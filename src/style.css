@@ -1,0 +1,113 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Courier New', ui-monospace, monospace;
+  color: #f2efe8;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: #fff;
+  box-shadow: 0 0 2px #000;
+  pointer-events: none;
+}
+
+.prompt,
+.message {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.prompt {
+  top: calc(50% + 22px);
+  font-size: 16px;
+}
+
+.message {
+  bottom: 14%;
+  font-size: 20px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message.show {
+  opacity: 1;
+}
+
+.debug {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  display: none;
+}
+
+.debug.show {
+  display: block;
+}
+
+.pause {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 12, 0.72);
+  cursor: pointer;
+}
+
+.pause.show {
+  display: flex;
+}
+
+.pause h1 {
+  margin: 0;
+  font-size: 44px;
+  letter-spacing: 0.08em;
+}
+
+.pause .sub {
+  margin: 4px 0 24px;
+  opacity: 0.6;
+}
+
+.pause .hint {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.controls td {
+  padding: 2px 12px;
+}
+
+.controls td:first-child {
+  text-align: right;
+  opacity: 0.7;
+}
