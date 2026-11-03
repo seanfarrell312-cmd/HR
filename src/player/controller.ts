@@ -16,6 +16,11 @@ export class PlayerController {
   pitch = 0;
   /** Debug-only fast movement while Shift is held. */
   allowFast = false;
+  /**
+   * Drag-to-look mode for browsers that refuse pointer lock (embedded
+   * previews, some iframes). Play runs without capturing the mouse.
+   */
+  dragLook = false;
 
   private keys = new Set<string>();
 
@@ -27,7 +32,8 @@ export class PlayerController {
     document.addEventListener('keydown', (e) => this.keys.add(e.code));
     document.addEventListener('keyup', (e) => this.keys.delete(e.code));
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
+      const dragging = this.dragLook && (e.buttons & 1) === 1;
+      if (!this.locked && !dragging) return;
       this.yaw += e.movementX * MOUSE_SENSITIVITY;
       this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * MOUSE_SENSITIVITY, -MAX_PITCH, MAX_PITCH);
     });
@@ -44,6 +50,11 @@ export class PlayerController {
     return document.pointerLockElement === this.element;
   }
 
+  /** True while the player is in control, with or without pointer lock. */
+  get active(): boolean {
+    return this.locked || this.dragLook;
+  }
+
   clearInput(): void {
     this.keys.clear();
   }
@@ -58,7 +69,7 @@ export class PlayerController {
   }
 
   update(dt: number, colliders: Collider[]): void {
-    if (this.locked) {
+    if (this.active) {
       let f = 0;
       let r = 0;
       if (this.keys.has('KeyW')) f += 1;

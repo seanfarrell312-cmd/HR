@@ -92,30 +92,61 @@ function cyclePreset(): void {
 }
 
 function lockPointer(): void {
-  const result = renderer.domElement.requestPointerLock() as unknown;
-  // Chrome refuses a re-lock for about a second after Escape; say so rather
-  // than leaving the click looking dead.
+  let result: unknown;
+  try {
+    result = renderer.domElement.requestPointerLock();
+  } catch {
+    startDragLook();
+    return;
+  }
   if (result instanceof Promise) {
-    result.catch(() => hud.setPaused(true, 'Click again to resume'));
+    result.catch(() => {
+      // Chrome refuses a re-lock for about a second after Escape; anything
+      // else means this page can't capture the mouse at all (embedded
+      // previews, sandboxed frames), so play on without it.
+      if (performance.now() - lastUnlock < 2000) hud.setPaused(true, 'Click again to resume');
+      else startDragLook();
+    });
   }
 }
 
+function startDragLook(): void {
+  if (player.dragLook) return;
+  player.dragLook = true;
+  started = true;
+  hud.setPaused(false, '');
+  hud.flash('Mouse capture is blocked here. Hold the left button and drag to look.', 4);
+}
+
+function pause(): void {
+  player.dragLook = false;
+  player.clearInput();
+  hud.setPaused(true, 'Paused — click to resume');
+}
+
+let lastUnlock = -Infinity;
+
 app.addEventListener('click', () => {
-  if (!player.locked) lockPointer();
+  if (!player.active) lockPointer();
 });
 
 document.addEventListener('pointerlockchange', () => {
   if (player.locked) started = true;
+  else lastUnlock = performance.now();
   hud.setPaused(!player.locked, started ? 'Paused — click to resume' : 'Click to start');
 });
-document.addEventListener('pointerlockerror', () => hud.setPaused(true, 'Click again to resume'));
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Backquote') {
     debugVisible = !debugVisible;
     return;
   }
-  if (!player.locked || e.repeat) return;
+  // With pointer lock the browser handles Escape itself; drag-look needs it here.
+  if (e.code === 'Escape' && player.dragLook) {
+    pause();
+    return;
+  }
+  if (!player.active || e.repeat) return;
   if (e.code === 'KeyE') {
     apply(resolve(target, state, player).action);
     return;
@@ -196,7 +227,7 @@ renderer.setAnimationLoop(() => {
     poseDoor(v);
   }
 
-  target = player.locked ? findTarget() : null;
+  target = player.active ? findTarget() : null;
   hud.setPrompt(resolve(target, state, player).prompt);
   hud.update(dt);
   hud.setDebug(debugVisible, debugText());

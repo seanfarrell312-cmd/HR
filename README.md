@@ -29,6 +29,11 @@ npm run build      # type-check + production build into dist/
 | Esc | Pause (releases the mouse) |
 | `` ` `` | Toggle the debug panel (on by default in dev) |
 
+If the browser refuses to capture the mouse (embedded previews such as the
+Claude app's browser pane, some iframes), the game starts anyway in
+**drag-to-look** mode: hold the left mouse button and drag to look. A normal
+Chrome or Edge tab captures the mouse as usual.
+
 With the debug panel open:
 
 | Key | Action |
