@@ -38,7 +38,7 @@ With the debug panel open:
 
 | Key | Action |
 |---|---|
-| 1–9, 0, - | Teleport to a zone (listed in the panel) |
+| 1–9, 0, -, = | Teleport to a zone (listed in the panel) |
 | R | Reset to the arrival point |
 | P | Cycle door presets (Day 1 start ↔ all unlocked) |
 | Shift | Fast walk |
@@ -52,9 +52,9 @@ All of it lives in [src/data/layout.ts](src/data/layout.ts).
   set into the wall beside it.
 - **Centre:** cobblestone path north to the church doors.
 - **West:** garden with the holy water fountain, bench, flower beds and the
-  old priest's grave.
-- **East:** graveyard rows, with a tall headstone at the north end framed from
-  the shed doorway.
+  old priest's grave; a second set of graves to the south of it.
+- **East:** graveyard rows, with the tall demon-perch headstone at the south
+  end, framed from the shed doorway about 40 m away.
 - **North:** the church. Nave with six rows of pews each side and the altar;
   office and storage closet off the west wall; chapel off the east wall with
   the relic table just outside its door; basement door in the north-east
@@ -75,6 +75,8 @@ The church layout follows
 - `tests/reachability.test.ts`: flood-fills the walkable map from the arrival
   point. Every zone is reachable with all doors open; the Day 1 preset reaches
   the nave and office but not the locked rooms.
+- `tests/sightlines.test.ts`: the tall headstone is in clear view from the
+  shed doorway and far away; the west garden is hidden behind the church.
 - `tests/interact.test.ts`: lock feedback, open/close, never closing a door
   on the player.
 

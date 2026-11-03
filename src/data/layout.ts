@@ -113,7 +113,8 @@ export const AREAS: Area[] = [
   { id: 'gate', label: 'Front gate', rect: rect(-6, 0, 6, 6), level: 0 },
   { id: 'path', label: 'Central path', rect: rect(-2, 6, 2, 50), level: 0 },
   { id: 'west-garden', label: 'West garden', rect: rect(-38, 42, -18, 68), level: 0 },
-  { id: 'east-graves', label: 'East graveyard', rect: rect(17, 30, 39, 66), level: 0 },
+  { id: 'east-graves', label: 'East graveyard', rect: rect(17, 26, 39, 66), level: 0 },
+  { id: 'west-graves', label: 'West graves', rect: rect(-38, 14, -17, 40), level: 0 },
   { id: 'nave', label: 'Nave', rect: NAVE, level: 0, roof: NAVE_H, floor: '#8a7f72' },
   { id: 'office', label: 'Office', rect: rect(-16.4, 50.6, -8, 56.2), level: 0, roof: ROOM_H, floor: '#6b5338' },
   { id: 'storage', label: 'Storage closet', rect: rect(-10.6, 60.5, -8, 62.9), level: 0, roof: ROOM_H, floor: '#6b5338' },
@@ -220,23 +221,34 @@ function pews(): Prop[] {
   return out;
 }
 
-function headstones(): Prop[] {
+/** A grid of headstones starting at (x0, y0), spaced 4 m apart east-west. */
+function graveRows(prefix: string, x0: number, y0: number, rows: number, cols: number): Prop[] {
   const out: Prop[] = [];
-  for (let row = 0; row < 6; row++) {
-    for (let col = 0; col < 5; col++) {
-      const x = 20 + col * 4;
-      const y = 34 + row * 4.4;
-      out.push({ id: `grave-e${row}-${col}`, label: 'Headstone', rect: rect(x - 0.4, y - 0.12, x + 0.4, y + 0.12), height: 1, level: 0, color: '#9c9a96' });
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = x0 + col * 4;
+      const y = y0 + row * 4.4;
+      out.push({ id: `grave-${prefix}${row}-${col}`, label: 'Headstone', rect: rect(x - 0.4, y - 0.12, x + 0.4, y + 0.12), height: 1, level: 0, color: '#9c9a96' });
     }
   }
-  // Northernmost, centrally framed headstone seen from the shed doorway (D3-12).
-  out.push({ id: 'grave-north', label: 'Tall headstone', rect: rect(27.4, 63.4, 28.6, 63.7), height: 1.8, level: 0, color: '#8a8884' });
   return out;
+}
+
+function headstones(): Prop[] {
+  return [
+    ...graveRows('e', 20, 34, 6, 5),
+    // Tall headstone the demon perches on (D3-12). Moved to the south end of
+    // the east graves so it reads as distant from the shed doorway; see
+    // docs/decisions.md.
+    { id: 'grave-tall', label: 'Tall headstone', rect: rect(27.4, 30.4, 28.6, 30.7), height: 1.8, level: 0, color: '#8a8884' },
+    // West graves, south of the garden (doc 4.1 "West garden + graves").
+    ...graveRows('w', -34, 18, 5, 4),
+  ];
 }
 
 function trees(): Prop[] {
   const spots: [number, number][] = [
-    [-34, 46], [-35, 63], [-20, 45], [-31, 30], [-12, 20], [12, 18], [34, 22], [38, 70], [-38, 80], [-10, 80], [10, 80],
+    [-34, 46], [-35, 63], [-20, 45], [-38, 28], [-12, 20], [12, 18], [34, 22], [38, 70], [-38, 80], [-10, 80], [10, 80],
   ];
   return spots.map(([x, y], i) => ({
     id: `tree-${i + 1}`,
@@ -314,5 +326,6 @@ export const TELEPORTS: Teleport[] = [
   { key: '8', label: 'Basement', x: 6.5, y: 64.5, level: -1, yaw: Math.PI },
   { key: '9', label: 'Shed doorway', x: 26, y: 70.5, level: 0, yaw: Math.PI },
   { key: '0', label: 'West garden', x: -24, y: 52, level: 0, yaw: -Math.PI / 2 },
-  { key: '-', label: 'East graveyard', x: 24, y: 31, level: 0, yaw: 0 },
+  { key: '-', label: 'East graveyard', x: 22, y: 28, level: 0, yaw: 0 },
+  { key: '=', label: 'West graves', x: -20, y: 16, level: 0, yaw: -Math.PI / 4 },
 ];

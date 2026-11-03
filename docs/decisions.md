@@ -31,3 +31,10 @@ These are greybox choices to be confirmed at the S0 gate, not designer rulings.
 - Exterior placement (garden, graves, shed, perimeter) follows section 4.1 of
   the doc; the church is the occluding mass between the shed and the west
   garden (section 4.3).
+
+## 2026-11-02 — S0 review: graves
+
+| Topic | Ruling |
+|---|---|
+| Demon-perch headstone (D3-12) | Moved from the north end of the east graves to the **south end**, about 40 m from the shed doorway, so the silhouette reads as distant. Supersedes the doc's "northernmost" wording in 4.1/4.3; the "centrally framed from the shed doorway" intent stands. |
+| West graves | A second set of graves sits **south of the west garden** (doc 4.1 "West garden + graves"). The old priest's grave stays by the garden. |

@@ -64,6 +64,7 @@ describe('layout data', () => {
       '8': 'basement',
       '0': 'west-garden',
       '-': 'east-graves',
+      '=': 'west-graves',
     };
     for (const [key, zone] of Object.entries(expected)) {
       const t = TELEPORTS.find((x) => x.key === key)!;
