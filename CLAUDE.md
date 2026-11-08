@@ -17,10 +17,17 @@ TypeScript + Three.js, built with Vite, tested with Vitest.
 
 Work proceeds in segments S0–S7 (doc section 9). Each segment stops at a gate
 for the designer's approval. Do not start the next segment's features until
-the current gate passes. Website deployment is out of scope until S7 is
-approved.
+the current gate passes.
 
-Current segment: **S0 — walkable monastery greybox.**
+Current segment: **S1 — arrival and first clock exorcism.** S0 approved
+2026-11-08.
+
+## Deployment
+
+Every push to `main` runs `npm test` and `npm run build` in GitHub Actions and
+deploys `dist/` to Azure Static Web Apps (workflow in `.github/workflows/`).
+The live site is what the designer playtests, so `main` must always be
+playable. Push only when the designer asks.
 
 ## Code layout
 

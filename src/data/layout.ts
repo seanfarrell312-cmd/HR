@@ -47,6 +47,8 @@ export interface Door {
   level: Level;
   /** Side of the wall the door swings into, as a unit offset along the normal. */
   swing: 1 | -1;
+  /** Two leaves hinged at either side of the opening, meeting in the middle. */
+  double?: boolean;
 }
 
 export interface Prop {
@@ -176,8 +178,8 @@ export const WALLS: Wall[] = [
 // --- Doors ---------------------------------------------------------------
 
 export const DOORS: Door[] = [
-  { id: 'gate', label: 'Front gate', x: 0, y: 0, axis: 'x', width: 4, height: 2.4, level: 0, swing: 1 },
-  { id: 'church', label: 'Church doors', x: 0, y: 50, axis: 'x', width: 3, height: 3.6, level: 0, swing: 1 },
+  { id: 'gate', label: 'Front gate', x: 0, y: 0, axis: 'x', width: 4, height: 2.4, level: 0, swing: 1, double: true },
+  { id: 'church', label: 'Church doors', x: 0, y: 50, axis: 'x', width: 3, height: 3.6, level: 0, swing: 1, double: true },
   { id: 'office', label: 'Office door', x: -8, y: 52.9, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: -1 },
   { id: 'storage', label: 'Storage closet', x: -8, y: 61.7, axis: 'y', width: 1.2, height: 2.3, level: 0, swing: -1 },
   { id: 'chapel', label: 'Chapel door', x: 8, y: 52.7, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: 1 },

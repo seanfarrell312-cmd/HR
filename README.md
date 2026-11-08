@@ -4,7 +4,10 @@ First-person, PS1-inspired supernatural horror with ritual chores, scripted
 environmental scares and a three-day story. Desktop browser game built with
 TypeScript, Three.js and Vite.
 
-**Status: S0, walkable monastery greybox.** No story, rituals or scares yet.
+**Status: S0 greybox approved; S1 (arrival and first clock exorcism) next.**
+No story, rituals or scares yet. Live build:
+https://gentle-mud-09ee6761e.6.azurestaticapps.net (deploys on every push
+to `main`).
 See [docs/design/design-doc-v0.4.md](docs/design/design-doc-v0.4.md) for the
 full plan and [docs/decisions.md](docs/decisions.md) for rulings since then.
 

@@ -14,8 +14,11 @@ import { wallSegments } from './collision';
 
 export interface DoorView {
   door: Door;
-  /** Pivot at the hinge; rotate around y to swing. */
-  pivot: THREE.Group;
+  /**
+   * One pivot per leaf, at its hinge; rotate around y to swing. `sign` is +1
+   * for a leaf hinged at the low end of the opening, -1 at the high end.
+   */
+  leaves: { pivot: THREE.Group; sign: 1 | -1 }[];
   /** Current swing, 0 = closed, 1 = fully open. */
   amount: number;
   target: number;
@@ -87,34 +90,47 @@ function propMesh(p: Prop): THREE.Object3D {
   }
 }
 
-function doorView(door: Door): DoorView {
-  const t = WALL_THICKNESS * 0.6;
+function doorLeaf(door: Door, sign: 1 | -1, width: number): THREE.Group {
   const panel = new THREE.Mesh(
-    new THREE.BoxGeometry(door.width, door.height, t),
+    new THREE.BoxGeometry(width, door.height, WALL_THICKNESS * 0.6),
     mat(door.id === 'gate' ? '#2b2b2b' : door.id === 'church' ? '#5a3a20' : '#6e4a2c'),
   );
-  // Hinge on the low end of the opening; the panel extends along the wall.
+  // The hinge sits at one end of the opening; the panel extends along the
+  // wall towards the other end (local +x from the low hinge, -x from the high).
   const pivot = new THREE.Group();
+  const hinge = sign === 1 ? -door.width / 2 : door.width / 2;
   if (door.axis === 'x') {
-    pivot.position.set(...toWorld(door.x - door.width / 2, door.y, door.level));
-    panel.position.set(door.width / 2, door.height / 2, 0);
+    pivot.position.set(...toWorld(door.x + hinge, door.y, door.level));
   } else {
-    pivot.position.set(...toWorld(door.x, door.y - door.width / 2, door.level));
+    pivot.position.set(...toWorld(door.x, door.y + hinge, door.level));
     pivot.rotation.y = Math.PI / 2;
-    panel.position.set(door.width / 2, door.height / 2, 0);
   }
+  panel.position.set((sign * width) / 2, door.height / 2, 0);
   panel.userData.interactId = `door:${door.id}`;
   pivot.add(panel);
   pivot.userData.baseRotation = pivot.rotation.y;
-  return { door, pivot, amount: 0, target: 0 };
+  return pivot;
 }
 
-/** Apply a door's current swing amount to its pivot. */
+function doorView(door: Door): DoorView {
+  const leaves = door.double
+    ? [
+        { pivot: doorLeaf(door, 1, door.width / 2), sign: 1 as const },
+        { pivot: doorLeaf(door, -1, door.width / 2), sign: -1 as const },
+      ]
+    : [{ pivot: doorLeaf(door, 1, door.width), sign: 1 as const }];
+  return { door, leaves, amount: 0, target: 0 };
+}
+
+/** Apply a door's current swing amount to its leaves. */
 export function poseDoor(v: DoorView): void {
   // Local -z is plan north for an x-axis door and plan west (after the base
-  // rotation) for a y-axis door; the sign picks which side it swings into.
+  // rotation) for a y-axis door; `swing` picks which side it opens into, and
+  // a leaf hinged at the high end turns the opposite way to reach that side.
   const dir = v.door.axis === 'x' ? v.door.swing : -v.door.swing;
-  v.pivot.rotation.y = v.pivot.userData.baseRotation + dir * v.amount * (Math.PI / 2) * 0.95;
+  for (const { pivot, sign } of v.leaves) {
+    pivot.rotation.y = pivot.userData.baseRotation + sign * dir * v.amount * (Math.PI / 2) * 0.95;
+  }
 }
 
 export function buildWorld(): WorldView {
@@ -171,8 +187,10 @@ export function buildWorld(): WorldView {
   for (const d of DOORS) {
     const v = doorView(d);
     doors.set(d.id, v);
-    root.add(v.pivot);
-    raycastTargets.push(v.pivot);
+    for (const { pivot } of v.leaves) {
+      root.add(pivot);
+      raycastTargets.push(pivot);
+    }
   }
 
   // Transitions get an invisible-ish marker the player can aim at.
