@@ -10,6 +10,7 @@ import { applyEvent, type Effect, type StoryEvent } from './story/events';
 import { HoldMeter } from './story/hold';
 import { currentObjective } from './story/objectives';
 import { Hud, type Panel } from './ui/hud';
+import { showTitleScreen } from './ui/title';
 import { buildWorld, poseDoor } from './world/build';
 import { closedDoorColliders, staticColliders, type Collider } from './world/collision';
 import { lockState, resolve, type Action } from './world/interact';
@@ -262,6 +263,7 @@ let lastUnlock = -Infinity;
 app.addEventListener('click', () => {
   if (!player.active) lockPointer();
 });
+showTitleScreen(lockPointer);
 app.addEventListener('contextmenu', (e) => e.preventDefault());
 
 document.addEventListener('pointerlockchange', () => {

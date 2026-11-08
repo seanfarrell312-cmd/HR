@@ -7,3 +7,4 @@ scope. Each entry names the segment where it belongs. Move an item into
 | Raised | Item | Belongs in |
 |---|---|---|
 | S0 review | Grounds feel empty in places. Revisit after walk-time testing: shrink the perimeter, or add set dressing (hedges, lamps, benches, paths to the graves). | S0 gate (scale) / S7 (dressing) |
+| Title screen | OPTIONS button is a disabled placeholder. Candidate settings: mouse sensitivity, volume, invert look. | S7 |

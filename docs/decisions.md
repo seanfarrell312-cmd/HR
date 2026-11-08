@@ -67,3 +67,11 @@ These are greybox choices to be confirmed at the S0 gate, not designer rulings.
   drags with the **right** button so the left stays free for hold-to-bless.
 - The chapel key can only be taken after reading the office note; trying
   earlier gives a short reminder thought (doc 5.4 "non-blocking reminder").
+
+## 2026-11-08 — Title screen
+
+At the designer's request the page now opens on a title screen modelled on
+their earlier game's: "Happy Resting" in a heavy outlined face, "a game by
+seanologues", and START and OPTIONS buttons, on a blue background. The title
+is green (the reverse of the reference's blue-on-green); START enters the
+game. OPTIONS is shown greyed out until there are settings to offer.

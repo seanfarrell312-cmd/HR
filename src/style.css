@@ -271,3 +271,68 @@ canvas {
   font-size: 36px;
   color: #9eff8f;
 }
+
+/* --- Title screen ---------------------------------------------------------- */
+
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: #2f6cc4;
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-weight: 900;
+  text-align: center;
+}
+
+.title-name {
+  margin: 0;
+  font-size: clamp(44px, 10vw, 120px);
+  line-height: 1;
+  color: #6fd36a;
+  -webkit-text-stroke: 0.09em #1c1410;
+  paint-order: stroke fill;
+}
+
+.title-by {
+  margin: 0.9em 0 3.2em;
+  font-size: clamp(16px, 2.4vw, 26px);
+  color: #fff;
+}
+
+.title-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+}
+
+.title-btn {
+  font: inherit;
+  font-size: clamp(20px, 2.6vw, 30px);
+  letter-spacing: 0.04em;
+  padding: 0.35em 1.1em;
+  border: 0;
+  border-radius: 0;
+  color: #fff;
+  background: #1f4f96;
+  cursor: pointer;
+}
+
+.title-btn:hover,
+.title-btn:focus-visible {
+  background: #173d75;
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.title-btn:disabled {
+  color: #8c8c8c;
+  background: #4f4f4f;
+  cursor: default;
+  outline: none;
+}
