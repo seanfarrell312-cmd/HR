@@ -14,6 +14,8 @@ export const DOOR_PRESETS: DoorPreset[] = [
     id: 'day1-start',
     label: 'Day 1 start',
     locks: {
+      // Opened by the keypad code (D1-01) and the chapel key (D1-03).
+      gate: 'locked',
       chapel: 'locked',
       storage: 'locked',
       basement: 'locked',

@@ -4,8 +4,9 @@ First-person, PS1-inspired supernatural horror with ritual chores, scripted
 environmental scares and a three-day story. Desktop browser game built with
 TypeScript, Three.js and Vite.
 
-**Status: S0 greybox approved; S1 (arrival and first clock exorcism) next.**
-No story, rituals or scares yet. Live build:
+**Status: S1 (arrival and first clock exorcism) built, awaiting the S1 gate.**
+Day 1 runs from the bus to the clock on the supervisor's desk (D1-01 to
+D1-06); everything after that is S2. Live build:
 https://gentle-mud-09ee6761e.6.azurestaticapps.net (deploys on every push
 to `main`).
 See [docs/design/design-doc-v0.4.md](docs/design/design-doc-v0.4.md) for the
@@ -28,13 +29,17 @@ npm run build      # type-check + production build into dist/
 |---|---|
 | Click | Capture the mouse and start / resume |
 | WASD + mouse | Move and look |
-| E | Interact (doors, stairs) |
+| E | Interact; also puts down a note, phone or keypad |
+| Hold left click | Bless (fills the ring round the crosshair) |
+| Q | Phone (re-read texts) |
+| 0–9, Backspace | Gate keypad, while it's open |
 | Esc | Pause (releases the mouse) |
 | `` ` `` | Toggle the debug panel (on by default in dev) |
 
 If the browser refuses to capture the mouse (embedded previews such as the
 Claude app's browser pane, some iframes), the game starts anyway in
-**drag-to-look** mode: hold the left mouse button and drag to look. A normal
+**drag-to-look** mode: hold the right mouse button and drag to look (the
+left button stays free for blessing). A normal
 Chrome or Edge tab captures the mouse as usual.
 
 With the debug panel open:
@@ -42,7 +47,7 @@ With the debug panel open:
 | Key | Action |
 |---|---|
 | 1–9, 0, -, = | Teleport to a zone (listed in the panel) |
-| R | Reset to the arrival point |
+| R | Reset Day 1 to the arrival point |
 | P | Cycle door presets (Day 1 start ↔ all unlocked) |
 | Shift | Fast walk |
 
@@ -80,6 +85,10 @@ The church layout follows
   the nave and office but not the locked rooms.
 - `tests/sightlines.test.ts`: the tall headstone is in clear view from the
   shed doorway and far away; the west garden is hidden behind the church.
+- `tests/day1.test.ts`: the S1 stage tests. Gate opens only on the right
+  code, the ritual needs its preconditions and the holy circle, the ghost and
+  every objective fire once even when every event is spammed, and D1-01 to
+  D1-06 complete in order.
 - `tests/interact.test.ts`: lock feedback, open/close, never closing a door
   on the player.
 

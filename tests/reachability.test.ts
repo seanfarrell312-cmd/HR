@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DOOR_PRESETS } from '../src/data/doorPresets';
 import { AREAS, ARRIVAL, DOORS, PLAYER_RADIUS, TRANSITIONS, type Level } from '../src/data/layout';
 import { blocked, closedDoorColliders, staticColliders } from '../src/world/collision';
+import { createInitialState, type GameState } from '../src/state/store';
+import { lockState } from '../src/world/interact';
 import { zoneAt } from '../src/world/zones';
 
 // Flood-fill the walkable grid from the arrival point, the way a player would
@@ -45,9 +46,9 @@ function reachableZones(openDoors: Set<string>): Set<string> {
   return zones;
 }
 
-function openableDoors(presetId: string): Set<string> {
-  const preset = DOOR_PRESETS.find((p) => p.id === presetId)!;
-  return new Set(DOORS.filter((d) => !preset.locks[d.id]).map((d) => d.id));
+/** Doors the player could open in this state, all of them opened. */
+function openableDoors(state: GameState): Set<string> {
+  return new Set(DOORS.filter((d) => lockState(state, d.id) === 'unlocked').map((d) => d.id));
 }
 
 describe('reachability', () => {
@@ -61,13 +62,29 @@ describe('reachability', () => {
     expect([...zones].sort()).toEqual(['outside']);
   });
 
-  it('on the Day 1 preset, reaches the nave and office but not the locked rooms', () => {
-    const zones = reachableZones(openableDoors('day1-start'));
+  it('on Day 1, keeps the player outside until the gate code is entered', () => {
+    const zones = reachableZones(openableDoors(createInitialState('day1-start')));
+    expect([...zones].sort()).toEqual(['outside']);
+  });
+
+  it('after the gate code, reaches the nave and office but not the locked rooms', () => {
+    const s = createInitialState('day1-start');
+    s.flags.add('gate-unlocked');
+    const zones = reachableZones(openableDoors(s));
     for (const id of ['outside', 'gate', 'path', 'west-garden', 'east-graves', 'nave', 'office']) {
       expect(zones.has(id), id).toBe(true);
     }
     for (const id of ['chapel', 'storage', 'stair-annex', 'basement', 'shed']) {
       expect(zones.has(id), id).toBe(false);
     }
+  });
+
+  it('with the chapel key, reaches the chapel and the holy circle inside it', () => {
+    const s = createInitialState('day1-start');
+    s.flags.add('gate-unlocked');
+    s.inventory.add('chapel-key');
+    const zones = reachableZones(openableDoors(s));
+    expect(zones.has('chapel')).toBe(true);
+    expect(zones.has('storage')).toBe(false);
   });
 });

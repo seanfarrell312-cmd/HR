@@ -18,9 +18,12 @@ export class PlayerController {
   allowFast = false;
   /**
    * Drag-to-look mode for browsers that refuse pointer lock (embedded
-   * previews, some iframes). Play runs without capturing the mouse.
+   * previews, some iframes). Play runs without capturing the mouse; the right
+   * button drags the view so the left stays free for hold actions.
    */
   dragLook = false;
+  /** Movement and look are suspended, e.g. while a note or keypad is open. */
+  frozen = false;
 
   private keys = new Set<string>();
 
@@ -32,8 +35,8 @@ export class PlayerController {
     document.addEventListener('keydown', (e) => this.keys.add(e.code));
     document.addEventListener('keyup', (e) => this.keys.delete(e.code));
     document.addEventListener('mousemove', (e) => {
-      const dragging = this.dragLook && (e.buttons & 1) === 1;
-      if (!this.locked && !dragging) return;
+      const dragging = this.dragLook && (e.buttons & 2) === 2;
+      if (this.frozen || (!this.locked && !dragging)) return;
       this.yaw += e.movementX * MOUSE_SENSITIVITY;
       this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * MOUSE_SENSITIVITY, -MAX_PITCH, MAX_PITCH);
     });
@@ -69,7 +72,7 @@ export class PlayerController {
   }
 
   update(dt: number, colliders: Collider[]): void {
-    if (this.active) {
+    if (this.active && !this.frozen) {
       let f = 0;
       let r = 0;
       if (this.keys.has('KeyW')) f += 1;

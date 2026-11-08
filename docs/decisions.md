@@ -61,3 +61,9 @@ These are greybox choices to be confirmed at the S0 gate, not designer rulings.
 - The mantel clock starts on the ritual table; after the blessing it is carried to a socket on the office desk (D1-06).
 - Hold-to-bless takes 2 s, shown by the circular progress meter (doc 5.1).
 - The gate code value is a placeholder until the designer picks one.
+- Q opens the phone to re-read texts. The doc's input list (5.1) has no
+  phone key, so this is a PROVISIONAL addition.
+- In drag-to-look mode (browsers that refuse mouse capture) the view now
+  drags with the **right** button so the left stays free for hold-to-bless.
+- The chapel key can only be taken after reading the office note; trying
+  earlier gives a short reminder thought (doc 5.4 "non-blocking reminder").

@@ -179,6 +179,7 @@ export function buildWorld(): WorldView {
 
   for (const p of PROPS) {
     const mesh = propMesh(p);
+    if (p.interact) mesh.userData.interactId = `item:${p.interact}`;
     root.add(mesh);
     raycastTargets.push(mesh);
   }

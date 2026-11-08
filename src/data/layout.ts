@@ -63,6 +63,8 @@ export interface Prop {
   solid?: boolean;
   /** Height the prop starts at above the level floor. */
   base?: number;
+  /** Story interaction id; the prop answers to `item:<interact>`. */
+  interact?: string;
 }
 
 export interface Transition {
@@ -267,8 +269,8 @@ export const PROPS: Prop[] = [
   // Ground features.
   { id: 'path', label: 'Cobblestone path', rect: rect(-1.5, 0, 1.5, 50), height: 0.02, level: 0, color: '#9b958b', shape: 'flat', solid: false },
   { id: 'road', label: 'Road', rect: rect(-20, -10, 20, -6), height: 0.02, level: 0, color: '#4b4b4f', shape: 'flat', solid: false },
-  { id: 'drop-box', label: 'Relic drop box', rect: rect(3.2, -0.6, 4.2, 0.6), height: 1.3, level: 0, color: '#3b4a5a' },
-  { id: 'gate-keypad', label: 'Gate keypad', rect: rect(-2.7, -0.35, -2.3, -0.15), height: 1.4, level: 0, color: '#2d2d2d' },
+  { id: 'drop-box', label: 'Relic drop box', rect: rect(3.2, -0.6, 4.2, 0.6), height: 1.3, level: 0, color: '#3b4a5a', interact: 'drop-box' },
+  { id: 'gate-keypad', label: 'Gate keypad', rect: rect(-2.7, -0.35, -2.3, -0.15), height: 1.4, level: 0, color: '#2d2d2d', interact: 'keypad' },
 
   // West garden.
   { id: 'fountain', label: 'Holy water fountain', rect: rect(-28.2, 53.8, -25.8, 56.2), height: 0.9, level: 0, color: '#a7b4bb', shape: 'cylinder' },
@@ -286,10 +288,10 @@ export const PROPS: Prop[] = [
   { id: 'aisle', label: 'Aisle carpet', rect: rect(-0.8, 50.2, 0.8, 64.6), height: 0.02, level: 0, color: '#a11d22', shape: 'flat', solid: false },
   { id: 'altar', label: 'Altar', rect: rect(-2.8, 64.8, 2.8, 66.3), height: 1.1, level: 0, color: '#c8c3ba' },
   { id: 'relic-table', label: 'Cleaned-relic table', rect: rect(6.9, 50.3, 7.85, 51.8), height: 0.85, level: 0, color: WOOD },
-  { id: 'keys', label: 'Key hooks', rect: rect(-7.85, 51.1, -7.75, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false },
+  { id: 'keys', label: 'Key hooks', rect: rect(-7.85, 51.1, -7.75, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false, interact: 'chapel-key' },
 
   // Office.
-  { id: 'office-desk', label: 'Desk', rect: rect(-14.6, 51.2, -13.6, 54.2), height: 0.8, level: 0, color: DARK_WOOD },
+  { id: 'office-desk', label: 'Desk', rect: rect(-14.6, 51.2, -13.6, 54.2), height: 0.8, level: 0, color: DARK_WOOD, interact: 'office-desk' },
   { id: 'office-phone', label: 'Landline phone', rect: rect(-14.35, 53.3, -13.9, 53.7), height: 0.12, level: 0, color: '#1e1e1e', base: 0.8, solid: false },
   { id: 'office-shelf', label: 'Bookshelf', rect: rect(-16.1, 55.3, -8.4, 55.9), height: 2.2, level: 0, color: DARK_WOOD },
 

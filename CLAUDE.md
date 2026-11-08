@@ -33,10 +33,15 @@ playable. Push only when the designer asks.
 
 - `src/data/` — plain data: layout (rooms, walls, doors, props, zones,
   teleports), door presets, story state keys. No Three.js imports.
-- `src/world/` — `collision.ts` and `zones.ts` are pure logic (tested);
-  `build.ts` turns layout data into Three.js meshes.
+- `src/world/` — `collision.ts`, `zones.ts` and `interact.ts` are pure logic
+  (tested); `build.ts` turns layout data into Three.js meshes and
+  `storyProps.ts` draws story items from state every frame.
 - `src/player/` — first-person controller (pointer lock, WASD, interaction ray).
 - `src/state/` — game state store.
+- `src/story/` — pure story logic: `events.ts` is the only place story state
+  changes (every event is validated and idempotent), `objectives.ts` is the
+  objective sequencer, `hold.ts` the hold-to-act meter.
+- `src/audio/` — placeholder synthesised sound effects.
 - `src/ui/` — HUD, crosshair prompt, pause overlay, debug panel.
 - `tests/` — Vitest. Logic that can be tested without a browser should be.
 
