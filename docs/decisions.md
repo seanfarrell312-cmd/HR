@@ -46,3 +46,18 @@ These are greybox choices to be confirmed at the S0 gate, not designer rulings.
 | Gate and church doors | Both are **double doors** that open **inward** (the gate into the grounds, the church doors into the nave). Other doors stay single. |
 | Website deployment | Brought forward from "after S7": every push to `main` runs the tests, builds and deploys to Azure Static Web Apps. `main` must stay playable. |
 | S0 sign-off | Designer playtested the deployed greybox and approved the layout and scale, with the double-door change above. Edge and 1440p checks remain open for S7 browser QA. **S1 is next.** |
+
+## 2026-11-08 — S1 setup
+
+| Topic | Ruling |
+|---|---|
+| Gate code (D1-01) | Arrives as an **SMS from the supervisor** as the player steps off the bus, and can be re-read on the phone. Introduces the SMS alert used for relic deliveries. |
+| Bus arrival | **Simple drive-off:** "Day 1" title fades in at the road while a low-poly bus pulls away with an engine sound, about 3 s, skippable. |
+| Matches and crucifix | Start on the **chapel supply shelf** and reset there each morning. |
+| Candles (D1-04) | **Four candle stands** at the corners of the holy circle, each lit separately with E. |
+
+### PROVISIONAL S1 defaults (not yet ruled on)
+
+- The mantel clock starts on the ritual table; after the blessing it is carried to a socket on the office desk (D1-06).
+- Hold-to-bless takes 2 s, shown by the circular progress meter (doc 5.1).
+- The gate code value is a placeholder until the designer picks one.
