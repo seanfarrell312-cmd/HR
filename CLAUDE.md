@@ -19,7 +19,7 @@ Work proceeds in segments S0–S7 (doc section 9). Each segment stops at a gate
 for the designer's approval. Do not start the next segment's features until
 the current gate passes.
 
-Current segment: **S1 — arrival and first clock exorcism.** S0 approved
+Current segment: **S2 — complete Day 1.** S0 approved 2026-11-08; S1 approved
 2026-11-08.
 
 ## Deployment

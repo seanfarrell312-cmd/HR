@@ -1,48 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { CHURCH_APPROACH, GATE_CODE, HEAD_HOME_DELAY, HOLY_CIRCLE, THOUGHTS, TREE_PEEK } from '../src/data/story';
+import { CHURCH_APPROACH, GATE_CODE, HOLY_CIRCLE, THOUGHTS, TREE_PEEK } from '../src/data/story';
 import { createInitialState, type GameState } from '../src/state/store';
 import { applyEvent, type Effect, type StoryEvent } from '../src/story/events';
 import { HoldMeter } from '../src/story/hold';
 import { advanceObjectives, currentObjective } from '../src/story/objectives';
 import { inHolyCircle, lockState, resolve } from '../src/world/interact';
 import { chimeVolume } from '../src/world/storyProps';
+import { PLAYTHROUGH, play, step } from './playthrough';
 
 // S1 stage tests (doc 9.1): gate only opens on the correct code; the ritual
 // only works after its preconditions; the ghost and each objective complete
-// once; spamming input never duplicates state.
+// once; spamming input never duplicates state. S2's are in day1-s2.test.ts.
 
 const run = (s: GameState, events: StoryEvent[]): Effect[] => events.flatMap((e) => applyEvent(s, e));
 const kinds = (fx: Effect[]) => fx.map((f) => f.kind);
 const inCircle = { x: HOLY_CIRCLE.x, y: HOLY_CIRCLE.y, level: 0 as const };
 
-/** Every S1 event in order, as a player would trigger them. */
-const PLAYTHROUGH: StoryEvent[] = [
-  { type: 'receive-sms', id: 'gateCode' },
-  { type: 'read-sms' },
-  { type: 'keypad-submit', code: GATE_CODE },
-  { type: 'door-opened', id: 'church' },
-  { type: 'read-note' },
-  { type: 'take', item: 'chapel-key' },
-  { type: 'take', item: 'matches' },
-  { type: 'light-candle', index: 0 },
-  { type: 'light-candle', index: 1 },
-  { type: 'light-candle', index: 2 },
-  { type: 'light-candle', index: 3 },
-  { type: 'take', item: 'crucifix' },
-  { type: 'bless-clock' },
-  { type: 'pickup-clock' },
-  { type: 'place-clock' },
-  { type: 'head-home' },
-  { type: 'reach-gate', x: 0, y: 1, level: 0 },
-];
-
-/** Open the church doors the way the game does: the door opens, then the event. */
-function withChurchOpen(s: GameState, events: StoryEvent[]): Effect[] {
-  return events.flatMap((e) => {
-    if (e.type === 'door-opened') s.open_doors.add(e.id);
-    return applyEvent(s, e);
-  });
-}
+const withChurchOpen = play;
 
 describe('church-approach thought', () => {
   const unlocked = () => {
@@ -77,10 +51,10 @@ describe('church-approach thought', () => {
 });
 
 describe('tree peek', () => {
-  /** Clock delivered and the head-home thought played: the end of the day. */
+  /** Relic put away and the head-home thought played: the end of the day. */
   const homeward = () => {
     const s = createInitialState();
-    withChurchOpen(s, PLAYTHROUGH.slice(0, 16));
+    withChurchOpen(s, PLAYTHROUGH.slice(0, step('head-home') + 1));
     return s;
   };
   const near = { type: 'near-peek', x: TREE_PEEK.x - 6, y: TREE_PEEK.y - 4, level: 0 } as const;
@@ -93,14 +67,14 @@ describe('tree peek', () => {
     const s = homeward();
     expect(s.flags.has('heading-home')).toBe(true);
     expect(applyEvent(s, { type: 'near-peek', x: 0, y: 10, level: 0 })).toEqual([]);
-    expect(s.fired_scares).toEqual(['d1-clock-ghost']);
+    expect(s.fired_scares).toEqual(['d1-clock-ghost', 'd1-relic-ghost']);
   });
 
   it('giggles and ducks away once', () => {
     const s = homeward();
     expect(applyEvent(s, near)).toEqual([{ kind: 'sfx', id: 'giggle' }]);
     expect(applyEvent(s, near)).toEqual([]);
-    expect(s.fired_scares).toEqual(['d1-clock-ghost', 'd1-tree-peek']);
+    expect(s.fired_scares).toEqual(['d1-clock-ghost', 'd1-relic-ghost', 'd1-tree-peek']);
   });
 });
 
@@ -182,7 +156,7 @@ describe('candles and blessing (D1-04, D1-05)', () => {
 
   it('releases the ghost exactly once, however often the blessing fires', () => {
     const s = createInitialState();
-    const fx = run(s, [...PLAYTHROUGH.slice(6, 13), { type: 'bless-clock' }, { type: 'bless-clock' }]);
+    const fx = run(s, [...PLAYTHROUGH.slice(step('take'), step('bless-clock') + 1), { type: 'bless-clock' }, { type: 'bless-clock' }]);
     expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(1);
     expect(s.fired_scares).toEqual(['d1-clock-ghost']);
   });
@@ -198,7 +172,7 @@ describe('clock delivery (D1-06)', () => {
 
   it('carries one clock at a time and places it once', () => {
     const s = createInitialState();
-    withChurchOpen(s, PLAYTHROUGH.slice(0, 14));
+    withChurchOpen(s, PLAYTHROUGH.slice(0, step('pickup-clock') + 1));
     expect(s.clock).toBe('held');
     expect(resolve('item:office-desk', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'place-clock' } });
     applyEvent(s, { type: 'place-clock' });
@@ -208,38 +182,13 @@ describe('clock delivery (D1-06)', () => {
   });
 });
 
-describe('heading home', () => {
-  const placed = () => {
+describe('clock delivered', () => {
+  it('thinks back on the clock, without heading home yet', () => {
     const s = createInitialState();
-    withChurchOpen(s, PLAYTHROUGH.slice(0, 15));
-    return s;
-  };
-
-  it('thinks back on the clock, then heads home after a pause', () => {
-    const s = createInitialState();
-    const fx = withChurchOpen(s, PLAYTHROUGH.slice(0, 15));
+    const fx = withChurchOpen(s, PLAYTHROUGH.slice(0, step('place-clock') + 1));
     expect(fx).toContainEqual({ kind: 'say', text: THOUGHTS.clockPlaced });
-    expect(fx).toContainEqual({ kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } });
-    // The walk-back objective stays hidden until the thought plays.
-    expect(s.objective_id).toBe('D1-RETURN');
-    expect(currentObjective(s).task(s)).toBe('');
-    expect(applyEvent(s, { type: 'head-home' })).toEqual([{ kind: 'say', text: THOUGHTS.headHome }]);
-    expect(currentObjective(s).task(s)).toBe('Head back to the front gate');
-    expect(applyEvent(s, { type: 'head-home' })).toEqual([]);
-  });
-
-  it('only counts the gate once the player is heading home', () => {
-    const s = placed();
-    expect(applyEvent(s, { type: 'reach-gate', x: 0, y: 1, level: 0 })).toEqual([]);
-    applyEvent(s, { type: 'head-home' });
-    expect(applyEvent(s, { type: 'reach-gate', x: 0, y: 30, level: 0 })).toEqual([]);
-    const fx = applyEvent(s, { type: 'reach-gate', x: 0, y: 1, level: 0 });
-    expect(fx).toContainEqual({ kind: 'objective', id: 'D1-RETURN' });
+    expect(fx.some((f) => f.kind === 'after' && f.event.type === 'head-home')).toBe(false);
     expect(s.objective_id).toBe('D1-07');
-  });
-
-  it('ignores an early head-home', () => {
-    const s = createInitialState();
     expect(applyEvent(s, { type: 'head-home' })).toEqual([]);
   });
 });
@@ -259,37 +208,35 @@ describe('clock chime', () => {
   });
 });
 
-describe('S1 playthrough', () => {
-  it('completes D1-01 to D1-06 and the walk back in order, then stops at the end of the build', () => {
+describe('Day 1 playthrough', () => {
+  const ALL = ['D1-01', 'D1-02', 'D1-03', 'D1-04', 'D1-05', 'D1-06', 'D1-07', 'D1-08', 'D1-09', 'D1-10'];
+
+  it('completes D1-01 to D1-10 in order and ends the shift once', () => {
     const s = createInitialState();
     const fx = withChurchOpen(s, PLAYTHROUGH);
-    expect(fx.filter((f) => f.kind === 'objective').map((f) => (f as { id: string }).id)).toEqual([
-      'D1-01',
-      'D1-02',
-      'D1-03',
-      'D1-04',
-      'D1-05',
-      'D1-06',
-      'D1-RETURN',
-    ]);
-    expect(s.objective_id).toBe('D1-07');
+    expect(fx.filter((f) => f.kind === 'objective').map((f) => (f as { id: string }).id)).toEqual(ALL);
+    expect(fx.filter((f) => f.kind === 'end-day')).toHaveLength(1);
+    expect(s.objective_id).toBe('D2-01');
   });
 
   it('does not duplicate any state when every event is spammed', () => {
     const s = createInitialState();
     const spammed = PLAYTHROUGH.flatMap((e) => [e, e, e]);
     const fx = withChurchOpen(s, spammed);
-    expect(s.completed_objectives).toEqual(['D1-01', 'D1-02', 'D1-03', 'D1-04', 'D1-05', 'D1-06', 'D1-RETURN']);
-    expect(s.inbox).toEqual(['gateCode']);
+    expect(s.completed_objectives).toEqual(ALL);
+    expect(s.inbox).toEqual(['gateCode', 'delivery1']);
     expect(s.candles_lit.size).toBe(4);
-    expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(1);
+    expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(2);
+    expect(fx.filter((f) => f.kind === 'rattle')).toHaveLength(1);
     expect(fx.filter((f) => f.kind === 'open-door')).toHaveLength(1);
+    expect(fx.filter((f) => f.kind === 'end-day')).toHaveLength(1);
+    expect(s.fired_scares).toEqual(['d1-clock-ghost', 'd1-relic-ghost']);
   });
 
   it('cannot complete a later objective early', () => {
     const s = createInitialState();
     // Everything from the chapel onwards, before the gate or the note.
-    run(s, PLAYTHROUGH.slice(6));
+    run(s, PLAYTHROUGH.slice(step('take')));
     expect(s.objective_id).toBe('D1-01');
     expect(advanceObjectives(s)).toEqual([]);
   });

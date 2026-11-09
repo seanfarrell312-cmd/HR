@@ -1,5 +1,6 @@
-// Day 1 story data for S1 (D1-01 to D1-06). Plain data: positions, texts and
-// tuning. Dialogue is PROVISIONAL copy until the script is locked (doc N07).
+// Day 1 story data (S1: D1-01 to D1-06; S2: D1-07 to D1-10 and the Day 2
+// reset). Plain data: positions, texts and tuning. Dialogue is PROVISIONAL
+// copy until the script is locked (doc N07).
 
 /** PLACEHOLDER gate code until the designer picks one (docs/decisions.md). */
 export const GATE_CODE = '4173';
@@ -39,6 +40,16 @@ export const SPOTS = {
   crucifix: { x: 8.55, y: 54.9, z: 1.2 },
   clockRitual: { x: 13.45, y: 53.3, z: 0.9 },
   clockDesk: { x: -14.1, y: 52.9, z: 0.8 },
+  // S2 (decisions 2026-11-09).
+  chaliceAltar: { x: 0, y: 65.1, z: 1.1 },
+  /** The ritual table's sockets: chalice and crucifix either side of the relic. */
+  chaliceRitual: { x: 13.45, y: 52.65, z: 0.9 },
+  crucifixRitual: { x: 13.45, y: 53.95, z: 0.9 },
+  relicRitual: { x: 13.45, y: 53.3, z: 0.9 },
+  /** Cleaned-relic table outside the chapel door. */
+  relicStored: { x: 7.4, y: 51.05, z: 0.85 },
+  /** Inside the drop box at the gate, where the music box is heard from. */
+  dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
 
 /** Four candle stands at the corners of the holy circle (decisions 2026-11-08). */
@@ -61,11 +72,22 @@ export const SMS: Record<string, Sms> = {
     from: 'Supervisor',
     text: `Afternoon! Should have sent this earlier but I forgot. Gate code is ${GATE_CODE}. Your instructions should be in my office. Just hang a left once you get into the church.`,
   },
+  // PROVISIONAL copy (decisions 2026-11-09).
+  delivery1: {
+    id: 'delivery1',
+    from: 'Supervisor',
+    text: "Something just came through the drop box by the gate. Could you bring it in and give it the usual treatment? Leave it on the table outside the chapel when you're done.",
+  },
 };
+
+/** Seconds after the ritual table is ready before the delivery text arrives. */
+export const DELIVERY_DELAY = 4;
 
 /** The card shown as each day begins (designer copy, 2026-11-08). */
 export const DAY_TITLES: Record<number, { title: string; time: string }> = {
   1: { title: 'First Day', time: '4PM' },
+  // PROVISIONAL until the designer names it.
+  2: { title: 'Second Day', time: '4PM' },
 };
 
 /** The supervisor's letter (designer copy, 2026-11-08), one entry per paragraph. */
@@ -90,15 +112,35 @@ export const THOUGHTS = {
   keyBeforeNote: 'Huh, a key. I should really read the note they left me first.',
   ghost: '...Huh. Kinda cute.',
   clockPlaced: "That wasn't too bad.",
-  /** A few seconds after the clock is on the desk; then the walk back to the gate. */
+  // PROVISIONAL S2 lines (decisions 2026-11-09).
+  relicRattle: 'Stubborn little thing. Maybe some scripture will settle it.',
+  relicGhost: 'Did it just wink at me?',
+  /** A few seconds after the music box is put away; then the walk back to the gate. */
   headHome: 'I guess I should head back to the bus stop.',
 };
 
-/**
- * Seconds between "That wasn't too bad." and the head-home thought. In the S1
- * build the walk home follows the clock; in S2 it moves to the end of the day,
- * after D1-07 to D1-09 (decisions 2026-11-08).
- */
+/** Reminders when something is tried too early (doc 5.4). PROVISIONAL copy. */
+export const REMINDERS = {
+  chaliceEarly: 'I should finish with the clock first.',
+  handsFull: 'My hands are full.',
+  hatchInside: "The hatch is on the inside of the gate.",
+  dropBoxEmpty: "Nothing's been delivered yet.",
+  tableNotReady: 'The chalice and crucifix need setting out first.',
+  scriptureFirst: 'I should read from the Bible first.',
+  standInCircle: 'I should stand in the holy circle.',
+};
+
+/** The verse on the Bible stand: Numbers 6:24-26, King James Version (public domain). */
+export const SCRIPTURE = {
+  reference: 'Numbers 6:24-26',
+  lines: [
+    'The LORD bless thee, and keep thee:',
+    'The LORD make his face shine upon thee, and be gracious unto thee:',
+    'The LORD lift up his countenance upon thee, and give thee peace.',
+  ],
+};
+
+/** Seconds between putting the music box away and the head-home thought (D1-10). */
 export const HEAD_HOME_DELAY = 5;
 
 /**
@@ -127,5 +169,5 @@ export const WRONG_CODE = 'Wrong code. I should check my messages.';
  */
 export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
 
-/** Message shown once S1's last objective is done. */
-export const S1_END = 'End of the S1 build. The rest of Day 1 comes in S2.';
+/** Shown as Day 2 begins, until S3 builds it. */
+export const S2_END = 'End of the S2 build. Day 2 comes in S3.';

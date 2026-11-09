@@ -127,3 +127,46 @@ Thoughts now stay up longer the longer they are (at least 3 s).
   evening sky.
 - The peek trigger distance (9 m) and the ghost's hover height are first
   guesses.
+
+## 2026-11-08 — S1 gate
+
+| Topic | Ruling |
+|---|---|
+| S1 sign-off | Designer playtested the deployed build (round 2: SMS alert, constant chime, folding chapel door, new ghost look, walk home with the tree peek) and approved it. **S2 is next.** |
+| Day 1 shape | The doc's D1-07 to D1-10 stay in Day 1. The walk home and the tree peek belong to the very end of the day, after the relic is stored (D1-10). |
+
+## 2026-11-09 — S2 setup
+
+Designer rulings before building S2:
+
+| Topic | Ruling |
+|---|---|
+| First delivered relic | A small wooden **music box**. While possessed its lid flaps and it plays a wonky tune, faintly audible from the drop box and clear close by. |
+| Chalice | Starts the day on the **nave altar**. Carried like the clock (one large prop at a time). |
+| Standard relic blessing | **Hold the crucifix** (the music box rattles hard, then settles), **E on the Bible stand** to read scripture, **hold again** (it releases a winking green ghost). |
+
+### PROVISIONAL S2 defaults (not yet ruled on)
+
+- **Order.** D1-07: take the chalice from the altar once the clock is on the
+  desk, then one E at the ritual table sets out the chalice and the crucifix
+  together (the crucifix leaves the pocket for its socket). D1-08: the
+  supervisor's delivery text arrives 4 s later; read it, then take the music
+  box out of the drop box from inside the gate. D1-09: place it on the ritual
+  table, then the two-stage blessing. D1-10: put it on the cleaned-relic table
+  outside the chapel, which brings dusk (doc 7.1 D1_EVENING); 5 s later "I
+  guess I should head back to the bus stop.", the walk home with the tree
+  peek, and the gate ends the shift.
+- **Shift end.** Fade to black at the gate, then Day 2 begins at the arrival
+  spot with its title card. Day 2 itself is S3, so it shows an end-of-build
+  message.
+- **Day 2 reset.** Tools back at their day-start places (key on its hooks,
+  matches and crucifix on the shelf, chalice on the altar), candles out,
+  doors shut and locked, daytime sky, the music box cleared from the table.
+  The clock stays on the supervisor's desk; one-shot scares stay fired; the
+  phone keeps its old texts, all read.
+- **Copy, all placeholder for the designer to rewrite:** the delivery text,
+  the rattle thought ("Stubborn little thing. Maybe some scripture will
+  settle it."), the ghost thought ("Did it just wink at me?"), the reminders
+  for things tried early, the Day 2 card ("Second Day", "4PM"). The verse on
+  the Bible stand is Numbers 6:24-26, King James Version (public domain).
+- **Dusk colours** and the music box tune are first passes.

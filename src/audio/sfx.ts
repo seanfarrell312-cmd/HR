@@ -3,6 +3,9 @@ import type { SfxId } from '../story/events';
 // Placeholder sound effects synthesised with Web Audio, so the build needs no
 // audio assets yet. Real recordings replace these in S7 (doc 7.4).
 
+/** Day 1's music box melody (Hz): a little falling phrase. */
+const MUSIC_BOX_TUNE = [1568, 1319, 1175, 1319, 1047, 1175, 988, 1047];
+
 export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -63,6 +66,23 @@ export class Sfx {
       case 'sparkle':
         for (let i = 0; i < 9; i++) this.tone('sine', 1900 + Math.random() * 1500, i * 0.11, 0.35, 0.05);
         break;
+      case 'rattle':
+        // Wooden clatter that slows and quietens as it settles.
+        for (let i = 0; i < 16; i++) {
+          const t = 1.5 * (1 - Math.sqrt(1 - i / 16));
+          const k = 1 - i / 16;
+          this.hiss(t, 0.03, 1800 + Math.random() * 1500, 0.45 * k);
+          this.tone('square', 180 + Math.random() * 90, t, 0.03, 0.07 * k);
+        }
+        break;
+      case 'box-wind-down':
+        // The music box's tune winds down: slower, lower, then stops.
+        MUSIC_BOX_TUNE.forEach((f, i) => {
+          const t = i * 0.22 + i * i * 0.035;
+          this.tone('sine', f * (1 - i * 0.04), t, 0.45, 0.16 * (1 - i / 9));
+        });
+        this.tone('square', 90, 2.4, 0.05, 0.1);
+        break;
       case 'giggle':
         // "Hee-hee-hee": quick falling chirps, each sliding down like a titter.
         for (let i = 0; i < 6; i++) {
@@ -85,6 +105,18 @@ export class Sfx {
     this.tone('sine', 880 * wobble, 0, 1.2, 0.22 * volume);
     this.tone('sine', 1318 * wobble, 0, 0.9, 0.1 * volume);
     if (agitation > 0) this.tone('triangle', 932 * wobble, 0.05, 0.6, 0.12 * volume * agitation);
+  }
+
+  /** The possessed music box's tune: bright, slightly out of tune and uneven. */
+  tune(volume: number): void {
+    if (volume <= 0.01) return;
+    let t = 0;
+    for (const f of MUSIC_BOX_TUNE) {
+      const wobble = 1 + (Math.random() - 0.5) * 0.07;
+      this.tone('sine', f * wobble, t, 0.5, 0.16 * volume);
+      this.tone('sine', f * 2 * wobble, t, 0.2, 0.04 * volume);
+      t += 0.2 + Math.random() * 0.09;
+    }
   }
 
   /** A bus pulling away: low rumble fading out. */

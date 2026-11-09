@@ -1,4 +1,15 @@
-import { CHURCH_APPROACH, GATE_CODE, GATE_RETURN, HEAD_HOME_DELAY, S1_END, SMS, THOUGHTS, TREE_PEEK, WRONG_CODE } from '../data/story';
+import {
+  CHURCH_APPROACH,
+  DELIVERY_DELAY,
+  GATE_CODE,
+  GATE_RETURN,
+  HEAD_HOME_DELAY,
+  REMINDERS,
+  SMS,
+  THOUGHTS,
+  TREE_PEEK,
+  WRONG_CODE,
+} from '../data/story';
 import type { GameState, QuestItem } from '../state/store';
 import { advanceObjectives } from './objectives';
 
@@ -8,6 +19,7 @@ import { advanceObjectives } from './objectives';
 
 export type StoryEvent =
   | { type: 'receive-sms'; id: string }
+  /** The phone has been put away: everything in it counts as read. */
   | { type: 'read-sms' }
   | { type: 'keypad-submit'; code: string }
   /** The player's position; fires the church-approach thought once, in range. */
@@ -18,9 +30,22 @@ export type StoryEvent =
   | { type: 'bless-clock' }
   | { type: 'pickup-clock' }
   | { type: 'place-clock' }
-  /** Timed: the thought a few seconds after the clock is on the desk. */
+  // S2: D1-07 to D1-10.
+  | { type: 'pickup-chalice' }
+  /** Set the carried chalice and the crucifix out on the ritual table. */
+  | { type: 'stage-chalice' }
+  /** Take the delivered relic out of the drop box. */
+  | { type: 'take-relic' }
+  | { type: 'place-relic' }
+  /** First hold rattles the relic; after scripture, the second releases it. */
+  | { type: 'bless-relic' }
+  | { type: 'read-scripture' }
+  | { type: 'pickup-relic' }
+  /** Put the cleansed relic on the table outside the chapel. */
+  | { type: 'store-relic' }
+  /** Timed: the thought a few seconds after the relic is put away. */
   | { type: 'head-home' }
-  /** The player's position; completes the walk back once at the gate. */
+  /** The player's position; completes the walk out once at the gate. */
   | { type: 'reach-gate'; x: number; y: number; level: number }
   /** The player's position; the tree ghost ducks away once they come close. */
   | { type: 'near-peek'; x: number; y: number; level: number }
@@ -37,8 +62,12 @@ export type SfxId =
   | 'place'
   | 'paper'
   | 'wind-down'
+  | 'box-wind-down'
   | 'sparkle'
+  | 'rattle'
   | 'giggle';
+
+export type PurifiedRelic = 'clock' | 'music-box';
 
 export type Effect =
   | { kind: 'sfx'; id: SfxId }
@@ -46,11 +75,17 @@ export type Effect =
   | { kind: 'flash'; text: string }
   | { kind: 'open-door'; id: string }
   | { kind: 'sms'; id: string }
-  /** The blessed clock settles, sparkles, then releases its ghost (timed by the view). */
-  | { kind: 'purify' }
+  /** A blessed relic settles, sparkles, then releases its ghost (timed by the view). */
+  | { kind: 'purify'; relic: PurifiedRelic }
+  /** The relic fights the first blessing: a hard rattle that dies down. */
+  | { kind: 'rattle' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
-  | { kind: 'after'; seconds: number; event: StoryEvent };
+  | { kind: 'after'; seconds: number; event: StoryEvent }
+  /** The shift is over: fade out and start the next day. */
+  | { kind: 'end-day' };
+
+const flash = (text: string): Effect[] => [{ kind: 'flash', text }];
 
 export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
   const out: Effect[] = [];
@@ -58,13 +93,17 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'receive-sms':
       if (!SMS[e.id] || s.inbox.includes(e.id)) return [];
       s.inbox.push(e.id);
+      // The delivery text means the relic is waiting in the drop box.
+      if (e.id === 'delivery1' && s.relic === 'none') s.relic = 'drop-box';
       out.push({ kind: 'sfx', id: 'buzz' }, { kind: 'sms', id: e.id });
       break;
 
-    case 'read-sms':
-      if (s.inbox.length === 0 || s.flags.has('sms-read')) return [];
-      s.flags.add('sms-read');
+    case 'read-sms': {
+      const unread = s.inbox.filter((id) => !s.sms_read.has(id));
+      if (unread.length === 0) return [];
+      for (const id of unread) s.sms_read.add(id);
       break;
+    }
 
     case 'keypad-submit':
       if (s.flags.has('gate-unlocked')) return [];
@@ -91,6 +130,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'take':
       if (s.inventory.has(e.item)) return [];
+      // A staged crucifix is on the ritual table, not back on the shelf.
+      if (e.item === 'crucifix' && s.flags.has('crucifix-staged')) return [];
       if (e.item === 'chapel-key' && !s.flags.has('note-read')) {
         return [{ kind: 'say', text: THOUGHTS.keyBeforeNote }];
       }
@@ -100,7 +141,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'light-candle':
       if (e.index < 0 || e.index > 3 || s.candles_lit.has(e.index)) return [];
-      if (!s.inventory.has('matches')) return [{ kind: 'flash', text: 'I need the matches from the shelf.' }];
+      if (!s.inventory.has('matches')) return flash('I need the matches from the shelf.');
       s.candles_lit.add(e.index);
       out.push({ kind: 'sfx', id: 'strike' });
       break;
@@ -108,11 +149,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'bless-clock': {
       if (s.flags.has('clock-blessed')) return [];
       const why = blessBlocker(s);
-      if (why) return [{ kind: 'flash', text: why }];
+      if (why) return flash(why);
       s.flags.add('clock-blessed');
       s.fired_scares.push('d1-clock-ghost');
-      // The release sound and the ghost thought play when the ghost appears.
-      out.push({ kind: 'purify' });
+      // The release sound and the ghost thought are timed by the view.
+      out.push({ kind: 'purify', relic: 'clock' });
       break;
     }
 
@@ -127,15 +168,86 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.clock !== 'held') return [];
       s.clock = 'office-desk';
       s.held_prop_id = null;
-      out.push(
-        { kind: 'sfx', id: 'place' },
-        { kind: 'say', text: THOUGHTS.clockPlaced },
-        { kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } },
-      );
+      out.push({ kind: 'sfx', id: 'place' }, { kind: 'say', text: THOUGHTS.clockPlaced });
+      break;
+
+    case 'pickup-chalice':
+      if (s.chalice !== 'altar') return [];
+      if (s.clock !== 'office-desk') return flash(REMINDERS.chaliceEarly);
+      if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      s.chalice = 'held';
+      s.held_prop_id = 'chalice';
+      out.push({ kind: 'sfx', id: 'pickup' });
+      break;
+
+    case 'stage-chalice':
+      if (s.chalice !== 'held') return [];
+      s.chalice = 'ritual-table';
+      s.held_prop_id = null;
+      // The crucifix leaves the pocket for its socket on the table.
+      s.inventory.delete('crucifix');
+      s.flags.add('crucifix-staged');
+      out.push({ kind: 'sfx', id: 'place' });
+      break;
+
+    case 'take-relic':
+      if (s.relic !== 'drop-box') return [];
+      if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      s.relic = 'held';
+      s.held_prop_id = 'music-box';
+      out.push({ kind: 'sfx', id: 'pickup' });
+      break;
+
+    case 'place-relic':
+      if (s.relic !== 'held') return [];
+      if (s.chalice !== 'ritual-table') return flash(REMINDERS.tableNotReady);
+      s.relic = 'ritual-table';
+      s.held_prop_id = null;
+      out.push({ kind: 'sfx', id: 'place' });
+      break;
+
+    case 'bless-relic': {
+      if (s.relic !== 'ritual-table' || s.flags.has('relic-blessed')) return [];
+      if (!s.flags.has('crucifix-staged')) return flash(REMINDERS.tableNotReady);
+      if (!s.flags.has('relic-rattled')) {
+        // Cross: the relic fights it, rattles and settles.
+        s.flags.add('relic-rattled');
+        out.push({ kind: 'rattle' }, { kind: 'sfx', id: 'rattle' }, { kind: 'say', text: THOUGHTS.relicRattle });
+        break;
+      }
+      if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
+      // Scripture, then cross again: the spirit is released.
+      s.flags.add('relic-blessed');
+      s.fired_scares.push('d1-relic-ghost');
+      out.push({ kind: 'purify', relic: 'music-box' });
+      break;
+    }
+
+    case 'read-scripture':
+      if (!s.flags.has('relic-rattled') || s.flags.has('scripture-read')) return [];
+      s.flags.add('scripture-read');
+      out.push({ kind: 'sfx', id: 'paper' });
+      break;
+
+    case 'pickup-relic':
+      if (s.relic !== 'ritual-table' || !s.flags.has('relic-blessed')) return [];
+      if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      s.relic = 'held';
+      s.held_prop_id = 'music-box';
+      out.push({ kind: 'sfx', id: 'pickup' });
+      break;
+
+    case 'store-relic':
+      if (s.relic !== 'held' || !s.flags.has('relic-blessed')) return [];
+      s.relic = 'relic-table';
+      s.held_prop_id = null;
+      // Day 1's second relic is done: dusk falls (doc 7.1 D1_EVENING).
+      s.environment_preset = 'D1_EVENING';
+      out.push({ kind: 'sfx', id: 'place' }, { kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } });
       break;
 
     case 'head-home':
-      if (s.clock !== 'office-desk' || s.flags.has('heading-home')) return [];
+      if (s.relic !== 'relic-table' || s.flags.has('heading-home')) return [];
       s.flags.add('heading-home');
       out.push({ kind: 'say', text: THOUGHTS.headHome });
       break;
@@ -160,10 +272,12 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
   }
 
-  for (const id of advanceObjectives(s)) out.push({ kind: 'objective', id });
-  if (s.objective_id === 'D1-07' && !s.flags.has('s1-complete')) {
-    s.flags.add('s1-complete');
-    out.push({ kind: 'flash', text: S1_END });
+  for (const id of advanceObjectives(s)) {
+    out.push({ kind: 'objective', id });
+    // The ritual table is ready: the first delivery is on its way (D1-08).
+    if (id === 'D1-07') out.push({ kind: 'after', seconds: DELIVERY_DELAY, event: { type: 'receive-sms', id: 'delivery1' } });
+    // Out through the gate: the shift is over.
+    if (id === 'D1-10') out.push({ kind: 'end-day' });
   }
   return out;
 }

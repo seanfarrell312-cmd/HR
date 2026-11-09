@@ -299,7 +299,7 @@ export const PROPS: Prop[] = [
   ...pews(),
   { id: 'aisle', label: 'Aisle carpet', rect: rect(-0.8, 50.2, 0.8, 64.6), height: 0.02, level: 0, color: '#a11d22', shape: 'flat', solid: false },
   { id: 'altar', label: 'Altar', rect: rect(-2.8, 64.8, 2.8, 66.3), height: 1.1, level: 0, color: '#c8c3ba' },
-  { id: 'relic-table', label: 'Cleaned-relic table', rect: rect(6.9, 50.3, 7.85, 51.8), height: 0.85, level: 0, color: WOOD },
+  { id: 'relic-table', label: 'Cleaned-relic table', rect: rect(6.9, 50.3, 7.85, 51.8), height: 0.85, level: 0, color: WOOD, interact: 'relic-table' },
   { id: 'keys', label: 'Key hooks', rect: rect(-8.25, 51.1, -8.15, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false, interact: 'chapel-key' },
 
   // Office.
@@ -309,9 +309,9 @@ export const PROPS: Prop[] = [
 
   // Chapel.
   { id: 'chapel-supply', label: 'Supply shelf', rect: rect(8.3, 53.4, 8.8, 55.5), height: 1.2, level: 0, color: WOOD },
-  { id: 'ritual-table', label: 'Ritual table', rect: rect(12.9, 52.3, 14.0, 54.3), height: 0.9, level: 0, color: DARK_WOOD },
+  { id: 'ritual-table', label: 'Ritual table', rect: rect(12.9, 52.3, 14.0, 54.3), height: 0.9, level: 0, color: DARK_WOOD, interact: 'ritual-table' },
   { id: 'holy-circle', label: 'Holy circle', rect: rect(10.5, 52.2, 12.3, 54.0), height: 0.03, level: 0, color: '#3aa0e0', shape: 'ring', solid: false },
-  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: 1.1, level: 0, color: '#3540a8' },
+  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: 1.1, level: 0, color: '#3540a8', interact: 'bible' },
 
   // Shed.
   { id: 'shed-bench', label: 'Workbench', rect: rect(22.4, 76.6, 26, 77.6), height: 0.9, level: 0, color: WOOD },

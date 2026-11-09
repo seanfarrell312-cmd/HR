@@ -5,7 +5,7 @@ import type { Sms } from '../data/story';
 // and feedback, the phone, note, keypad and inventory panels, the day title
 // card, the pause screen and the developer debug panel.
 
-export type Panel = 'phone' | 'note' | 'keypad' | 'inventory';
+export type Panel = 'phone' | 'note' | 'keypad' | 'inventory' | 'bible';
 
 /** Seconds the objective stays up before it folds away to "(O) View Objectives". */
 export const OBJECTIVE_SECONDS = 5;
@@ -22,6 +22,7 @@ export class Hud {
   private smsAlert: HTMLElement;
   private holdRing: HTMLElement;
   private title: HTMLElement;
+  private fade: HTMLElement;
   private pause: HTMLElement;
   private pauseHint: HTMLElement;
   private debug: HTMLElement;
@@ -47,6 +48,7 @@ export class Hud {
        <div class="corner-hints"><div class="interact-hint">(E) Interact</div><div class="inventory-hint">(I) View Inventory</div></div>
        <div class="subtitle"></div>
        <div class="message"></div>
+       <div class="fade"></div>
        <div class="title-card"></div>
        <div class="panel"><div class="panel-body"></div><div class="panel-hint"></div></div>
        <pre class="debug"></pre>
@@ -79,6 +81,7 @@ export class Hud {
     this.smsAlert = q('.sms-alert');
     this.holdRing = q('.hold-ring');
     this.title = q('.title-card');
+    this.fade = q('.fade');
     this.pause = q('.pause');
     this.pauseHint = q('.pause .hint');
     this.debug = q('.debug');
@@ -153,6 +156,11 @@ export class Hud {
     this.title.classList.add('show');
   }
 
+  /** Fade the screen to black (end of a shift) or back in. */
+  setFade(black: boolean): void {
+    this.fade.classList.toggle('show', black);
+  }
+
   openPanel(kind: Panel, html: string, hint: string): void {
     this.panel.className = `panel show ${kind}`;
     this.panelBody.innerHTML = html;
@@ -187,6 +195,12 @@ export class Hud {
       ? `<ul class="inventory-list">${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`
       : '<p class="empty">Nothing yet.</p>';
     return `<div class="panel-title">Inventory</div>${list}`;
+  }
+
+  static bibleHtml(reference: string, lines: string[]): string {
+    return `<div class="panel-title">Holy Bible</div><div class="scripture">${lines
+      .map((l) => `<p>${esc(l)}</p>`)
+      .join('')}<p class="reference">${esc(reference)}</p></div>`;
   }
 
   static noteHtml(text: string): string {

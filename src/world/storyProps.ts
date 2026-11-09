@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AREAS, DOORS, toWorld } from '../data/layout';
 import { CANDLES, PURIFY, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
 import type { GameState } from '../state/store';
+import type { PurifiedRelic } from '../story/events';
 import { ghostModel, type GhostModel } from './ghost';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
@@ -50,6 +51,46 @@ function crucifixModel(): THREE.Group {
   return g;
 }
 
+function chaliceModel(): THREE.Group {
+  const pts = [
+    [0.001, 0], [0.065, 0], [0.065, 0.012], [0.02, 0.03], [0.014, 0.1], [0.02, 0.12],
+    [0.06, 0.16], [0.07, 0.23], [0.064, 0.232], [0.054, 0.165], [0.001, 0.135],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 12), lambert('#d4af37')));
+  return g;
+}
+
+interface MusicBoxView {
+  group: THREE.Group;
+  /** Pivot at the lid's back edge; rotation.x = -angle opens it. */
+  lid: THREE.Group;
+}
+
+/** A small wooden music box with a hinged lid and a gold comb inside. */
+function musicBoxModel(): MusicBoxView {
+  const g = new THREE.Group();
+  const wood = lambert('#7a3b2e');
+  const gold = lambert('#d4af37');
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.16), wood);
+  body.position.y = 0.05;
+  const band = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.015, 0.165), gold);
+  band.position.y = 0.08;
+  const comb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.14, 8), gold);
+  comb.rotation.z = Math.PI / 2;
+  comb.position.set(0, 0.1, 0);
+  const lid = new THREE.Group();
+  lid.position.set(0, 0.1, -0.08);
+  const lidBoard = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.16), wood);
+  lidBoard.position.set(0, 0.01, 0.08);
+  const mirror = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.11), basic('#c9d6dc'));
+  mirror.rotation.x = Math.PI / 2;
+  mirror.position.set(0, -0.001, 0.08);
+  lid.add(lidBoard, mirror);
+  g.add(body, band, comb, lid);
+  return { group: g, lid };
+}
+
 interface CandleView {
   flame: THREE.Mesh;
   light: THREE.PointLight;
@@ -64,8 +105,9 @@ interface Sparkle {
   speed: number;
 }
 
-/** A blessed clock settling down: wind-down, silence, sparkles, ghost. */
+/** A blessed relic settling down: wind-down, silence, sparkles, ghost. */
 interface Purification {
+  relic: PurifiedRelic;
   t: number;
   origin: THREE.Vector3;
   sparkles: Sparkle[];
@@ -79,6 +121,18 @@ export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost' | 'ghost-gone';
 const GHOST_LIFE = 3.4;
 /** Seconds for the tree ghost to giggle, duck behind the trunk and fade. */
 const PEEK_HIDE = 1.3;
+/** Seconds the music box rattles against the first blessing before it settles. */
+const RATTLE_SECONDS = 1.6;
+/** How far the music box lid opens (radians). */
+const LID_OPEN = 1.25;
+
+/**
+ * How loud the possessed music box is from `d` metres away: close by it
+ * plays clearly; across the grounds it's a faint tinkle.
+ */
+export function tuneVolume(d: number): number {
+  return 0.7 / (1 + (d / 5) ** 2);
+}
 
 const CHAPEL = AREAS.find((a) => a.id === 'chapel')!.rect;
 const CHAPEL_DOOR = DOORS.find((d) => d.id === 'chapel')!;
@@ -107,14 +161,23 @@ export class StoryProps {
   private matches: THREE.Object3D;
   private crucifix: THREE.Object3D;
   private clock: THREE.Group;
+  private chalice: THREE.Object3D;
+  private stagedCrucifix: THREE.Object3D;
+  private musicBox: MusicBoxView;
+  private heldChalice: THREE.Group;
+  private heldMusicBox: MusicBoxView;
   private candles: CandleView[] = [];
   private deskMarker: THREE.Mesh;
   private heldClock: THREE.Group;
   private heldCrucifix: THREE.Group;
-  /** The clock's ghost; one model, reused, with its light always in the scene. */
-  private clockGhost: GhostModel;
-  private clockGhostT = -1;
-  private clockGhostFrom = new THREE.Vector3();
+  /** The released ghost; one model, reused, with its light always in the scene. */
+  private relicGhost: GhostModel;
+  private relicGhostT = -1;
+  private relicGhostFrom = new THREE.Vector3();
+  /** Which relic the current ghost came from (the music box ghost winks). */
+  private relicGhostOf: PurifiedRelic = 'clock';
+  private rattleT = -1;
+  private tuneTimer = 1;
   /** The ghost peeking from behind the tree near the gate. */
   private peeker: GhostModel;
   private peekHideT = 0;
@@ -126,7 +189,10 @@ export class StoryProps {
   private purification: Purification | null = null;
 
   /** Fired as the purification reaches each beat, for sound and subtitles. */
-  onCue: (cue: PurifyCue) => void = () => {};
+  onCue: (cue: PurifyCue, relic: PurifiedRelic) => void = () => {};
+
+  /** Called when the possessed music box plays its tune, with volume 0..1. */
+  onTune: (volume: number) => void = () => {};
 
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
@@ -137,6 +203,11 @@ export class StoryProps {
     this.matches = tagged(at(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.06), lambert('#b8321f')), SPOTS.matches), 'matches');
     this.crucifix = tagged(at(crucifixModel(), SPOTS.crucifix), 'crucifix');
     this.clock = tagged(clockModel(), 'clock') as THREE.Group;
+    this.chalice = tagged(chaliceModel(), 'chalice');
+    this.stagedCrucifix = at(crucifixModel(), SPOTS.crucifixRitual);
+    this.stagedCrucifix.rotation.y = -Math.PI / 2;
+    this.musicBox = musicBoxModel();
+    tagged(this.musicBox.group, 'music-box');
 
     for (const [i, c] of CANDLES.entries()) {
       const stand = new THREE.Group();
@@ -166,27 +237,35 @@ export class StoryProps {
     this.heldClock.scale.setScalar(0.7);
     this.heldCrucifix = crucifixModel();
     this.heldCrucifix.position.set(0.22, -0.45, -0.5);
-    camera.add(this.heldClock, this.heldCrucifix);
+    this.heldChalice = chaliceModel();
+    this.heldChalice.position.set(0.17, -0.4, -0.62);
+    this.heldMusicBox = musicBoxModel();
+    this.heldMusicBox.group.position.set(0.15, -0.38, -0.62);
+    this.heldMusicBox.group.rotation.set(0.35, 0, 0);
+    camera.add(this.heldClock, this.heldCrucifix, this.heldChalice, this.heldMusicBox.group);
 
     // Lights stay in the scene at zero intensity: adding one later would make
     // Three.js recompile every shader and hitch.
-    this.clockGhost = ghostModel(true);
-    this.clockGhost.group.visible = false;
+    this.relicGhost = ghostModel(true);
+    this.relicGhost.group.visible = false;
     this.peeker = ghostModel(false);
     this.peeker.group.visible = false;
-    this.root.add(this.clockGhost.group, this.peeker.group);
+    this.root.add(this.relicGhost.group, this.peeker.group);
 
     this.root.add(this.note, this.key, this.matches, this.crucifix, this.clock, this.deskMarker);
-    this.raycastTargets.push(this.note, this.key, this.matches, this.crucifix, this.clock);
+    this.root.add(this.chalice, this.stagedCrucifix, this.musicBox.group);
+    this.raycastTargets.push(this.note, this.key, this.matches, this.crucifix, this.clock, this.chalice, this.musicBox.group);
   }
 
   /** Remove timed effects, e.g. on reset. */
   clearEffects(): void {
     this.endPurification();
-    this.clockGhostT = -1;
-    this.clockGhost.group.visible = false;
-    this.clockGhost.setFade(0);
+    this.relicGhostT = -1;
+    this.relicGhost.group.visible = false;
+    this.relicGhost.setFade(0);
+    this.relicGhost.setWink(0);
     this.peekHideT = 0;
+    this.rattleT = -1;
     if (this.bus) this.root.remove(this.bus);
     this.bus = null;
   }
@@ -218,9 +297,15 @@ export class StoryProps {
     return this.purification !== null;
   }
 
-  startPurification(): void {
+  /** The music box fights the first blessing: a hard rattle that dies away. */
+  startRattle(): void {
+    this.rattleT = 0;
+  }
+
+  startPurification(relic: PurifiedRelic): void {
     this.endPurification();
-    const origin = new THREE.Vector3(...toWorld(SPOTS.clockRitual.x, SPOTS.clockRitual.y, 0, SPOTS.clockRitual.z + 0.22));
+    const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
+    const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + (relic === 'clock' ? 0.22 : 0.12)));
     const sparkles: Sparkle[] = [];
     for (let i = 0; i < SPARKLE_COUNT; i++) {
       const mat = basic(i % 3 === 0 ? '#ffffff' : '#fff1a8', 0.95);
@@ -229,8 +314,8 @@ export class StoryProps {
       this.root.add(mesh);
       sparkles.push({ mesh, mat, delay: (i / SPARKLE_COUNT) * SPARKLE_SPREAD, angle: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 0.5 });
     }
-    this.purification = { t: 0, origin, sparkles, fired: new Set(['wind-down']) };
-    this.onCue('wind-down');
+    this.purification = { relic, t: 0, origin, sparkles, fired: new Set(['wind-down']) };
+    this.onCue('wind-down', relic);
   }
 
   private endPurification(): void {
@@ -249,8 +334,8 @@ export class StoryProps {
     const cue = (name: PurifyCue, at: number) => {
       if (p.t < at || p.fired.has(name)) return;
       p.fired.add(name);
-      if (name === 'ghost') this.startClockGhost();
-      this.onCue(name);
+      if (name === 'ghost') this.startRelicGhost(p.relic);
+      this.onCue(name, p.relic);
     };
     cue('sparkle', PURIFY.sparkleAt);
     cue('ghost', PURIFY.ghostAt);
@@ -271,10 +356,13 @@ export class StoryProps {
     if (p.t > Math.max(PURIFY.ghostAt, PURIFY.sparkleAt + SPARKLE_SPREAD + SPARKLE_LIFE)) this.endPurification();
   }
 
-  private startClockGhost(): void {
-    this.clockGhostFrom.set(...toWorld(SPOTS.clockRitual.x, SPOTS.clockRitual.y, 0, SPOTS.clockRitual.z));
-    this.clockGhostT = 0;
-    this.clockGhost.group.visible = true;
+  private startRelicGhost(relic: PurifiedRelic): void {
+    const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
+    this.relicGhostFrom.set(...toWorld(spot.x, spot.y, 0, spot.z));
+    this.relicGhostOf = relic;
+    this.relicGhostT = 0;
+    this.relicGhost.setWink(0);
+    this.relicGhost.group.visible = true;
   }
 
   /**
@@ -286,7 +374,9 @@ export class StoryProps {
     this.note.visible = true;
     this.key.visible = !s.inventory.has('chapel-key');
     this.matches.visible = !s.inventory.has('matches');
-    this.crucifix.visible = !s.inventory.has('crucifix');
+    // The shelf crucifix is gone once taken; staged, it stands on the ritual table.
+    this.crucifix.visible = !s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
+    this.stagedCrucifix.visible = s.flags.has('crucifix-staged');
 
     for (const [i, c] of this.candles.entries()) {
       const lit = s.candles_lit.has(i);
@@ -327,26 +417,90 @@ export class StoryProps {
       }
     }
 
+    this.syncChalice(s);
+    this.syncMusicBox(s, dt, fxDt, listener);
+
     // Crucifix rises into view while a blessing is held.
     this.heldCrucifix.visible = hold.active && hold.progress > 0;
     this.heldCrucifix.position.y = -0.45 + hold.progress * 0.2;
 
     const cam = this.camera.getWorldPosition(new THREE.Vector3());
     this.updatePurification(fxDt);
-    this.updateClockGhost(fxDt, cam);
+    this.updateRelicGhost(fxDt, cam);
     this.updatePeeker(s, fxDt, cam);
     this.updateBus(fxDt);
   }
 
-  private updateClockGhost(dt: number, cam: THREE.Vector3): void {
-    if (this.clockGhostT < 0) return;
-    const g = this.clockGhost;
-    this.clockGhostT += dt;
-    const t = this.clockGhostT;
+  private syncChalice(s: GameState): void {
+    this.chalice.visible = s.chalice !== 'held';
+    this.heldChalice.visible = s.chalice === 'held';
+    at(this.chalice, s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : SPOTS.chaliceAltar);
+  }
+
+  /**
+   * The music box: hidden in the drop box until carried, then on the ritual
+   * table and finally on the cleaned-relic table. While possessed its lid
+   * flaps and it plays a wonky tune; the first blessing makes it rattle and
+   * settle; once cleansed the lid closes.
+   */
+  private syncMusicBox(s: GameState, dt: number, fxDt: number, listener: THREE.Vector3): void {
+    const box = this.musicBox;
+    const onTable = s.relic === 'ritual-table' || s.relic === 'relic-table';
+    box.group.visible = onTable;
+    this.heldMusicBox.group.visible = s.relic === 'held';
+    at(box.group, s.relic === 'relic-table' ? SPOTS.relicStored : SPOTS.relicRitual);
+    box.group.rotation.set(0, -Math.PI / 2, 0);
+
+    const possessed = (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-rattled');
+    const now = performance.now() / 1000;
+    let lid = s.flags.has('relic-blessed') ? 0 : LID_OPEN;
+    let shake = possessed ? 0.35 : 0;
+    if (possessed) lid = LID_OPEN - 0.35 + Math.abs(Math.sin(now * 5)) * 0.35;
+
+    if (this.rattleT >= 0) {
+      this.rattleT += fxDt;
+      const k = Math.max(0, 1 - this.rattleT / RATTLE_SECONDS);
+      shake = Math.max(shake, 1.6 * k);
+      lid = LID_OPEN - Math.abs(Math.sin(now * 31)) * 0.9 * k;
+      if (this.rattleT >= RATTLE_SECONDS) this.rattleT = -1;
+    }
+    // Blessed: the last of the shaking dies away and the lid eases shut.
+    const p = this.purification;
+    if (p && p.relic === 'music-box') {
+      const settling = Math.max(0, 1 - p.t / PURIFY.windDown);
+      shake = Math.max(shake, settling);
+      lid = LID_OPEN * settling;
+    }
+    box.lid.rotation.x = -lid;
+    this.heldMusicBox.lid.rotation.x = -lid;
+    if (shake > 0 && s.relic === 'ritual-table') {
+      box.group.position.x += (Math.random() - 0.5) * 0.03 * shake;
+      box.group.position.z += (Math.random() - 0.5) * 0.03 * shake;
+      box.group.rotation.z = (Math.random() - 0.5) * 0.12 * shake;
+    }
+
+    if (possessed) {
+      this.tuneTimer -= dt;
+      if (this.tuneTimer <= 0) {
+        this.tuneTimer = 3.6;
+        const src = s.relic === 'drop-box' ? SPOTS.dropBox : SPOTS.relicRitual;
+        const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
+        this.onTune(listener.y < -3 ? 0 : tuneVolume(d));
+      }
+    }
+  }
+
+  private updateRelicGhost(dt: number, cam: THREE.Vector3): void {
+    if (this.relicGhostT < 0) return;
+    const g = this.relicGhost;
+    this.relicGhostT += dt;
+    const t = this.relicGhostT;
+    // The music box's ghost gives the player a wink once it's up.
+    if (this.relicGhostOf === 'music-box') g.setWink(t > 1.3 && t < 1.9 ? 1 : 0);
     // Rise to about eye level and drift a little towards the player so the
     // smile is in view from the holy circle, then fade away.
     const rise = Math.min(t / 1.2, 1);
-    const from = this.clockGhostFrom;
+    const from = this.relicGhostFrom;
     g.group.position.set(
       from.x + (cam.x - from.x) * 0.2 * rise,
       from.y + rise * 0.35 + Math.sin(t * 3) * 0.04,
@@ -355,9 +509,9 @@ export class StoryProps {
     g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), 0);
     g.setFade(t < GHOST_LIFE - 0.9 ? 1 : Math.max(0, (GHOST_LIFE - t) / 0.9));
     if (t >= GHOST_LIFE) {
-      this.clockGhostT = -1;
+      this.relicGhostT = -1;
       g.group.visible = false;
-      this.onCue('ghost-gone');
+      this.onCue('ghost-gone', this.relicGhostOf);
     }
   }
 

@@ -469,3 +469,34 @@ canvas {
   cursor: default;
   outline: none;
 }
+
+/* End-of-shift fade to black; sits under the title card so a new day's card
+   shows as it fades back in. */
+.fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 1.2s;
+  pointer-events: none;
+}
+
+.fade.show {
+  opacity: 1;
+}
+
+.scripture {
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.scripture p {
+  margin: 0 0 0.5em;
+}
+
+.scripture .reference {
+  margin-top: 0.8em;
+  font-style: normal;
+  text-align: right;
+  opacity: 0.8;
+}

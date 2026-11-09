@@ -4,9 +4,10 @@ First-person, PS1-inspired supernatural horror with ritual chores, scripted
 environmental scares and a three-day story. Desktop browser game built with
 TypeScript, Three.js and Vite.
 
-**Status: S1 (arrival and first clock exorcism) built, awaiting the S1 gate.**
-Day 1 runs from the bus to the clock on the supervisor's desk (D1-01 to
-D1-06); everything after that is S2. Live build:
+**Status: S2 (complete Day 1) built, awaiting the S2 gate.** Day 1 runs
+from the bus through the clock, the chalice, the first delivered relic and the
+walk home at dusk (D1-01 to D1-10), then resets into Day 2, which is S3.
+Live build:
 https://gentle-mud-09ee6761e.6.azurestaticapps.net (deploys on every push
 to `main`).
 See [docs/design/design-doc-v0.4.md](docs/design/design-doc-v0.4.md) for the
@@ -90,7 +91,11 @@ The church layout follows
 - `tests/day1.test.ts`: the S1 stage tests. Gate opens only on the right
   code, the ritual needs its preconditions and the holy circle, the ghost and
   every objective fire once even when every event is spammed, and D1-01 to
-  D1-06 complete in order.
+  D1-10 complete in order.
+- `tests/day1-s2.test.ts`: the S2 stage tests. Chalice, delivery and relic
+  can't be taken early or two at a time, the two-stage blessing needs
+  scripture between holds, the evening and the shift end happen once, and the
+  Day 2 reset puts tools back while keeping the clock on the desk.
 - `tests/interact.test.ts`: lock feedback, open/close, never closing a door
   on the player.
 

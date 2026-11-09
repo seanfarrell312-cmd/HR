@@ -1,5 +1,5 @@
 // Game state store. Key names follow design doc section 8.3 where it names
-// them; S1 adds the Day 1 inventory, flags and item locations.
+// them; S1 and S2 add the Day 1 inventory, flags and item locations.
 
 export type EnvironmentPreset =
   | 'BASE_DAY'
@@ -14,18 +14,30 @@ export type EnvironmentPreset =
 /** Invisible quest inventory (doc 5.2): keys and small tools. */
 export type QuestItem = 'chapel-key' | 'matches' | 'crucifix';
 
-/** One-shot story facts. Once set, never unset within a run. */
+/** Large props carried one at a time, shown in the player's hands (doc 5.2). */
+export type HeldProp = 'clock' | 'chalice' | 'music-box';
+
+/** One-shot story facts for the current day. A new day starts with none. */
 export type Flag =
-  | 'sms-read'
   | 'gate-unlocked'
   | 'church-approached'
   | 'note-read'
   | 'clock-blessed'
+  | 'crucifix-staged'
+  | 'relic-rattled'
+  | 'scripture-read'
+  | 'relic-blessed'
   | 'heading-home'
-  | 'returned-to-gate'
-  | 's1-complete';
+  | 'returned-to-gate';
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';
+export type ChaliceLocation = 'altar' | 'held' | 'ritual-table';
+/**
+ * Day 1's delivered relic (the music box): not yet delivered, waiting in the
+ * drop box, carried, on the ritual table, on the cleaned-relic table outside
+ * the chapel, or cleared away by staff between shifts.
+ */
+export type RelicLocation = 'none' | 'drop-box' | 'held' | 'ritual-table' | 'relic-table' | 'removed';
 
 export interface GameState {
   day_index: 1 | 2 | 3;
@@ -33,16 +45,20 @@ export interface GameState {
   completed_objectives: string[];
   fired_scares: string[];
   environment_preset: EnvironmentPreset;
-  held_prop_id: string | null;
+  held_prop_id: HeldProp | null;
   door_preset: string;
   open_doors: Set<string>;
   inventory: Set<QuestItem>;
   flags: Set<Flag>;
   /** SMS ids received, newest last. */
   inbox: string[];
+  /** SMS ids the player has read and put away. */
+  sms_read: Set<string>;
   /** Candle indexes lit this shift. */
   candles_lit: Set<number>;
   clock: ClockLocation;
+  chalice: ChaliceLocation;
+  relic: RelicLocation;
 }
 
 export function createInitialState(doorPreset = 'day1-start'): GameState {
@@ -58,7 +74,10 @@ export function createInitialState(doorPreset = 'day1-start'): GameState {
     inventory: new Set(),
     flags: new Set(),
     inbox: [],
+    sms_read: new Set(),
     candles_lit: new Set(),
     clock: 'ritual-table',
+    chalice: 'altar',
+    relic: 'none',
   };
 }

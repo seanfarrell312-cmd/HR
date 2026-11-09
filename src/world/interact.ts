@@ -1,6 +1,6 @@
 import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
-import { HOLY_CIRCLE } from '../data/story';
+import { HOLY_CIRCLE, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
 import { blessBlocker, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
@@ -12,6 +12,7 @@ export type Action =
   | { kind: 'story'; event: StoryEvent }
   | { kind: 'open-keypad' }
   | { kind: 'read-note' }
+  | { kind: 'read-bible' }
   | { kind: 'none' };
 
 export interface Resolution {
@@ -92,7 +93,12 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       if (s.flags.has('gate-unlocked')) return NONE;
       return { prompt: 'E  Use keypad', action: { kind: 'open-keypad' } };
     case 'drop-box':
-      return say('Relic drop box', "Nothing's been delivered yet.");
+      if (s.relic === 'none') return say('Relic drop box', REMINDERS.dropBoxEmpty);
+      if (s.relic !== 'drop-box') return NONE;
+      // Deliveries go in from the road; staff take them out from inside the gate.
+      if (player.y < 0) return say('Relic drop box', REMINDERS.hatchInside);
+      if (s.held_prop_id) return say('Relic drop box', REMINDERS.handsFull);
+      return story('E  Take the delivery', { type: 'take-relic' });
     case 'office-note':
       return { prompt: 'E  Read note', action: { kind: 'read-note' } };
     case 'chapel-key':
@@ -121,6 +127,43 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'office-desk':
       if (s.clock !== 'held') return NONE;
       return story('E  Put the clock down', { type: 'place-clock' });
+
+    case 'chalice':
+      if (s.chalice !== 'altar') return NONE;
+      if (s.clock !== 'office-desk') return say('Chalice', REMINDERS.chaliceEarly);
+      if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
+      return story('E  Take the chalice', { type: 'pickup-chalice' });
+
+    case 'ritual-table':
+      if (s.held_prop_id === 'chalice') return story('E  Set out the chalice and crucifix', { type: 'stage-chalice' });
+      if (s.held_prop_id === 'music-box' && s.relic === 'held' && !s.flags.has('relic-blessed')) {
+        if (s.chalice !== 'ritual-table') return say('Ritual table', REMINDERS.tableNotReady);
+        return story('E  Put the music box down', { type: 'place-relic' });
+      }
+      return NONE;
+
+    case 'music-box': {
+      if (s.relic !== 'ritual-table') return NONE;
+      if (s.flags.has('relic-blessed')) {
+        if (s.held_prop_id) return say('Music box', REMINDERS.handsFull);
+        return story('E  Pick up music box', { type: 'pickup-relic' });
+      }
+      if (!inHolyCircle(player)) return say('Music box', REMINDERS.standInCircle);
+      if (s.flags.has('relic-rattled') && !s.flags.has('scripture-read')) return say('Music box', REMINDERS.scriptureFirst);
+      return {
+        prompt: 'Hold click  Bless the music box',
+        action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
+        hold: { type: 'bless-relic' },
+      };
+    }
+
+    case 'bible':
+      if (!s.flags.has('relic-rattled') || s.flags.has('scripture-read')) return NONE;
+      return { prompt: 'E  Read scripture', action: { kind: 'read-bible' } };
+
+    case 'relic-table':
+      if (s.held_prop_id !== 'music-box' || !s.flags.has('relic-blessed')) return NONE;
+      return story('E  Put the music box on the table', { type: 'store-relic' });
   }
   return NONE;
 }

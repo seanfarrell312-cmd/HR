@@ -15,6 +15,8 @@ export interface GhostModel {
   group: THREE.Group;
   /** 0 = invisible, 1 = fully there; scales every material and the light. */
   setFade(f: number): void;
+  /** 0 = both eyes open, 1 = its right eye shut in a wink. */
+  setWink(k: number): void;
 }
 
 let bodyGeometry: THREE.BufferGeometry | null = null;
@@ -87,8 +89,10 @@ export function ghostModel(withLight: boolean): GhostModel {
   const eyeGeo = new THREE.SphereGeometry(0.05, 10, 8);
   const eyeY = SHOULDER + 0.08;
   const faceR = Math.sqrt(RADIUS * RADIUS - 0.08 * 0.08);
+  const eyes: THREE.Mesh[] = [];
   for (const side of [-1, 1]) {
     const eye = new THREE.Mesh(eyeGeo, dark);
+    eyes.push(eye);
     const x = side * 0.095;
     eye.scale.set(0.85, 1.25, 0.35);
     eye.position.set(x, eyeY, Math.sqrt(faceR * faceR - x * x) - 0.004);
@@ -123,6 +127,10 @@ export function ghostModel(withLight: boolean): GhostModel {
     setFade(f: number) {
       for (const { mat, full } of fades) mat.opacity = full * f;
       if (light) light.intensity = 1.5 * f;
+    },
+    setWink(k: number) {
+      // Squash the eye on the ghost's left as seen by the player (its right).
+      eyes[0].scale.y = 1.25 * (1 - 0.88 * k);
     },
   };
 }

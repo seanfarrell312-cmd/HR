@@ -1,8 +1,9 @@
-import { S1_END } from '../data/story';
+import { S2_END } from '../data/story';
 import type { GameState } from '../state/store';
 
-// Day 1 objectives built in S1 (doc 6.1). Each completes on validated state,
-// never on approach, and the sequencer only moves forward.
+// Day 1 objectives (doc 6.1), built in S1 and S2. Each completes on validated
+// state, never on approach, and the sequencer only moves forward. Day 2's
+// objectives arrive in S3; until then D2-01 is a placeholder.
 
 export interface Objective {
   id: string;
@@ -14,7 +15,7 @@ export interface Objective {
 export const DAY1: Objective[] = [
   {
     id: 'D1-01',
-    task: (s) => (s.flags.has('sms-read') ? 'Enter the code on the gate keypad' : 'Check your phone (Q)'),
+    task: (s) => (s.sms_read.has('gateCode') ? 'Enter the code on the gate keypad' : 'Check your phone (Q)'),
     done: (s) => s.flags.has('gate-unlocked'),
   },
   {
@@ -49,16 +50,48 @@ export const DAY1: Objective[] = [
     done: (s) => s.clock === 'office-desk',
   },
   {
-    // The walk out at the end of the day ("leave grounds", D1-10). In the S1
-    // build it follows the clock; S2 puts D1-07 to D1-09 before it
-    // (decisions 2026-11-08). Shown only once the head-home thought has played.
-    id: 'D1-RETURN',
-    task: (s) => (s.flags.has('heading-home') ? 'Head back to the front gate' : ''),
+    id: 'D1-07',
+    task: (s) =>
+      s.chalice === 'held' ? 'Set the chalice and crucifix out on the ritual table' : 'Fetch the chalice from the altar',
+    done: (s) => s.chalice === 'ritual-table',
+  },
+  {
+    id: 'D1-08',
+    // Nothing to show while the delivery text is on its way.
+    task: (s) =>
+      !s.inbox.includes('delivery1')
+        ? ''
+        : s.sms_read.has('delivery1')
+          ? 'Collect the delivery from the drop box by the gate'
+          : 'Check your phone (Q)',
+    done: (s) => s.relic === 'held' || s.relic === 'ritual-table',
+  },
+  {
+    id: 'D1-09',
+    task: (s) => {
+      if (s.relic === 'held') return 'Put the music box on the ritual table';
+      if (!s.flags.has('relic-rattled')) return 'Stand in the holy circle and bless the music box';
+      if (!s.flags.has('scripture-read')) return 'Read from the Bible on the stand';
+      return 'Bless the music box again';
+    },
+    done: (s) => s.flags.has('relic-blessed'),
+  },
+  {
+    // Store the relic, then leave the grounds (decisions 2026-11-09: the walk
+    // home and the tree peek end the day). The walk-out line waits for the
+    // head-home thought.
+    id: 'D1-10',
+    task: (s) => {
+      if (s.relic === 'relic-table') return s.flags.has('heading-home') ? 'Head back to the front gate' : '';
+      return s.relic === 'held'
+        ? 'Put the music box on the table outside the chapel'
+        : 'Take the music box to the table outside the chapel';
+    },
     done: (s) => s.flags.has('returned-to-gate'),
   },
   {
-    id: 'D1-07',
-    task: () => S1_END,
+    id: 'D2-01',
+    task: () => S2_END,
     done: () => false,
   },
 ];

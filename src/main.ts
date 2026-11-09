@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import './style.css';
 import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
+import { environmentLook } from './data/environment';
 import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, DAY_TITLES, OFFICE_NOTE, SMS, THOUGHTS } from './data/story';
+import { BLESS_SECONDS, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS, THOUGHTS } from './data/story';
 import { PlayerController } from './player/controller';
-import { createInitialState, type GameState } from './state/store';
+import { createInitialState, type EnvironmentPreset, type GameState } from './state/store';
+import { startDay } from './story/day';
 import { applyEvent, type Effect, type StoryEvent } from './story/events';
 import { HoldMeter } from './story/hold';
 import { currentObjective } from './story/objectives';
@@ -18,7 +20,8 @@ import { StoryProps } from './world/storyProps';
 import { zoneAt } from './world/zones';
 
 const REACH = 2.6;
-const SKY = '#a9c6e0';
+/** Seconds to fade to black at the end of a shift, and back in. */
+const DAY_FADE = 1.4;
 /** Seconds after arrival before the supervisor's text comes in. */
 const SMS_DELAY = 2.5;
 
@@ -29,14 +32,34 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 app.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 30, 110);
-scene.add(new THREE.HemisphereLight('#dfeaf5', '#4b5a3a', 1.6));
+const sky = new THREE.Color();
+const fog = new THREE.Fog(sky, 30, 110);
+scene.background = sky;
+scene.fog = fog;
+const hemi = new THREE.HemisphereLight();
 // Interiors have no lamps yet; keep ceilings and walls readable.
-scene.add(new THREE.AmbientLight('#ffffff', 0.6));
-const sun = new THREE.DirectionalLight('#fff4dd', 1.4);
-sun.position.set(-30, 60, 20);
-scene.add(sun);
+const ambient = new THREE.AmbientLight('#ffffff', 0.6);
+const sun = new THREE.DirectionalLight();
+scene.add(hemi, ambient, sun);
+let shownEnvironment: EnvironmentPreset | null = null;
+
+/** Sky, fog and lights for the state's environment preset (doc 7.1). */
+function applyEnvironment(preset: EnvironmentPreset): void {
+  if (preset === shownEnvironment) return;
+  shownEnvironment = preset;
+  const e = environmentLook(preset);
+  sky.set(e.sky);
+  fog.color.set(e.sky);
+  fog.near = e.fogNear;
+  fog.far = e.fogFar;
+  hemi.color.set(e.hemiSky);
+  hemi.groundColor.set(e.hemiGround);
+  hemi.intensity = e.hemiIntensity;
+  ambient.intensity = e.ambient;
+  sun.color.set(e.sun);
+  sun.intensity = e.sunIntensity;
+  sun.position.set(...e.sunPosition);
+}
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 300);
 // Held items are children of the camera, so it has to be in the scene.
@@ -54,10 +77,12 @@ const raycaster = new THREE.Raycaster(undefined, undefined, 0, REACH);
 const centre = new THREE.Vector2(0, 0);
 const blessMeter = new HoldMeter(BLESS_SECONDS);
 props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
-props.onCue = (cue) => {
+props.onTune = (volume) => sfx.tune(volume);
+props.onCue = (cue, relic) => {
   if (cue === 'ghost') sfx.play('release');
   // The thought waits until the ghost has risen and gone.
-  else if (cue === 'ghost-gone') hud.say(THOUGHTS.ghost);
+  else if (cue === 'ghost-gone') hud.say(relic === 'clock' ? THOUGHTS.ghost : THOUGHTS.relicGhost);
+  else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : 'box-wind-down');
   else sfx.play(cue);
 };
 
@@ -72,6 +97,8 @@ let keypadEntry = '';
 let smsTimer = -1;
 /** Story events waiting on a timer ('after' effects). */
 let pending: { seconds: number; event: StoryEvent }[] = [];
+/** Counts down through the end-of-shift fade; -1 when not changing day. */
+let dayFade = -1;
 let primaryDown = false;
 
 function refreshColliders(): void {
@@ -110,7 +137,16 @@ function handleEffect(e: Effect): void {
       hud.setPhoneAlert(true);
       break;
     case 'purify':
-      props.startPurification();
+      props.startPurification(e.relic);
+      break;
+    case 'rattle':
+      props.startRattle();
+      break;
+    case 'end-day':
+      // Fade out; the loop starts the next day once the screen is black.
+      dayFade = DAY_FADE;
+      player.frozen = true;
+      hud.setFade(true);
       break;
     case 'after':
       pending.push({ seconds: e.seconds, event: e.event });
@@ -130,19 +166,36 @@ function beginDay(): void {
   smsTimer = SMS_DELAY;
 }
 
-function reset(): void {
+/** Put the world in step with a fresh day's state: doors shut, effects cleared, player at the gate. */
+function enterDay(next: GameState): void {
   closePanel();
-  state = createInitialState(state.door_preset);
+  state = next;
   pending = [];
+  dayFade = -1;
   for (const v of world.doors.values()) {
     v.amount = v.target = 0;
     poseDoor(v);
   }
   refreshColliders();
   hud.setPhoneAlert(false);
+  hud.setFade(false);
   props.clearEffects();
+  applyEnvironment(state.environment_preset);
+  player.frozen = false;
   player.teleport(ARRIVAL);
   if (started) beginDay();
+}
+
+function reset(): void {
+  enterDay(createInitialState(state.door_preset));
+}
+
+/** The shift is over and the screen is black: on to the next day. */
+function nextDay(): void {
+  if (state.day_index >= 3) return;
+  enterDay(startDay(state, (state.day_index + 1) as 2 | 3));
+  // Day 2 itself is S3's work.
+  hud.flash(S2_END, 8);
 }
 
 function onFirstStart(): void {
@@ -163,6 +216,9 @@ function openPanel(kind: Panel): void {
   } else if (kind === 'note') {
     hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
     dispatch({ type: 'read-note' });
+  } else if (kind === 'bible') {
+    hud.openPanel('bible', Hud.bibleHtml(SCRIPTURE.reference, SCRIPTURE.lines), 'E to close');
+    dispatch({ type: 'read-scripture' });
   } else if (kind === 'inventory') {
     hud.openPanel('inventory', Hud.inventoryHtml(inventoryNames()), 'I to close');
   } else {
@@ -173,7 +229,7 @@ function openPanel(kind: Panel): void {
 
 function inventoryNames(): string[] {
   const names = [...state.inventory].map((i) => TOOL_NAMES[i]);
-  if (state.held_prop_id === 'clock') names.push('Mantel clock (carrying)');
+  if (state.held_prop_id) names.push(`${HELD_NAMES[state.held_prop_id]} (carrying)`);
   return names;
 }
 
@@ -228,6 +284,9 @@ function apply(action: Action): void {
       break;
     case 'read-note':
       openPanel('note');
+      break;
+    case 'read-bible':
+      openPanel('bible');
       break;
   }
 }
@@ -389,6 +448,7 @@ function shown(o: THREE.Object3D): boolean {
 }
 
 const TOOL_NAMES: Record<string, string> = { 'chapel-key': 'Chapel key', matches: 'Matches', crucifix: 'Crucifix' };
+const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box' };
 
 let fps = 0;
 function debugText(): string {
@@ -405,6 +465,7 @@ function debugText(): string {
     `flags     ${[...state.flags].join(', ') || '—'}`,
     `items     ${[...state.inventory].join(', ') || '—'}`,
     `candles   ${state.candles_lit.size}/4   clock ${state.clock}`,
+    `chalice   ${state.chalice}   relic ${state.relic}   sky ${state.environment_preset}`,
     `doors     ${preset?.label}  (P to cycle)`,
     `open      ${[...state.open_doors].join(', ') || '—'}`,
     `target    ${target ?? '—'}`,
@@ -466,15 +527,22 @@ renderer.setAnimationLoop(() => {
 
   target = player.active && !panel ? findTarget() : null;
   // The clock can't be picked up until it has finished settling.
-  if (target === 'item:clock' && props.purifying) target = null;
+  // Nor the music box.
+  if ((target === 'item:clock' || target === 'item:music-box') && props.purifying) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);
   hud.setPrompt(res.prompt);
-  hud.setObjective(started ? currentObjective(state).task(state) : '');
+  hud.setObjective(started && dayFade < 0 ? currentObjective(state).task(state) : '');
   hud.setCornerHints(started);
   hud.update(dt);
   hud.setDebug(debugVisible, debugText());
+
+  if (dayFade > 0) {
+    dayFade -= dt;
+    if (dayFade <= 0) nextDay();
+  }
+  applyEnvironment(state.environment_preset);
 
   props.sync(state, dt, { active: !!res.hold && primaryDown, progress: blessMeter.progress }, camera.position, worldPaused);
   renderer.render(scene, camera);
