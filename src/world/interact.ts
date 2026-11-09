@@ -2,7 +2,7 @@ import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
 import { HOLY_CIRCLE, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { blessBlocker, tableReady, type StoryEvent } from '../story/events';
+import { altarOpen, blessBlocker, tableReady, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -12,7 +12,6 @@ export type Action =
   | { kind: 'story'; event: StoryEvent }
   | { kind: 'open-keypad' }
   | { kind: 'read-note' }
-  | { kind: 'read-bible' }
   | { kind: 'none' };
 
 export interface Resolution {
@@ -134,7 +133,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 
     case 'chalice':
       if (s.chalice !== 'altar') return NONE;
-      if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
+      // Too early, the story answers with a thought instead.
+      if (altarOpen(s) && s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
       return story('E  Take the chalice', { type: 'pickup-chalice' });
 
     case 'ritual-table': {
@@ -157,12 +157,20 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         if (s.held_prop_id) return say('Music box', REMINDERS.handsFull);
         return story('E  Pick up music box', { type: 'pickup-relic' });
       }
-      // Still rattling from the first blessing.
-      if (s.flags.has('relic-rattled') && !s.flags.has('relic-settled')) return NONE;
+      // Rattling, then the two thoughts: nothing to do until the Bible is wanted.
+      if (s.flags.has('relic-rattled') && !s.flags.has('bible-prompted')) return NONE;
       if (!tableReady(s)) return say('Music box', REMINDERS.tableNotReady);
       if (!s.inventory.has('cross')) return say('Music box', REMINDERS.needCross);
+      if (s.flags.has('relic-rattled') && !s.flags.has('scripture-read')) {
+        if (!s.inventory.has('bible')) return say('Music box', REMINDERS.bibleFirst);
+        if (!inHolyCircle(player)) return say('Music box', REMINDERS.standInCircle);
+        return {
+          prompt: 'Hold click  Read the music box some scripture',
+          action: { kind: 'message', text: 'Hold the left mouse button to read to it.' },
+          hold: { type: 'begin-scripture' },
+        };
+      }
       if (!inHolyCircle(player)) return say('Music box', REMINDERS.standInCircle);
-      if (s.flags.has('relic-rattled') && !s.flags.has('scripture-read')) return say('Music box', REMINDERS.scriptureFirst);
       return {
         prompt: 'Hold click  Bless the music box',
         action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
@@ -171,8 +179,13 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     }
 
     case 'bible':
-      if (!s.flags.has('relic-settled') || s.flags.has('scripture-read')) return NONE;
-      return { prompt: 'E  Read scripture', action: { kind: 'read-bible' } };
+      // Off the stand once the music box needs scripture; back on it after.
+      if (s.inventory.has('bible')) {
+        if (!s.flags.has('relic-blessed')) return NONE;
+        return story('E  Put the Bible back', { type: 'return-bible' });
+      }
+      if (!s.flags.has('bible-prompted') || s.flags.has('scripture-read')) return NONE;
+      return story('E  Pick up the Bible', { type: 'take', item: 'bible' });
 
     case 'relic-table':
       if (s.held_prop_id !== 'music-box' || !s.flags.has('relic-blessed')) return NONE;

@@ -39,16 +39,18 @@ export const SPOTS = {
   matches: { x: 8.55, y: 54.0, z: 1.2 },
   /** The hand cross for blessings, on the chapel shelf. */
   cross: { x: 8.55, y: 54.9, z: 1.2 },
-  clockRitual: { x: 13.45, y: 53.3, z: 0.9 },
+  clockRitual: { x: 13.83, y: 53.3, z: 0.9 },
   clockDesk: { x: -14.1, y: 52.9, z: 0.8 },
   // S2 (decisions 2026-11-09). The chalice and the standing crucifix live
   // side by side on the nave altar, ready for each day's table setting.
   chaliceAltar: { x: -0.3, y: 65.1, z: 1.1 },
   crucifixAltar: { x: 0.3, y: 65.15, z: 1.1 },
   /** The ritual table's sockets: chalice and crucifix either side of the relic. */
-  chaliceRitual: { x: 13.45, y: 52.65, z: 0.9 },
-  crucifixRitual: { x: 13.45, y: 53.95, z: 0.9 },
-  relicRitual: { x: 13.45, y: 53.3, z: 0.9 },
+  chaliceRitual: { x: 13.83, y: 52.65, z: 0.9 },
+  crucifixRitual: { x: 13.83, y: 53.95, z: 0.9 },
+  relicRitual: { x: 13.83, y: 53.3, z: 0.9 },
+  /** The Bible, lying open on top of its stand. */
+  bible: { x: 12.37, y: 53.1, z: 1.0 },
   /** Cleaned-relic table outside the chapel door. */
   relicStored: { x: 7.4, y: 51.05, z: 0.85 },
   /** Inside the drop box at the gate, where the music box is heard from. */
@@ -79,7 +81,7 @@ export const SMS: Record<string, Sms> = {
   delivery1: {
     id: 'delivery1',
     from: 'Supervisor',
-    text: "Nice work on the clock! Another one just came through the drop box at the front gate. You can open it from the hatch on the inside. Bring it in and give it the usual treatment, then leave it on the table outside the chapel.",
+    text: "Heads up, someone just dropped off a new relic in the drop box by the front gate. The hatch is on the inside. Once it's dealt with, leave it on the table outside the chapel.",
   },
 };
 
@@ -123,8 +125,14 @@ export const THOUGHTS = {
   relicAnnoying: "Man, this thing's annoying. I should hurry.",
   /** Once the first blessing's rattle has died away. */
   relicSettled: 'Well that shut it up at least, but it looks like this spirit is a stubborn one.',
+  goodBook: "Let's see how it likes a little of the Good Book.",
+  /** Trying the altar pieces before the objective asks for them. */
+  chaliceEarly: 'Nice chalice, I guess the collections are doing well.',
+  crucifixEarly: "It's well polished, but clearly cheap. I guess the money all went to the cup.",
   relicGhost: 'Did it just wink at me?',
-  /** A few seconds after the music box is put away; then the walk back to the gate. */
+  /** As soon as the music box is put away and dusk falls. */
+  late: 'Woah, when did it get so late?',
+  /** After a pause; then the walk back to the gate. */
   headHome: 'I guess I should head back to the bus stop.',
 };
 
@@ -135,7 +143,8 @@ export const REMINDERS = {
   dropBoxEmpty: "Nothing's been delivered yet.",
   tableNotReady: 'The chalice and crucifix need setting out on the table first.',
   needCross: 'I need the cross from the shelf.',
-  scriptureFirst: 'I should read from the Bible first.',
+  scriptureFirst: 'I should read it some scripture first.',
+  bibleFirst: 'I need the Bible from the stand.',
   standInCircle: 'I should stand in the holy circle.',
 };
 
@@ -152,12 +161,23 @@ export const SCRIPTURE = {
 /** Seconds the music box rattles against the first blessing before it is still. */
 export const RATTLE_SECONDS = 1.6;
 
-/**
- * Seconds after the rattle stops before the "shut it up" thought, and after
- * the wink thought before the music box's next objective shows.
- */
+/** Seconds after the rattle stops before the "shut it up" thought. */
 export const THOUGHT_BEAT = 0.4;
-export const STORE_OBJECTIVE_DELAY = 3;
+
+/**
+ * Seconds a thought stays on screen. Story beats that follow a thought (the
+ * next thought, or a new objective) wait this long plus THOUGHT_GAP, so the
+ * player is never asked to read two things at once (S2 playtest, 2026-11-09).
+ */
+export function thoughtSeconds(text: string): number {
+  return Math.max(3, text.length / 14);
+}
+export const THOUGHT_GAP = 0.6;
+/** Seconds after a thought before what follows it. */
+export const afterThought = (text: string): number => thoughtSeconds(text) + THOUGHT_GAP;
+
+/** Pause between the "so late" thought clearing and the head-home thought. */
+export const LATE_PAUSE = 2;
 
 /** The "sounds like another noisy one" thought: this close to the drop box. */
 export const DROP_BOX_APPROACH = { x: SPOTS.dropBox.x, y: SPOTS.dropBox.y, r: 10 };
@@ -169,7 +189,7 @@ export const DROP_BOX_APPROACH = { x: SPOTS.dropBox.x, y: SPOTS.dropBox.y, r: 10
 export const RELIC_ANNOY = { x: 0, y: 50, r: 17 };
 
 /** Seconds between putting the music box away and the head-home thought (D1-10). */
-export const HEAD_HOME_DELAY = 5;
+export const HEAD_HOME_DELAY = afterThought(THOUGHTS.late) + LATE_PAUSE;
 
 /**
  * Reaching this stretch around the front gate (either side of it) completes

@@ -73,6 +73,34 @@ function standingCrucifixModel(): THREE.Group {
   return g;
 }
 
+/**
+ * A Bible lying open: a dark red cover with two pages rising in a shallow V.
+ * Spine along local z; read from the +z edge.
+ */
+function openBookModel(): THREE.Group {
+  const g = new THREE.Group();
+  const cover = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.22), lambert('#5a1e1e'));
+  cover.position.y = 0.01;
+  g.add(cover);
+  for (const side of [-1, 1]) {
+    const page = new THREE.Group();
+    page.position.set(0, 0.02, 0);
+    page.rotation.z = side * -0.12;
+    const sheet = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.018, 0.2), lambert('#f2ead6'));
+    sheet.position.set(side * 0.072, 0.009, 0);
+    page.add(sheet);
+    // A few lines of print.
+    for (let i = 0; i < 5; i++) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.008), basic('#6b6257'));
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(side * 0.072, 0.0185, -0.07 + i * 0.035);
+      page.add(line);
+    }
+    g.add(page);
+  }
+  return g;
+}
+
 function chaliceModel(): THREE.Group {
   const pts = [
     [0.001, 0], [0.065, 0], [0.065, 0.012], [0.02, 0.03], [0.014, 0.1], [0.02, 0.12],
@@ -184,6 +212,10 @@ export class StoryProps {
   private chalice: THREE.Object3D;
   /** The standing crucifix: on the altar, or set out on the ritual table. */
   private crucifix: THREE.Object3D;
+  /** The Bible, open on its stand until it's picked up. */
+  private bible: THREE.Object3D;
+  private heldCrucifix: THREE.Group;
+  private heldBible: THREE.Group;
   private musicBox: MusicBoxView;
   private heldChalice: THREE.Group;
   private heldMusicBox: MusicBoxView;
@@ -226,6 +258,10 @@ export class StoryProps {
     this.clock = tagged(clockModel(), 'clock') as THREE.Group;
     this.chalice = tagged(chaliceModel(), 'chalice');
     this.crucifix = tagged(standingCrucifixModel(), 'crucifix');
+    this.bible = tagged(at(openBookModel(), SPOTS.bible), 'bible');
+    // Facing the reader in the circle (west), tilted up towards them.
+    this.bible.rotation.order = 'YXZ';
+    this.bible.rotation.set(0.3, -Math.PI / 2, 0);
     this.musicBox = musicBoxModel();
     tagged(this.musicBox.group, 'music-box');
 
@@ -257,12 +293,22 @@ export class StoryProps {
     this.heldClock.scale.setScalar(0.7);
     this.heldCross = crossModel();
     this.heldCross.position.set(0.22, -0.45, -0.5);
+    // Right hand: the chalice. Left hand: the standing crucifix or the open
+    // Bible, so the player carries one thing in each (S2 playtest).
     this.heldChalice = chaliceModel();
-    this.heldChalice.position.set(0.17, -0.4, -0.62);
+    this.heldChalice.position.set(0.19, -0.4, -0.62);
+    this.heldCrucifix = standingCrucifixModel();
+    this.heldCrucifix.position.set(-0.24, -0.52, -0.62);
+    this.heldCrucifix.rotation.set(0.15, 0.25, 0.12);
+    this.heldCrucifix.scale.setScalar(0.85);
+    this.heldBible = openBookModel();
+    this.heldBible.position.set(-0.22, -0.3, -0.52);
+    this.heldBible.rotation.set(0.95, 0.3, 0.15);
+    this.heldBible.scale.setScalar(0.85);
     this.heldMusicBox = musicBoxModel();
     this.heldMusicBox.group.position.set(0.15, -0.38, -0.62);
     this.heldMusicBox.group.rotation.set(0.35, 0, 0);
-    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldMusicBox.group);
+    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldCrucifix, this.heldBible, this.heldMusicBox.group);
 
     // Lights stay in the scene at zero intensity: adding one later would make
     // Three.js recompile every shader and hitch.
@@ -273,8 +319,8 @@ export class StoryProps {
     this.root.add(this.relicGhost.group, this.peeker.group);
 
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
-    this.root.add(this.chalice, this.crucifix, this.musicBox.group);
-    this.raycastTargets.push(this.note, this.key, this.matches, this.cross, this.clock, this.chalice, this.crucifix, this.musicBox.group);
+    this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group);
+    this.raycastTargets.push(this.note, this.key, this.matches, this.cross, this.clock, this.chalice, this.crucifix, this.bible, this.musicBox.group);
   }
 
   /** Remove timed effects, e.g. on reset. */
@@ -389,12 +435,14 @@ export class StoryProps {
    * `paused` freezes timed effects (purification, ghost, bus) while the
    * inventory is open; the clock keeps chiming so the world still sounds alive.
    */
-  sync(s: GameState, dt: number, hold: { active: boolean; progress: number }, listener: THREE.Vector3, paused = false): void {
+  sync(s: GameState, dt: number, hold: { active: boolean; progress: number; cross: boolean }, listener: THREE.Vector3, paused = false): void {
     const fxDt = paused ? 0 : dt;
     this.note.visible = true;
     this.key.visible = !s.inventory.has('chapel-key');
     this.matches.visible = !s.inventory.has('matches');
     this.cross.visible = !s.inventory.has('cross');
+    this.bible.visible = !s.inventory.has('bible');
+    this.heldBible.visible = s.inventory.has('bible');
 
     for (const [i, c] of this.candles.entries()) {
       const lit = s.candles_lit.has(i);
@@ -440,7 +488,7 @@ export class StoryProps {
     this.syncMusicBox(s, dt, fxDt, listener);
 
     // The hand cross rises into view while a blessing is held.
-    this.heldCross.visible = hold.active && hold.progress > 0;
+    this.heldCross.visible = hold.cross && hold.active && hold.progress > 0;
     this.heldCross.position.y = -0.45 + hold.progress * 0.2;
 
     const cam = this.camera.getWorldPosition(new THREE.Vector3());
@@ -456,7 +504,9 @@ export class StoryProps {
     this.heldChalice.visible = s.chalice === 'held';
     at(this.chalice, s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : SPOTS.chaliceAltar);
     const staged = s.flags.has('crucifix-staged');
-    this.crucifix.visible = staged || !s.inventory.has('crucifix');
+    const carried = s.inventory.has('crucifix') && !staged;
+    this.crucifix.visible = !carried;
+    this.heldCrucifix.visible = carried;
     at(this.crucifix, staged ? SPOTS.crucifixRitual : SPOTS.crucifixAltar);
     // Face whoever stands before it: south down the nave, west from the circle.
     this.crucifix.rotation.y = staged ? -Math.PI / 2 : 0;

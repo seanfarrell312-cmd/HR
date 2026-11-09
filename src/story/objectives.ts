@@ -30,18 +30,19 @@ export const DAY1: Objective[] = [
     done: (s) => s.flags.has('note-read') && s.inventory.has('chapel-key'),
   },
   {
-    // Preparing the ritual site, part one. The table (D1-05) can be set first
-    // or in between; its objective then completes the moment this one does.
+    // Preparing the ritual site, part one: into the chapel, then the candles.
     id: 'D1-04',
-    task: (s) =>
-      s.inventory.has('matches')
-        ? `Light the candles around the holy circle (${s.candles_lit.size}/4)`
-        : 'Fetch the matches from the chapel shelf',
+    task: (s) => {
+      if (!s.flags.has('chapel-opened')) return 'Unlock the chapel';
+      if (!s.inventory.has('matches')) return 'Pick up the matches from the shelf';
+      return `Light the candles around the holy circle (${s.candles_lit.size}/4)`;
+    },
     done: (s) => s.candles_lit.size === 4,
   },
   {
     // Preparing the ritual site, part two (decisions 2026-11-09, S2 playtest:
-    // moved ahead of the first blessing and repeated each day).
+    // moved ahead of the first blessing and repeated each day). The altar
+    // pieces only come away once this objective is current.
     id: 'D1-05',
     task: (s) => {
       const chaliceAtAltar = s.chalice === 'altar';
@@ -80,9 +81,11 @@ export const DAY1: Objective[] = [
     task: (s) => {
       if (s.relic === 'held') return 'Put the music box on the ritual table';
       if (!s.flags.has('relic-rattled')) return 'Stand in the holy circle and bless the music box';
-      // Nothing new until it has gone still and the thought has played.
-      if (!s.flags.has('relic-settled')) return '';
-      if (!s.flags.has('scripture-read')) return 'Read from the Bible on the stand';
+      // Nothing new while it rattles and the two thoughts play out.
+      if (!s.flags.has('bible-prompted')) return '';
+      if (!s.inventory.has('bible') && !s.flags.has('scripture-read')) return 'Pick up the Bible from the stand';
+      // Shown again only once the scripture has been read and put away.
+      if (!s.flags.has('scripture-read')) return 'Read the music box some scripture';
       return 'Bless the music box again';
     },
     done: (s) => s.flags.has('relic-blessed'),
@@ -93,7 +96,7 @@ export const DAY1: Objective[] = [
     // head-home thought.
     id: 'D1-10',
     task: (s) => {
-      if (s.relic === 'relic-table') return s.flags.has('heading-home') ? 'Head back to the front gate' : '';
+      if (s.relic === 'relic-table') return s.flags.has('gate-prompted') ? 'Head back to the front gate' : '';
       // Waits until the ghost has gone and the wink thought has played.
       if (!s.flags.has('relic-thought-done')) return '';
       return s.relic === 'held'

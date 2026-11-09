@@ -17,7 +17,7 @@ export type EnvironmentPreset =
  * is the larger standing one from the altar, set out on the ritual table
  * (decisions 2026-11-09, S2 playtest).
  */
-export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix';
+export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible';
 
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
 export type HeldProp = 'clock' | 'chalice' | 'music-box';
@@ -27,17 +27,22 @@ export type Flag =
   | 'gate-unlocked'
   | 'church-approached'
   | 'note-read'
+  | 'chapel-opened'
   | 'clock-blessed'
   | 'crucifix-staged'
   | 'drop-box-approached'
   | 'relic-annoyed'
   | 'relic-rattled'
   | 'relic-settled'
+  | 'good-book-said'
+  | 'bible-prompted'
+  | 'scripture-opened'
   | 'scripture-read'
   | 'relic-blessed'
   | 'relic-ghost-gone'
   | 'relic-thought-done'
   | 'heading-home'
+  | 'gate-prompted'
   | 'returned-to-gate';
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';

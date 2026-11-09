@@ -234,3 +234,44 @@ bigger than the movement just before it.
 - **Chime:** calm and steady until the site is ready, then fast and shaking
   at once (no gradual build).
 - **Control guide position:** upper centre, under the day card.
+
+## 2026-11-09 — S2 playtest changes, round 2
+
+Designer rulings:
+
+| Topic | Ruling |
+|---|---|
+| Altar pieces | The chalice and crucifix can't be taken until the objective asks for them (D1-05). Trying earlier gives a thought and leaves them where they are: "Nice chalice, I guess the collections are doing well." / "It's well polished, but clearly cheap. I guess the money all went to the cup." |
+| Carrying them | Both show in the hands: the crucifix in the left, the chalice in the right, a first taste of carrying one thing in each hand. |
+| After the chapel key | "Unlock the chapel", then once the door is open "Pick up the matches from the shelf". |
+| Delivery text | The supervisor doesn't know what's happened at the church; the text only says a new relic is in the drop box (provisional copy below). |
+| Ritual table | Moved further back from the circle so the released ghost can be seen. |
+| Scripture | After the rattle: "Well that shut it up at least..." then "Let's see how it likes a little of the Good Book." Then "Pick up the Bible from the stand" (it shows open in the left hand), then "Read the music box some scripture": hold on the music box to open the scripture. "Bless the music box again" only appears once the scripture is closed. |
+| Bible stand | Stays put, in a fixed spot between the two eastern candles, between the player in the circle and the table (designer's choice, 2026-11-09). |
+| Dusk | As soon as the music box is put away and the sky changes: "Woah, when did it get so late?" A pause, then "I guess I should head back to the bus stop.", then the "Head back to the front gate" objective. |
+| Pacing | An objective never appears while the thought before it is still on screen. |
+
+Because of the altar rule, D1-04 (candles) and D1-05 (table) are now in a
+fixed order; the table can no longer be set first.
+
+Every timed beat after a thought waits for that thought's time on screen
+(at least 3 s, longer for long lines, matching the subtitle) plus 0.6 s.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Delivery text:** "Heads up, someone just dropped off a new relic in the
+  drop box by the front gate. The hatch is on the inside. Once it's dealt
+  with, leave it on the table outside the chapel."
+- **Layout.** The ritual table now runs x 13.45 to 14.2 against the east
+  wall; it was 12.9 to 14.0. Its sockets moved with it. The interaction reach
+  is 2.9 m (it was 2.6) so the table can still be reached from the circle.
+  The Bible stand is a slim wooden stand at x 12.22 to 12.52, centred between
+  the eastern candles.
+- **Scripture hold.** It lasts as long as a blessing hold (2 s). Only the
+  Bible is in view during it; the hand cross rises only for blessings.
+- **The Bible afterwards.** It stays in the left hand after the blessing. You
+  can put it back on the stand (E) once the music box is cleansed. Either
+  way it is back on the stand on Day 2.
+- **The pause** between "so late" clearing and the head-home thought is 2 s.
+- **Copy fixes.** I corrected spelling and capitals in the designer lines
+  ("chalice", "I", "Let's", "likes"). "Woah" is kept as written.

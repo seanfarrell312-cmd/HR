@@ -12,6 +12,7 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'read-note' },
   { type: 'take', item: 'chapel-key' },
   // D1-04 and D1-05: prepare the ritual site.
+  { type: 'door-opened', id: 'chapel' },
   { type: 'take', item: 'matches' },
   { type: 'light-candle', index: 0 },
   { type: 'light-candle', index: 1 },
@@ -35,6 +36,10 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'place-relic' },
   { type: 'bless-relic' },
   { type: 'relic-settled' },
+  { type: 'good-book' },
+  { type: 'bible-prompt' },
+  { type: 'take', item: 'bible' },
+  { type: 'begin-scripture' },
   { type: 'read-scripture' },
   { type: 'bless-relic' },
   { type: 'relic-ghost-gone' },
@@ -43,6 +48,7 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'pickup-relic' },
   { type: 'store-relic' },
   { type: 'head-home' },
+  { type: 'gate-prompt' },
   { type: 'reach-gate', x: 0, y: 1, level: 0 },
 ];
 

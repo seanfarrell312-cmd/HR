@@ -1,4 +1,5 @@
 import {
+  afterThought,
   CHURCH_APPROACH,
   DELIVERY_DELAY,
   DROP_BOX_APPROACH,
@@ -9,7 +10,6 @@ import {
   RELIC_ANNOY,
   REMINDERS,
   SMS,
-  STORE_OBJECTIVE_DELAY,
   THOUGHT_BEAT,
   THOUGHTS,
   TREE_PEEK,
@@ -52,7 +52,16 @@ export type StoryEvent =
   | { type: 'bless-relic' }
   /** Timed: the rattle has died away. */
   | { type: 'relic-settled' }
+  /** Timed, after the "stubborn" thought: the Good Book thought. */
+  | { type: 'good-book' }
+  /** Timed, after the Good Book thought: the Bible pickup objective shows. */
+  | { type: 'bible-prompt' }
+  /** Holding on the music box with the Bible in hand: open the scripture. */
+  | { type: 'begin-scripture' }
+  /** The scripture has been read and put away. */
   | { type: 'read-scripture' }
+  /** Put the Bible back on its stand once the music box is cleansed. */
+  | { type: 'return-bible' }
   /** The music box's ghost has risen and gone (from the view's timing). */
   | { type: 'relic-ghost-gone' }
   /** Timed: a beat after the wink thought, the music box's next objective shows. */
@@ -62,6 +71,8 @@ export type StoryEvent =
   | { type: 'store-relic' }
   /** Timed: the thought a few seconds after the relic is put away. */
   | { type: 'head-home' }
+  /** Timed, after the head-home thought: the gate objective shows. */
+  | { type: 'gate-prompt' }
   /** The player's position; completes the walk out once at the gate. */
   | { type: 'reach-gate'; x: number; y: number; level: number }
   /** The player's position; the tree ghost ducks away once they come close. */
@@ -96,6 +107,8 @@ export type Effect =
   | { kind: 'purify'; relic: PurifiedRelic }
   /** The relic fights the first blessing: a hard rattle that dies down. */
   | { kind: 'rattle' }
+  /** Show the scripture panel (read from the Bible in hand). */
+  | { kind: 'open-scripture' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -152,12 +165,17 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (e.item === 'chapel-key' && !s.flags.has('note-read')) {
         return [{ kind: 'say', text: THOUGHTS.keyBeforeNote }];
       }
+      // The altar pieces stay put until the objective asks for them.
+      if (e.item === 'crucifix' && !altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.crucifixEarly }];
+      // The Bible comes off its stand once the music box needs scripture.
+      if (e.item === 'bible' && (!s.flags.has('bible-prompted') || s.flags.has('scripture-read'))) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
       break;
 
     case 'pickup-chalice':
       if (s.chalice !== 'altar') return [];
+      if (!altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.chaliceEarly }];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
       s.chalice = 'held';
       s.held_prop_id = 'chalice';
@@ -271,13 +289,43 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'relic-settled':
       if (!s.flags.has('relic-rattled') || s.flags.has('relic-settled')) return [];
       s.flags.add('relic-settled');
-      out.push({ kind: 'say', text: THOUGHTS.relicSettled });
+      out.push(
+        { kind: 'say', text: THOUGHTS.relicSettled },
+        { kind: 'after', seconds: afterThought(THOUGHTS.relicSettled), event: { type: 'good-book' } },
+      );
+      break;
+
+    case 'good-book':
+      if (!s.flags.has('relic-settled') || s.flags.has('good-book-said')) return [];
+      s.flags.add('good-book-said');
+      out.push(
+        { kind: 'say', text: THOUGHTS.goodBook },
+        { kind: 'after', seconds: afterThought(THOUGHTS.goodBook), event: { type: 'bible-prompt' } },
+      );
+      break;
+
+    case 'bible-prompt':
+      if (!s.flags.has('good-book-said') || s.flags.has('bible-prompted')) return [];
+      s.flags.add('bible-prompted');
+      break;
+
+    case 'begin-scripture':
+      if (s.relic !== 'ritual-table' || !s.flags.has('bible-prompted') || s.flags.has('scripture-read')) return [];
+      if (!s.inventory.has('bible')) return flash(REMINDERS.bibleFirst);
+      s.flags.add('scripture-opened');
+      out.push({ kind: 'sfx', id: 'paper' }, { kind: 'open-scripture' });
       break;
 
     case 'read-scripture':
-      if (!s.flags.has('relic-settled') || s.flags.has('scripture-read')) return [];
+      // Counts once the scripture has been opened and then put away.
+      if (!s.flags.has('scripture-opened') || s.flags.has('scripture-read')) return [];
       s.flags.add('scripture-read');
-      out.push({ kind: 'sfx', id: 'paper' });
+      break;
+
+    case 'return-bible':
+      if (!s.inventory.has('bible') || !s.flags.has('relic-blessed')) return [];
+      s.inventory.delete('bible');
+      out.push({ kind: 'sfx', id: 'place' });
       break;
 
     case 'relic-ghost-gone':
@@ -285,7 +333,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.flags.add('relic-ghost-gone');
       out.push(
         { kind: 'say', text: THOUGHTS.relicGhost },
-        { kind: 'after', seconds: STORE_OBJECTIVE_DELAY, event: { type: 'relic-thought-done' } },
+        { kind: 'after', seconds: afterThought(THOUGHTS.relicGhost), event: { type: 'relic-thought-done' } },
       );
       break;
 
@@ -308,13 +356,26 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.held_prop_id = null;
       // Day 1's second relic is done: dusk falls (doc 7.1 D1_EVENING).
       s.environment_preset = 'D1_EVENING';
-      out.push({ kind: 'sfx', id: 'place' }, { kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } });
+      out.push(
+        { kind: 'sfx', id: 'place' },
+        { kind: 'say', text: THOUGHTS.late },
+        { kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } },
+      );
       break;
 
     case 'head-home':
       if (s.relic !== 'relic-table' || s.flags.has('heading-home')) return [];
+      // The tree ghost starts peeking now; the gate objective waits for the thought.
       s.flags.add('heading-home');
-      out.push({ kind: 'say', text: THOUGHTS.headHome });
+      out.push(
+        { kind: 'say', text: THOUGHTS.headHome },
+        { kind: 'after', seconds: afterThought(THOUGHTS.headHome), event: { type: 'gate-prompt' } },
+      );
+      break;
+
+    case 'gate-prompt':
+      if (!s.flags.has('heading-home') || s.flags.has('gate-prompted')) return [];
+      s.flags.add('gate-prompted');
       break;
 
     case 'reach-gate': {
@@ -334,6 +395,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'door-opened':
       // Only matters for objectives; the door itself is already open.
+      if (e.id === 'chapel') s.flags.add('chapel-opened');
       break;
   }
 
@@ -354,6 +416,15 @@ export function blessBlocker(s: GameState): string | null {
   if (!tableReady(s)) return REMINDERS.tableNotReady;
   if (!s.inventory.has('cross')) return REMINDERS.needCross;
   return null;
+}
+
+/**
+ * The chalice and crucifix can come off the altar once the objective asks for
+ * them (D1-05), not before (S2 playtest, 2026-11-09). Later days set their
+ * own rules in S3.
+ */
+export function altarOpen(s: GameState): boolean {
+  return s.objective_id === 'D1-05';
 }
 
 const near = (p: { x: number; y: number; level: number }, c: { x: number; y: number; r: number }): boolean =>

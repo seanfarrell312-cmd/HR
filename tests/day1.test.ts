@@ -6,7 +6,7 @@ import { HoldMeter } from '../src/story/hold';
 import { advanceObjectives, currentObjective } from '../src/story/objectives';
 import { inHolyCircle, lockState, resolve } from '../src/world/interact';
 import { chimeVolume } from '../src/world/storyProps';
-import { PLAYTHROUGH, play, step } from './playthrough';
+import { PLAYTHROUGH, play, playedTo, step } from './playthrough';
 
 // S1 stage tests (doc 9.1): gate only opens on the correct code; the ritual
 // only works after its preconditions; the ghost and each objective complete
@@ -134,7 +134,7 @@ describe('candles, table and blessing (D1-04 to D1-06)', () => {
   });
 
   it('refuses the blessing until candles are lit, the table is set and the cross is in hand', () => {
-    const s = createInitialState();
+    const s = playedTo(step('take', 2), createInitialState()); // in the chapel, before the matches
     applyEvent(s, { type: 'take', item: 'matches' });
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
@@ -147,7 +147,7 @@ describe('candles, table and blessing (D1-04 to D1-06)', () => {
   });
 
   it('only offers the hold-to-bless action from inside the holy circle', () => {
-    const s = createInitialState();
+    const s = playedTo(step('take', 2), createInitialState());
     run(s, [{ type: 'take', item: 'matches' }, { type: 'take', item: 'cross' }]);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
     run(s, [{ type: 'pickup-chalice' }, { type: 'take', item: 'crucifix' }, { type: 'stage-table' }]);
@@ -158,8 +158,8 @@ describe('candles, table and blessing (D1-04 to D1-06)', () => {
   });
 
   it('releases the ghost exactly once, however often the blessing fires', () => {
-    const s = createInitialState();
-    const fx = run(s, [...PLAYTHROUGH.slice(step('take'), step('bless-clock') + 1), { type: 'bless-clock' }, { type: 'bless-clock' }]);
+    const s = playedTo(step('bless-clock'), createInitialState());
+    const fx = run(s, [{ type: 'bless-clock' }, { type: 'bless-clock' }, { type: 'bless-clock' }]);
     expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(1);
     expect(s.fired_scares).toEqual(['d1-clock-ghost']);
   });

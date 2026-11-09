@@ -1,4 +1,4 @@
-import type { Sms } from '../data/story';
+import { thoughtSeconds, type Sms } from '../data/story';
 
 // DOM overlay: crosshair, prompt and hold meter, the objective box and SMS
 // alert (top right), control reminders (bottom right), subtitles
@@ -148,7 +148,7 @@ export class Hud {
   }
 
   /** The protagonist's subtitled thought (doc 3.2). */
-  say(text: string, seconds = Math.max(3, text.length / 14)): void {
+  say(text: string, seconds = thoughtSeconds(text)): void {
     this.subtitle.textContent = text;
     this.subtitle.classList.add('show');
     this.subtitleTimer = seconds;

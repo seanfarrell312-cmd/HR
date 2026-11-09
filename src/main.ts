@@ -19,7 +19,8 @@ import { lockState, resolve, type Action } from './world/interact';
 import { StoryProps } from './world/storyProps';
 import { zoneAt } from './world/zones';
 
-const REACH = 2.6;
+/** Interaction reach (m); enough to reach the set-back ritual table from the circle. */
+const REACH = 2.9;
 /** Seconds to fade to black at the end of a shift, and back in. */
 const DAY_FADE = 1.4;
 /** Seconds after arrival before the supervisor's text comes in. */
@@ -148,6 +149,9 @@ function handleEffect(e: Effect): void {
     case 'rattle':
       props.startRattle();
       break;
+    case 'open-scripture':
+      openPanel('bible');
+      break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
       dayFade = DAY_FADE;
@@ -228,8 +232,8 @@ function openPanel(kind: Panel): void {
     hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
     dispatch({ type: 'read-note' });
   } else if (kind === 'bible') {
+    // Read aloud to the music box; it counts once the panel is put away.
     hud.openPanel('bible', Hud.bibleHtml(SCRIPTURE.reference, SCRIPTURE.lines), 'E to close');
-    dispatch({ type: 'read-scripture' });
   } else if (kind === 'inventory') {
     hud.openPanel('inventory', Hud.inventoryHtml(inventoryNames()), 'I to close');
   } else {
@@ -248,6 +252,8 @@ function closePanel(): void {
   if (!panel) return;
   // The gate-code objective follows once the text has been read and put away.
   if (panel === 'phone') dispatch({ type: 'read-sms' });
+  // The next step of the blessing follows once the scripture has been read and closed.
+  if (panel === 'bible') dispatch({ type: 'read-scripture' });
   panel = null;
   player.frozen = false;
   hud.closePanel();
@@ -295,9 +301,6 @@ function apply(action: Action): void {
       break;
     case 'read-note':
       openPanel('note');
-      break;
-    case 'read-bible':
-      openPanel('bible');
       break;
   }
 }
@@ -470,7 +473,13 @@ function shown(o: THREE.Object3D): boolean {
   return true;
 }
 
-const TOOL_NAMES: Record<string, string> = { 'chapel-key': 'Chapel key', matches: 'Matches', cross: 'Cross', crucifix: 'Standing crucifix' };
+const TOOL_NAMES: Record<string, string> = {
+  'chapel-key': 'Chapel key',
+  matches: 'Matches',
+  cross: 'Cross',
+  crucifix: 'Standing crucifix',
+  bible: 'Bible',
+};
 const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box' };
 
 let fps = 0;
@@ -569,6 +578,8 @@ renderer.setAnimationLoop(() => {
   }
   applyEnvironment(state.environment_preset);
 
-  props.sync(state, dt, { active: !!res.hold && primaryDown, progress: blessMeter.progress }, camera.position, worldPaused);
+  // Reading scripture is a hold too, but with the Bible, not the cross.
+  const hold = { active: !!res.hold && primaryDown, progress: blessMeter.progress, cross: res.hold?.type !== 'begin-scripture' };
+  props.sync(state, dt, hold, camera.position, worldPaused);
   renderer.render(scene, camera);
 });

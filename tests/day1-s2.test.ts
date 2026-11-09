@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ENVIRONMENTS } from '../src/data/environment';
 import {
+  afterThought,
   DELIVERY_DELAY,
   HEAD_HOME_DELAY,
   HOLY_CIRCLE,
   RATTLE_SECONDS,
   REMINDERS,
+  SMS,
   SPOTS,
-  STORE_OBJECTIVE_DELAY,
   THOUGHTS,
+  thoughtSeconds,
 } from '../src/data/story';
 import { createInitialState, type GameState } from '../src/state/store';
 import { startDay } from '../src/story/day';
@@ -28,7 +30,33 @@ const inside = { x: 3.7, y: 1.2, level: 0 as const };
 const flashes = (fx: Effect[]) => fx.filter((f) => f.kind === 'flash').map((f) => (f as { text: string }).text);
 const says = (fx: Effect[]) => fx.filter((f) => f.kind === 'say').map((f) => (f as { text: string }).text);
 
+describe('into the chapel (D1-04)', () => {
+  it('asks to unlock the chapel, then for the matches', () => {
+    const s = at(step('door-opened', 2));
+    expect(s.objective_id).toBe('D1-04');
+    expect(currentObjective(s).task(s)).toBe('Unlock the chapel');
+    s.open_doors.add('chapel');
+    applyEvent(s, { type: 'door-opened', id: 'chapel' });
+    expect(currentObjective(s).task(s)).toBe('Pick up the matches from the shelf');
+    applyEvent(s, { type: 'take', item: 'matches' });
+    expect(currentObjective(s).task(s)).toBe('Light the candles around the holy circle (0/4)');
+  });
+});
+
 describe('preparing the ritual table (D1-05)', () => {
+  it('leaves the altar pieces alone until the objective asks, with a thought', () => {
+    const s = at(step('light-candle', 4));
+    expect(s.objective_id).toBe('D1-04');
+    expect(applyEvent(s, { type: 'pickup-chalice' })).toEqual([{ kind: 'say', text: THOUGHTS.chaliceEarly }]);
+    expect(applyEvent(s, { type: 'take', item: 'crucifix' })).toEqual([{ kind: 'say', text: THOUGHTS.crucifixEarly }]);
+    expect(s.chalice).toBe('altar');
+    expect(s.held_prop_id).toBeNull();
+    expect(s.inventory.has('crucifix')).toBe(false);
+    // Even with full hands, the thought rather than "my hands are full".
+    s.held_prop_id = 'clock';
+    expect(resolve('item:chalice', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'pickup-chalice' } });
+  });
+
   it('follows the candles, asking for both altar pieces', () => {
     const s = at(step('pickup-chalice'));
     expect(s.objective_id).toBe('D1-05');
@@ -67,18 +95,6 @@ describe('preparing the ritual table (D1-05)', () => {
     applyEvent(s, { type: 'pickup-chalice' });
     expect(resolve('item:ritual-table', s, inCircle).prompt).toBe('E  Set out the chalice');
     applyEvent(s, { type: 'stage-table' });
-    expect(s.objective_id).toBe('D1-06');
-  });
-
-  it('can be set before the candles are lit', () => {
-    const s = at(step('take', 2)); // just before the matches
-    applyEvent(s, { type: 'pickup-chalice' });
-    applyEvent(s, { type: 'take', item: 'crucifix' });
-    applyEvent(s, { type: 'stage-table' });
-    expect(s.objective_id).toBe('D1-04');
-    play(s, PLAYTHROUGH.slice(step('take', 2), step('pickup-chalice')));
-    // Lighting the last candle completes both parts of the site.
-    expect(s.completed_objectives).toContain('D1-05');
     expect(s.objective_id).toBe('D1-06');
   });
 
@@ -124,6 +140,11 @@ describe('delivery (D1-08)', () => {
     expect(resolve('item:drop-box', s, inside).action).toEqual({ kind: 'message', text: REMINDERS.dropBoxEmpty });
   });
 
+  it('only tells the player a relic is at the drop box', () => {
+    expect(SMS.delivery1.text).toMatch(/drop box/);
+    expect(SMS.delivery1.text).not.toMatch(/clock/i);
+  });
+
   it('asks for the phone, then the drop box', () => {
     const s = at(step('read-sms', 2));
     expect(s.relic).toBe('drop-box');
@@ -160,7 +181,7 @@ describe('delivery (D1-08)', () => {
 });
 
 describe('relic blessing (D1-09)', () => {
-  it('rattles on the first blessing, and only then thinks it is stubborn', () => {
+  it('rattles on the first blessing, then two thoughts, then asks for the Bible', () => {
     const s = at(step('bless-relic'));
     expect(currentObjective(s).task(s)).toBe('Stand in the holy circle and bless the music box');
     expect(resolve('item:music-box', s, { x: 9.5, y: 53, level: 0 }).hold).toBeUndefined();
@@ -173,29 +194,72 @@ describe('relic blessing (D1-09)', () => {
     ]);
     const after = fx[2] as { seconds: number };
     expect(after.seconds).toBeGreaterThanOrEqual(RATTLE_SECONDS);
-    // Nothing new to do, and no Bible, until it has gone still.
-    expect(currentObjective(s).task(s)).toBe('');
-    expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'none' });
-    expect(resolve('item:music-box', s, inCircle).hold).toBeUndefined();
-    expect(says(applyEvent(s, { type: 'relic-settled' }))).toEqual([THOUGHTS.relicSettled]);
+    // Nothing new to do, and no Bible, until it has gone still and both thoughts have played.
+    const quiet = () => {
+      expect(currentObjective(s).task(s)).toBe('');
+      expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'none' });
+      expect(resolve('item:music-box', s, inCircle).hold).toBeUndefined();
+    };
+    quiet();
+    const settled = applyEvent(s, { type: 'relic-settled' });
+    expect(says(settled)).toEqual([THOUGHTS.relicSettled]);
+    expect(settled).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.relicSettled), event: { type: 'good-book' } });
     expect(applyEvent(s, { type: 'relic-settled' })).toEqual([]);
-    expect(currentObjective(s).task(s)).toBe('Read from the Bible on the stand');
+    quiet();
+    const book = applyEvent(s, { type: 'good-book' });
+    expect(says(book)).toEqual([THOUGHTS.goodBook]);
+    expect(book).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.goodBook), event: { type: 'bible-prompt' } });
+    quiet();
+    applyEvent(s, { type: 'bible-prompt' });
+    expect(currentObjective(s).task(s)).toBe('Pick up the Bible from the stand');
+  });
+
+  it('never stacks an objective on top of the thought before it', () => {
+    for (const text of [THOUGHTS.relicSettled, THOUGHTS.goodBook, THOUGHTS.relicGhost, THOUGHTS.headHome]) {
+      expect(afterThought(text)).toBeGreaterThan(thoughtSeconds(text));
+    }
+  });
+
+  it('takes the Bible into the hand, then reads it to the music box with a hold', () => {
+    const s = at(step('take', 5));
+    expect(resolve('item:bible', s, inCircle)).toMatchObject({ prompt: 'E  Pick up the Bible' });
+    expect(resolve('item:music-box', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.bibleFirst });
+    applyEvent(s, { type: 'take', item: 'bible' });
+    expect(s.inventory.has('bible')).toBe(true);
+    expect(currentObjective(s).task(s)).toBe('Read the music box some scripture');
+    expect(resolve('item:music-box', s, { x: 9.5, y: 53, level: 0 }).hold).toBeUndefined();
+    expect(resolve('item:music-box', s, inCircle)).toMatchObject({
+      prompt: 'Hold click  Read the music box some scripture',
+      hold: { type: 'begin-scripture' },
+    });
+    expect(applyEvent(s, { type: 'begin-scripture' })).toContainEqual({ kind: 'open-scripture' });
+    // Still reading: the next objective waits for the scripture to be closed.
+    expect(currentObjective(s).task(s)).toBe('Read the music box some scripture');
+    applyEvent(s, { type: 'read-scripture' });
+    expect(currentObjective(s).task(s)).toBe('Bless the music box again');
+    expect(resolve('item:music-box', s, inCircle).hold).toEqual({ type: 'bless-relic' });
   });
 
   it('needs scripture before the second blessing', () => {
     const s = at(step('read-scripture'));
     expect(flashes(applyEvent(s, { type: 'bless-relic' }))).toEqual([REMINDERS.scriptureFirst]);
     expect(s.flags.has('relic-blessed')).toBe(false);
-    expect(resolve('item:music-box', s, inCircle).hold).toBeUndefined();
-    expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'read-bible' });
-    applyEvent(s, { type: 'read-scripture' });
-    expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'none' });
-    expect(currentObjective(s).task(s)).toBe('Bless the music box again');
   });
 
-  it('ignores the Bible before the rattle', () => {
+  it('ignores the Bible and the scripture before they are wanted', () => {
     const s = at(step('bless-relic'));
+    expect(applyEvent(s, { type: 'take', item: 'bible' })).toEqual([]);
+    expect(applyEvent(s, { type: 'begin-scripture' })).toEqual([]);
     expect(applyEvent(s, { type: 'read-scripture' })).toEqual([]);
+    expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'none' });
+  });
+
+  it('can put the Bible back on its stand once the music box is cleansed', () => {
+    const s = at(step('pickup-relic'));
+    expect(s.inventory.has('bible')).toBe(true);
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Put the Bible back');
+    applyEvent(s, { type: 'return-bible' });
+    expect(s.inventory.has('bible')).toBe(false);
     expect(resolve('item:bible', s, inCircle).action).toEqual({ kind: 'none' });
   });
 
@@ -211,7 +275,7 @@ describe('relic blessing (D1-09)', () => {
     expect(currentObjective(s).task(s)).toBe('');
     const fx = applyEvent(s, { type: 'relic-ghost-gone' });
     expect(says(fx)).toEqual([THOUGHTS.relicGhost]);
-    expect(fx).toContainEqual({ kind: 'after', seconds: STORE_OBJECTIVE_DELAY, event: { type: 'relic-thought-done' } });
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.relicGhost), event: { type: 'relic-thought-done' } });
     expect(applyEvent(s, { type: 'relic-ghost-gone' })).toEqual([]);
     expect(currentObjective(s).task(s)).toBe('');
     applyEvent(s, { type: 'relic-thought-done' });
@@ -240,10 +304,18 @@ describe('store and leave (D1-10)', () => {
     const fx = applyEvent(s, { type: 'store-relic' });
     expect(s.environment_preset).toBe('D1_EVENING');
     expect(s.relic).toBe('relic-table');
+    // "So late" straight away, then a pause before the head-home thought.
+    expect(says(fx)).toEqual([THOUGHTS.late]);
     expect(fx).toContainEqual({ kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } });
+    expect(HEAD_HOME_DELAY).toBeGreaterThan(afterThought(THOUGHTS.late));
     expect(currentObjective(s).task(s)).toBe('');
     expect(applyEvent(s, { type: 'store-relic' })).toEqual([]);
-    expect(applyEvent(s, { type: 'head-home' })).toEqual([{ kind: 'say', text: THOUGHTS.headHome }]);
+    const home = applyEvent(s, { type: 'head-home' });
+    expect(says(home)).toEqual([THOUGHTS.headHome]);
+    expect(home).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.headHome), event: { type: 'gate-prompt' } });
+    // The objective waits until the thought has played.
+    expect(currentObjective(s).task(s)).toBe('');
+    applyEvent(s, { type: 'gate-prompt' });
     expect(currentObjective(s).task(s)).toBe('Head back to the front gate');
   });
 
@@ -287,6 +359,7 @@ describe('Day 2 reset', () => {
     expect(after.candles_lit.size).toBe(0);
     expect(after.chalice).toBe('altar');
     expect(after.flags.has('crucifix-staged')).toBe(false);
+    expect(after.inventory.has('bible')).toBe(false);
     expect(after.relic).toBe('removed');
   });
 
