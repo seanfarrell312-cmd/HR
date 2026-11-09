@@ -90,19 +90,23 @@ function propMesh(p: Prop): THREE.Object3D {
   }
 }
 
+const LEAF_THICKNESS = WALL_THICKNESS * 0.6;
+
 function doorLeaf(door: Door, sign: 1 | -1, width: number): THREE.Group {
   const panel = new THREE.Mesh(
-    new THREE.BoxGeometry(width, door.height, WALL_THICKNESS * 0.6),
+    new THREE.BoxGeometry(width, door.height, LEAF_THICKNESS),
     mat(door.id === 'gate' ? '#2b2b2b' : door.id === 'church' ? '#5a3a20' : '#6e4a2c'),
   );
   // The hinge sits at one end of the opening; the panel extends along the
   // wall towards the other end (local +x from the low hinge, -x from the high).
   const pivot = new THREE.Group();
   const hinge = sign === 1 ? -door.width / 2 : door.width / 2;
+  // A folding leaf hangs on the face of the wall it swings towards.
+  const face = door.fold ? door.swing * (WALL_THICKNESS / 2 + LEAF_THICKNESS / 2) : 0;
   if (door.axis === 'x') {
-    pivot.position.set(...toWorld(door.x + hinge, door.y, door.level));
+    pivot.position.set(...toWorld(door.x + hinge, door.y + face, door.level));
   } else {
-    pivot.position.set(...toWorld(door.x, door.y + hinge, door.level));
+    pivot.position.set(...toWorld(door.x + face, door.y + hinge, door.level));
     pivot.rotation.y = Math.PI / 2;
   }
   panel.position.set((sign * width) / 2, door.height / 2, 0);
@@ -130,8 +134,10 @@ export function poseDoor(v: DoorView): void {
   // rotation) for a y-axis door; `swing` picks which side it opens into, and
   // a leaf hinged at the high end turns the opposite way to reach that side.
   const dir = v.door.axis === 'x' ? v.door.swing : -v.door.swing;
+  // Square to the wall when open, or folded almost flat back against it.
+  const open = v.door.fold ? Math.PI * 0.97 : (Math.PI / 2) * 0.95;
   for (const { pivot, sign } of v.leaves) {
-    pivot.rotation.y = pivot.userData.baseRotation + sign * dir * v.amount * (Math.PI / 2) * 0.95;
+    pivot.rotation.y = pivot.userData.baseRotation + sign * dir * v.amount * open;
   }
 }
 

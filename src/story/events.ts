@@ -1,4 +1,4 @@
-import { CHURCH_APPROACH, GATE_CODE, S1_END, SMS, THOUGHTS, WRONG_CODE } from '../data/story';
+import { CHURCH_APPROACH, GATE_CODE, GATE_RETURN, HEAD_HOME_DELAY, S1_END, SMS, THOUGHTS, TREE_PEEK, WRONG_CODE } from '../data/story';
 import type { GameState, QuestItem } from '../state/store';
 import { advanceObjectives } from './objectives';
 
@@ -18,6 +18,12 @@ export type StoryEvent =
   | { type: 'bless-clock' }
   | { type: 'pickup-clock' }
   | { type: 'place-clock' }
+  /** Timed: the thought a few seconds after the clock is on the desk. */
+  | { type: 'head-home' }
+  /** The player's position; completes the walk back once at the gate. */
+  | { type: 'reach-gate'; x: number; y: number; level: number }
+  /** The player's position; the tree ghost ducks away once they come close. */
+  | { type: 'near-peek'; x: number; y: number; level: number }
   | { type: 'door-opened'; id: string };
 
 export type SfxId =
@@ -31,7 +37,8 @@ export type SfxId =
   | 'place'
   | 'paper'
   | 'wind-down'
-  | 'sparkle';
+  | 'sparkle'
+  | 'giggle';
 
 export type Effect =
   | { kind: 'sfx'; id: SfxId }
@@ -41,7 +48,9 @@ export type Effect =
   | { kind: 'sms'; id: string }
   /** The blessed clock settles, sparkles, then releases its ghost (timed by the view). */
   | { kind: 'purify' }
-  | { kind: 'objective'; id: string };
+  | { kind: 'objective'; id: string }
+  /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
+  | { kind: 'after'; seconds: number; event: StoryEvent };
 
 export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
   const out: Effect[] = [];
@@ -118,7 +127,32 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.clock !== 'held') return [];
       s.clock = 'office-desk';
       s.held_prop_id = null;
-      out.push({ kind: 'sfx', id: 'place' }, { kind: 'say', text: THOUGHTS.clockPlaced });
+      out.push(
+        { kind: 'sfx', id: 'place' },
+        { kind: 'say', text: THOUGHTS.clockPlaced },
+        { kind: 'after', seconds: HEAD_HOME_DELAY, event: { type: 'head-home' } },
+      );
+      break;
+
+    case 'head-home':
+      if (s.clock !== 'office-desk' || s.flags.has('heading-home')) return [];
+      s.flags.add('heading-home');
+      out.push({ kind: 'say', text: THOUGHTS.headHome });
+      break;
+
+    case 'reach-gate': {
+      if (!s.flags.has('heading-home') || s.flags.has('returned-to-gate')) return [];
+      const r = GATE_RETURN;
+      if (e.level !== 0 || e.x < r.x1 || e.x > r.x2 || e.y < r.y1 || e.y > r.y2) return [];
+      s.flags.add('returned-to-gate');
+      break;
+    }
+
+    case 'near-peek':
+      if (s.fired_scares.includes('d1-tree-peek') || !s.flags.has('heading-home')) return [];
+      if (e.level !== 0 || Math.hypot(e.x - TREE_PEEK.x, e.y - TREE_PEEK.y) > TREE_PEEK.trigger) return [];
+      s.fired_scares.push('d1-tree-peek');
+      out.push({ kind: 'sfx', id: 'giggle' });
       break;
 
     case 'door-opened':

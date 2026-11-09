@@ -1,12 +1,13 @@
 import * as THREE from 'three';
-import { toWorld } from '../data/layout';
-import { CANDLES, PURIFY, SPOTS, type ItemSpot } from '../data/story';
+import { AREAS, DOORS, toWorld } from '../data/layout';
+import { CANDLES, PURIFY, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
 import type { GameState } from '../state/store';
+import { ghostModel, type GhostModel } from './ghost';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
 // called every frame and derives everything from state, so a reset or a
 // debug jump never leaves a stale prop behind. Only the purification (sparkles
-// and ghost) and the bus are timed effects, started by events.
+// and ghost), the tree ghost ducking away and the bus are timed effects.
 
 const lambert = (color: string) => new THREE.MeshLambertMaterial({ color, flatShading: true });
 const basic = (color: string, opacity = 1) =>
@@ -54,15 +55,6 @@ interface CandleView {
   light: THREE.PointLight;
 }
 
-interface Ghost {
-  group: THREE.Group;
-  mats: THREE.MeshBasicMaterial[];
-  light: THREE.PointLight;
-  t: number;
-  baseY: number;
-  startX: number;
-  startZ: number;
-}
 
 interface Sparkle {
   mesh: THREE.Mesh;
@@ -80,7 +72,26 @@ interface Purification {
   fired: Set<PurifyCue>;
 }
 
-export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost';
+/** 'ghost' as it appears; 'ghost-gone' once it has risen and vanished. */
+export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost' | 'ghost-gone';
+
+/** Seconds the clock ghost is on screen: rise, smile, fade. */
+const GHOST_LIFE = 3.4;
+/** Seconds for the tree ghost to giggle, duck behind the trunk and fade. */
+const PEEK_HIDE = 1.3;
+
+const CHAPEL = AREAS.find((a) => a.id === 'chapel')!.rect;
+const CHAPEL_DOOR = DOORS.find((d) => d.id === 'chapel')!;
+
+/**
+ * How loud the clock is from a plan position: full inside the chapel, then
+ * fading with distance from the chapel door; muffled from the basement.
+ */
+export function chimeVolume(x: number, y: number, level: number): number {
+  if (level === 0 && x >= CHAPEL.x1 && x <= CHAPEL.x2 && y >= CHAPEL.y1 && y <= CHAPEL.y2) return 1;
+  const d = Math.hypot(x - CHAPEL_DOOR.x, y - CHAPEL_DOOR.y);
+  return (level === 0 ? 1 : 0.3) / (1 + (d / 7) ** 2);
+}
 
 const SPARKLE_COUNT = 22;
 const SPARKLE_LIFE = 1.6;
@@ -100,7 +111,15 @@ export class StoryProps {
   private deskMarker: THREE.Mesh;
   private heldClock: THREE.Group;
   private heldCrucifix: THREE.Group;
-  private ghosts: Ghost[] = [];
+  /** The clock's ghost; one model, reused, with its light always in the scene. */
+  private clockGhost: GhostModel;
+  private clockGhostT = -1;
+  private clockGhostFrom = new THREE.Vector3();
+  /** The ghost peeking from behind the tree near the gate. */
+  private peeker: GhostModel;
+  private peekHideT = 0;
+  /** +1 or -1: which side of the trunk (across the line of sight) it leans out of. */
+  private peekSide = 1;
   private bus: THREE.Group | null = null;
   private busT = 0;
   private chimeTimer = 2;
@@ -149,6 +168,14 @@ export class StoryProps {
     this.heldCrucifix.position.set(0.22, -0.45, -0.5);
     camera.add(this.heldClock, this.heldCrucifix);
 
+    // Lights stay in the scene at zero intensity: adding one later would make
+    // Three.js recompile every shader and hitch.
+    this.clockGhost = ghostModel(true);
+    this.clockGhost.group.visible = false;
+    this.peeker = ghostModel(false);
+    this.peeker.group.visible = false;
+    this.root.add(this.clockGhost.group, this.peeker.group);
+
     this.root.add(this.note, this.key, this.matches, this.crucifix, this.clock, this.deskMarker);
     this.raycastTargets.push(this.note, this.key, this.matches, this.crucifix, this.clock);
   }
@@ -156,8 +183,10 @@ export class StoryProps {
   /** Remove timed effects, e.g. on reset. */
   clearEffects(): void {
     this.endPurification();
-    for (const g of this.ghosts) this.root.remove(g.group);
-    this.ghosts = [];
+    this.clockGhostT = -1;
+    this.clockGhost.group.visible = false;
+    this.clockGhost.setFade(0);
+    this.peekHideT = 0;
     if (this.bus) this.root.remove(this.bus);
     this.bus = null;
   }
@@ -220,7 +249,7 @@ export class StoryProps {
     const cue = (name: PurifyCue, at: number) => {
       if (p.t < at || p.fired.has(name)) return;
       p.fired.add(name);
-      if (name === 'ghost') this.spawnGhost();
+      if (name === 'ghost') this.startClockGhost();
       this.onCue(name);
     };
     cue('sparkle', PURIFY.sparkleAt);
@@ -242,27 +271,10 @@ export class StoryProps {
     if (p.t > Math.max(PURIFY.ghostAt, PURIFY.sparkleAt + SPARKLE_SPREAD + SPARKLE_LIFE)) this.endPurification();
   }
 
-  private spawnGhost(): void {
-    const group = new THREE.Group();
-    const mats = [basic('#8dff6e', 0.85), basic('#101810', 0.9)];
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.34, 0.7, 7, 1, true), mats[0]);
-    body.position.y = 0.35;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), mats[0]);
-    head.position.y = 0.72;
-    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.02), mats[1]);
-    eyeL.position.set(-0.08, 0.76, 0.2);
-    const eyeR = eyeL.clone();
-    eyeR.position.x = 0.08;
-    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.013, 4, 10, Math.PI), mats[1]);
-    smile.rotation.z = Math.PI;
-    smile.position.set(0, 0.67, 0.2);
-    const light = new THREE.PointLight('#7dff6a', 1.5, 4, 2);
-    light.position.y = 0.6;
-    group.add(body, head, eyeL, eyeR, smile, light);
-    const [x, y, z] = toWorld(SPOTS.clockRitual.x, SPOTS.clockRitual.y, 0, SPOTS.clockRitual.z);
-    group.position.set(x, y, z);
-    this.root.add(group);
-    this.ghosts.push({ group, mats, light, t: 0, baseY: y, startX: x, startZ: z });
+  private startClockGhost(): void {
+    this.clockGhostFrom.set(...toWorld(SPOTS.clockRitual.x, SPOTS.clockRitual.y, 0, SPOTS.clockRitual.z));
+    this.clockGhostT = 0;
+    this.clockGhost.group.visible = true;
   }
 
   /**
@@ -304,12 +316,14 @@ export class StoryProps {
       this.clock.position.z += (Math.random() - 0.5) * 0.03 * shake;
       this.clock.rotation.z = (Math.random() - 0.5) * 0.12 * shake;
     }
-    if (restless) {
+    // Once the church doors have opened the clock chimes without a break,
+    // faster as it gets agitated, heard faintly anywhere in the church.
+    if (restless && s.completed_objectives.includes('D1-02')) {
       this.chimeTimer -= dt;
       if (this.chimeTimer <= 0) {
-        this.chimeTimer = 6 - 4.8 * agitation;
-        const d = this.clock.position.distanceTo(listener);
-        this.onChime(Math.max(0, 1 - d / 14), agitation);
+        this.chimeTimer = 2.4 - 1.5 * agitation;
+        const level = listener.y < -3 ? -1 : 0;
+        this.onChime(chimeVolume(listener.x, -listener.z, level), agitation);
       }
     }
 
@@ -317,32 +331,82 @@ export class StoryProps {
     this.heldCrucifix.visible = hold.active && hold.progress > 0;
     this.heldCrucifix.position.y = -0.45 + hold.progress * 0.2;
 
+    const cam = this.camera.getWorldPosition(new THREE.Vector3());
     this.updatePurification(fxDt);
-    this.updateGhosts(fxDt);
+    this.updateClockGhost(fxDt, cam);
+    this.updatePeeker(s, fxDt, cam);
     this.updateBus(fxDt);
   }
 
-  private updateGhosts(dt: number): void {
-    const LIFE = 3.4;
-    for (const g of [...this.ghosts]) {
-      g.t += dt;
-      // Rise to about eye level and drift a little towards the player so the
-      // smile is in view from the holy circle.
-      const cam = this.camera.getWorldPosition(new THREE.Vector3());
-      const rise = Math.min(g.t / 1.2, 1);
-      g.group.position.y = g.baseY + rise * 0.35 + Math.sin(g.t * 3) * 0.04;
-      g.group.position.x = g.startX + (cam.x - g.startX) * 0.2 * rise;
-      g.group.position.z = g.startZ + (cam.z - g.startZ) * 0.2 * rise;
-      g.group.rotation.y = Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z);
-      const fade = g.t < LIFE - 0.9 ? 1 : Math.max(0, (LIFE - g.t) / 0.9);
-      g.mats[0].opacity = 0.85 * fade;
-      g.mats[1].opacity = 0.9 * fade;
-      g.light.intensity = 1.5 * fade;
-      if (g.t >= LIFE) {
-        this.root.remove(g.group);
-        this.ghosts.splice(this.ghosts.indexOf(g), 1);
-      }
+  private updateClockGhost(dt: number, cam: THREE.Vector3): void {
+    if (this.clockGhostT < 0) return;
+    const g = this.clockGhost;
+    this.clockGhostT += dt;
+    const t = this.clockGhostT;
+    // Rise to about eye level and drift a little towards the player so the
+    // smile is in view from the holy circle, then fade away.
+    const rise = Math.min(t / 1.2, 1);
+    const from = this.clockGhostFrom;
+    g.group.position.set(
+      from.x + (cam.x - from.x) * 0.2 * rise,
+      from.y + rise * 0.35 + Math.sin(t * 3) * 0.04,
+      from.z + (cam.z - from.z) * 0.2 * rise,
+    );
+    g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), 0);
+    g.setFade(t < GHOST_LIFE - 0.9 ? 1 : Math.max(0, (GHOST_LIFE - t) / 0.9));
+    if (t >= GHOST_LIFE) {
+      this.clockGhostT = -1;
+      g.group.visible = false;
+      this.onCue('ghost-gone');
     }
+  }
+
+  /**
+   * The tree ghost stays on the far side of the trunk from the player and
+   * leans out past its west edge, so it is peeking from any angle. Once the
+   * scare has fired it giggles, slides fully behind the trunk and fades.
+   */
+  private updatePeeker(s: GameState, dt: number, cam: THREE.Vector3): void {
+    const g = this.peeker;
+    const fired = s.fired_scares.includes('d1-tree-peek');
+    if (fired) this.peekHideT += dt;
+    // Only on the walk home at the end of the day.
+    g.group.visible = s.flags.has('heading-home') && (!fired || this.peekHideT < PEEK_HIDE);
+    if (!g.group.visible) return;
+
+    const [tx, , tz] = toWorld(TREE_PEEK.x, TREE_PEEK.y, 0);
+    // Unit vector from the player to the tree, along the ground.
+    let dx = tx - cam.x;
+    let dz = tz - cam.z;
+    const len = Math.hypot(dx, dz) || 1;
+    dx /= len;
+    dz /= len;
+    // Across the line of sight, pick the side whose edge is further west
+    // (smaller x), with a little hysteresis so it doesn't flicker when the
+    // player stands due east or west of the tree.
+    const acrossX = -dz * this.peekSide;
+    if (acrossX > 0.15) this.peekSide = -this.peekSide;
+    const sx = -dz * this.peekSide;
+    const sz = dx * this.peekSide;
+
+    const t = this.peekHideT;
+    const giggle = fired ? Math.max(0, 1 - t / 0.6) : 0;
+    const duck = fired ? Math.min(1, Math.max(0, (t - 0.45) / 0.5)) : 0;
+    const out = (TREE_PEEK.trunk + 0.02) * (1 - duck);
+    const behind = TREE_PEEK.trunk + 0.25;
+    const now = performance.now() / 1000;
+    g.group.position.set(
+      tx + dx * behind + sx * out,
+      0.55 + Math.sin(now * 2) * 0.04 + giggle * Math.abs(Math.sin(now * 26)) * 0.06,
+      tz + dz * behind + sz * out,
+    );
+    const face = Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z);
+    // The ghost's local +x, facing the player, is (cos face, -sin face) in
+    // world x/z; lean the head towards the open side of the trunk.
+    const leanSide = Math.sign(Math.cos(face) * sx - Math.sin(face) * sz) || 1;
+    const lean = 0.32 * (1 - duck) + giggle * Math.sin(now * 30) * 0.08;
+    g.group.rotation.set(0, face, -leanSide * lean);
+    g.setFade(fired ? Math.min(1, Math.max(0, (PEEK_HIDE - t) / 0.4)) : 1);
   }
 
   private updateBus(dt: number): void {

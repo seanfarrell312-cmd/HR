@@ -54,6 +54,11 @@ export interface Door {
    * the default) or 'high'.
    */
   hinge?: 'low' | 'high';
+  /**
+   * Hang the leaf on the swing-side face of the wall so it can fold right
+   * back, nearly flat against that face, instead of stopping square to it.
+   */
+  fold?: boolean;
 }
 
 export interface Prop {
@@ -189,9 +194,9 @@ export const DOORS: Door[] = [
   { id: 'church', label: 'Church doors', x: 0, y: 50, axis: 'x', width: 3, height: 3.6, level: 0, swing: 1, double: true },
   { id: 'office', label: 'Office door', x: -8, y: 52.9, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: -1 },
   { id: 'storage', label: 'Storage closet', x: -8, y: 61.7, axis: 'y', width: 1.2, height: 2.3, level: 0, swing: -1 },
-  // Opens out into the nave, hinged on the north side so it swings clear of
-  // the relic table (decisions 2026-11-08).
-  { id: 'chapel', label: 'Chapel door', x: 8, y: 52.7, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: -1, hinge: 'high' },
+  // Opens into the chapel, hinged on the south side, and folds back flat
+  // against the wall into the empty south-west corner (decisions 2026-11-08).
+  { id: 'chapel', label: 'Chapel door', x: 8, y: 52.7, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: 1, fold: true },
   { id: 'basement', label: 'Basement door', x: 6.4, y: 67.4, axis: 'x', width: 1.4, height: 2.3, level: 0, swing: 1 },
   { id: 'shed', label: 'Shed door', x: 26, y: 72, axis: 'x', width: 1.6, height: 2.3, level: 0, swing: 1 },
 ];

@@ -63,6 +63,14 @@ export class Sfx {
       case 'sparkle':
         for (let i = 0; i < 9; i++) this.tone('sine', 1900 + Math.random() * 1500, i * 0.11, 0.35, 0.05);
         break;
+      case 'giggle':
+        // "Hee-hee-hee": quick falling chirps, each sliding down like a titter.
+        for (let i = 0; i < 6; i++) {
+          const f = 1250 - i * 55 + Math.random() * 40;
+          this.glide('triangle', f, f * 0.78, i * 0.12, 0.09, 0.13);
+          this.glide('sine', f * 2, f * 1.6, i * 0.12, 0.07, 0.04);
+        }
+        break;
       case 'paper':
         this.hiss(0, 0.08, 4000, 0.25);
         this.hiss(0.12, 0.08, 3500, 0.2);

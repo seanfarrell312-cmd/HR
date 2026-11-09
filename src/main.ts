@@ -55,10 +55,10 @@ const centre = new THREE.Vector2(0, 0);
 const blessMeter = new HoldMeter(BLESS_SECONDS);
 props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onCue = (cue) => {
-  if (cue === 'ghost') {
-    sfx.play('release');
-    hud.say(THOUGHTS.ghost);
-  } else sfx.play(cue);
+  if (cue === 'ghost') sfx.play('release');
+  // The thought waits until the ghost has risen and gone.
+  else if (cue === 'ghost-gone') hud.say(THOUGHTS.ghost);
+  else sfx.play(cue);
 };
 
 let state: GameState = createInitialState();
@@ -70,6 +70,8 @@ let target: string | null = null;
 let panel: Panel | null = null;
 let keypadEntry = '';
 let smsTimer = -1;
+/** Story events waiting on a timer ('after' effects). */
+let pending: { seconds: number; event: StoryEvent }[] = [];
 let primaryDown = false;
 
 function refreshColliders(): void {
@@ -110,6 +112,9 @@ function handleEffect(e: Effect): void {
     case 'purify':
       props.startPurification();
       break;
+    case 'after':
+      pending.push({ seconds: e.seconds, event: e.event });
+      break;
     case 'objective':
       break; // the objective box follows state every frame
   }
@@ -128,6 +133,7 @@ function beginDay(): void {
 function reset(): void {
   closePanel();
   state = createInitialState(state.door_preset);
+  pending = [];
   for (const v of world.doors.values()) {
     v.amount = v.target = 0;
     poseDoor(v);
@@ -154,7 +160,6 @@ function openPanel(kind: Panel): void {
   if (kind === 'phone') {
     hud.openPanel('phone', Hud.phoneHtml(state.inbox.map((id) => SMS[id])), 'Q or E to put away');
     hud.setPhoneAlert(false);
-    dispatch({ type: 'read-sms' });
   } else if (kind === 'note') {
     hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
     dispatch({ type: 'read-note' });
@@ -174,6 +179,8 @@ function inventoryNames(): string[] {
 
 function closePanel(): void {
   if (!panel) return;
+  // The gate-code objective follows once the text has been read and put away.
+  if (panel === 'phone') dispatch({ type: 'read-sms' });
   panel = null;
   player.frozen = false;
   hud.closePanel();
@@ -433,8 +440,21 @@ renderer.setAnimationLoop(() => {
     if (smsTimer <= 0) dispatch({ type: 'receive-sms', id: 'gateCode' });
   }
 
-  if (started && !worldPaused && !state.flags.has('church-approached')) {
-    dispatch({ type: 'approach-church', x: player.x, y: player.y, level: player.level });
+  if (!worldPaused && pending.length) {
+    for (const p of pending) p.seconds -= dt;
+    const due = pending.filter((p) => p.seconds <= 0);
+    pending = pending.filter((p) => p.seconds > 0);
+    for (const p of due) dispatch(p.event);
+  }
+
+  if (started && !worldPaused) {
+    // Position checks; each event is a no-op once it has fired.
+    const at = { x: player.x, y: player.y, level: player.level };
+    if (!state.flags.has('church-approached')) dispatch({ type: 'approach-church', ...at });
+    if (state.flags.has('heading-home')) {
+      if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
+      dispatch({ type: 'reach-gate', ...at });
+    }
   }
 
   for (const v of world.doors.values()) {
@@ -452,7 +472,7 @@ renderer.setAnimationLoop(() => {
   hud.setHold(blessMeter.progress);
   hud.setPrompt(res.prompt);
   hud.setObjective(started ? currentObjective(state).task(state) : '');
-  hud.setInventoryHint(started);
+  hud.setCornerHints(started);
   hud.update(dt);
   hud.setDebug(debugVisible, debugText());
 

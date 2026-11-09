@@ -1,6 +1,7 @@
 import type { Sms } from '../data/story';
 
-// DOM overlay: crosshair, prompt and hold meter, the objective box, subtitles
+// DOM overlay: crosshair, prompt and hold meter, the objective box and SMS
+// alert (top right), control reminders (bottom right), subtitles
 // and feedback, the phone, note, keypad and inventory panels, the day title
 // card, the pause screen and the developer debug panel.
 
@@ -17,7 +18,8 @@ export class Hud {
   private objectiveText: HTMLElement;
   private objectiveHint: HTMLElement;
   private inventoryHint: HTMLElement;
-  private phoneAlert: HTMLElement;
+  private interactHint: HTMLElement;
+  private smsAlert: HTMLElement;
   private holdRing: HTMLElement;
   private title: HTMLElement;
   private pause: HTMLElement;
@@ -35,9 +37,14 @@ export class Hud {
       `<div class="crosshair"></div>
        <div class="hold-ring"></div>
        <div class="prompt"></div>
-       <div class="objective"><div class="objective-label">Objective</div><div class="objective-text"></div></div>
-       <div class="objective-hint">(O) View Objectives</div>
-       <div class="corner-hints"><div class="phone-alert"></div><div class="inventory-hint">(I) View Inventory</div></div>
+       <div class="top-right">
+         <div class="objective-slot">
+           <div class="objective"><div class="objective-label">Objective</div><div class="objective-text"></div></div>
+           <div class="objective-hint">(O) View Objectives</div>
+         </div>
+         <div class="sms-alert">New SMS - Press Q</div>
+       </div>
+       <div class="corner-hints"><div class="interact-hint">(E) Interact</div><div class="inventory-hint">(I) View Inventory</div></div>
        <div class="subtitle"></div>
        <div class="message"></div>
        <div class="title-card"></div>
@@ -68,7 +75,8 @@ export class Hud {
     this.objectiveText = q('.objective-text');
     this.objectiveHint = q('.objective-hint');
     this.inventoryHint = q('.inventory-hint');
-    this.phoneAlert = q('.phone-alert');
+    this.interactHint = q('.interact-hint');
+    this.smsAlert = q('.sms-alert');
     this.holdRing = q('.hold-ring');
     this.title = q('.title-card');
     this.pause = q('.pause');
@@ -106,12 +114,15 @@ export class Hud {
     this.objectiveHint.classList.remove('show');
   }
 
-  setInventoryHint(visible: boolean): void {
+  /** The bottom-right control reminders: "(E) Interact" and "(I) View Inventory". */
+  setCornerHints(visible: boolean): void {
     this.inventoryHint.classList.toggle('show', visible);
+    this.interactHint.classList.toggle('show', visible);
   }
 
+  /** Flashing red "New SMS - Press Q" under the objective while a text is unread. */
   setPhoneAlert(unread: boolean): void {
-    this.phoneAlert.textContent = unread ? '[Phone] New message — press Q' : '';
+    this.smsAlert.classList.toggle('show', unread);
   }
 
   /** Hold meter around the crosshair; progress 0 hides it. */

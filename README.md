@@ -31,7 +31,7 @@ npm run build      # type-check + production build into dist/
 | WASD + mouse | Move and look |
 | E | Interact; also puts down a note, phone or keypad |
 | Hold left click | Bless (fills the ring round the crosshair) |
-| Q | Phone (re-read texts) |
+| Q | Phone (re-read texts); "New SMS - Press Q" flashes top right when one arrives |
 | O | Show the current objective again (it folds away after 5 s) |
 | I | Inventory (pauses the game) |
 | 0–9, Backspace | Gate keypad, while it's open |

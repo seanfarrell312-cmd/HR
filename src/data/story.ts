@@ -68,26 +68,53 @@ export const DAY_TITLES: Record<number, { title: string; time: string }> = {
   1: { title: 'First Day', time: '4PM' },
 };
 
+/** The supervisor's letter (designer copy, 2026-11-08), one entry per paragraph. */
 export const OFFICE_NOTE = [
-  'Welcome Monsignor,',
-  '',
-  "On behalf of St. Mary's, myself, and the parishioners and staff, I would like to thank you for accepting our request for assistance from the Vatican. As you probably already know, the increasing number of restless spirits and strange possessions has put a real strain on our ministry. There's now so many possessed items popping up around the countryside we had to install a drop box by the gate just to handle them all. I'm sure a man of your expertise isn't too fazed by all this, but we're just a small town congregation with little to no formal training on how to handle restless spirits. I've already taken the liberty of bringing in your first case. I left it on the chapel table on the other side of the building. I locked the door to keep it contained in there, so be sure to grab the chapel key behind you. You may already be able to hear it. It's an antique mantel clock that Mrs. Kettle brought in. Apparently it's been chiming non-stop for 4 days. We tried everything short of smashing it to make it stop, but it just got louder. It even started giggling at us at one point. Clearly a possession.",
-  '',
-  "Once you're in the chapel, set up the ritual site and do your thing. I know it's not much but it's the best we've got. Light the four candles, stand in the circle and hit it with a blessing. You can find matches and a crucifix on the shelf once you're in there.",
-  '',
-  "If it works (I'm sure it will), pop it on my desk. Mrs. Kettle doesn't want it back and it's too nice to throw away.",
-  '',
+  'Welcome, Monsignor,',
+  "On behalf of everyone at St. Mary's, thank you for answering our request for assistance from the Vatican.",
+  "As you're probably aware, we've been dealing with an increasing number of restless spirits and strange possessions. It's gotten so bad that we've had to install a drop box by the front gate just to keep up with all the possessed items turning up around the countryside.",
+  "I'm sure a man of your experience is accustomed to this sort of thing, but we're just a small congregation with little training in these matters.",
+  "I've taken the liberty of preparing your first case.",
+  "Mrs. Kettle brought in an antique mantel clock that's been chiming nonstop for four days. We tried everything short of smashing it, but it only got louder. At one point, it even started giggling at us.",
+  'Clearly possessed.',
+  "I've left it on the table in the chapel, on the other side of the building. The door is locked to keep it contained, so be sure to grab the chapel key behind you. You may already be able to hear it.",
+  "Once inside, prepare the ritual site. Light the four candles, stand in the circle, and give it a blessing. There should be matches and a crucifix on the shelf. I'm sure you know the rest.",
+  "If all goes well (and I'm sure it will), leave the clock on my desk when you're finished. Mrs. Kettle doesn't want it back, and it seems a shame to throw away such a nice antique.",
   '— Supervisor',
-].join('\n');
+].join('\n\n');
 
 /** Subtitled thoughts (doc 3.2). Keyed so they can be traced to dialogue IDs later. */
 export const THOUGHTS = {
   gateOpen: 'Nice, it worked.',
-  churchApproach: "The grounds are really nice. Hard to believe they'd need someone like me.",
+  churchApproach: "This place feels so peaceful. Hard to believe they'd need someone like me.",
   keyBeforeNote: 'Huh, a key. I should really read the note they left me first.',
   ghost: '...Huh. Kinda cute.',
-  clockPlaced: 'One down.',
+  clockPlaced: "That wasn't too bad.",
+  /** A few seconds after the clock is on the desk; then the walk back to the gate. */
+  headHome: 'I guess I should head back to the bus stop.',
 };
+
+/**
+ * Seconds between "That wasn't too bad." and the head-home thought. In the S1
+ * build the walk home follows the clock; in S2 it moves to the end of the day,
+ * after D1-07 to D1-09 (decisions 2026-11-08).
+ */
+export const HEAD_HOME_DELAY = 5;
+
+/**
+ * Reaching this stretch around the front gate (either side of it) completes
+ * the walk back. Plan rect, level 0.
+ */
+export const GATE_RETURN = { x1: -6, y1: -6, x2: 6, y2: 4 };
+
+/**
+ * The smiling ghost peeking out from behind the tree nearest the gate
+ * (decisions 2026-11-08). It shows on the walk home at the end of the day,
+ * leaning out past the west edge of the trunk as seen from wherever the
+ * player stands. Coming within `trigger` metres makes it giggle and duck away
+ * for good.
+ */
+export const TREE_PEEK = { x: 12, y: 18, trunk: 0.35, trigger: 9 };
 
 /** Feedback lines that aren't thoughts. */
 export const WRONG_CODE = 'Wrong code. I should check my messages.';
@@ -101,4 +128,4 @@ export const WRONG_CODE = 'Wrong code. I should check my messages.';
 export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
 
 /** Message shown once S1's last objective is done. */
-export const S1_END = 'End of the S1 build. Day 1 continues in S2.';
+export const S1_END = 'End of the S1 build. The rest of Day 1 comes in S2.';

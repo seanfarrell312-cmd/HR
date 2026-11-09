@@ -128,19 +128,48 @@ canvas {
   display: none;
 }
 
-.objective {
+/* Top-right stack: the objective (or its folded hint), then the SMS alert. */
+.top-right {
   position: absolute;
   top: 16px;
   right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.objective-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.objective {
   max-width: min(520px, 46vw);
   padding: 12px 18px 14px;
   background: rgba(8, 10, 12, 0.66);
   border-left: 5px solid #ffd75e;
   text-shadow: 0 1px 2px #000;
-  pointer-events: none;
   opacity: 0;
   transform: translateX(12px);
   transition: opacity 0.35s, transform 0.35s;
+}
+
+/* Whichever of the box and its hint is hidden drops out of the flow, so the
+   SMS alert sits directly under the one on screen. */
+.objective:not(.show),
+.objective-hint:not(.show) {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* Keep its own width while fading out, not the narrower hint's. */
+.objective:not(.show) {
+  width: max-content;
 }
 
 .objective.show {
@@ -172,7 +201,8 @@ canvas {
 }
 
 .objective-hint,
-.inventory-hint {
+.inventory-hint,
+.interact-hint {
   font-size: 22px;
   text-shadow: 0 1px 2px #000, 0 0 4px #000;
   pointer-events: none;
@@ -181,13 +211,12 @@ canvas {
 }
 
 .objective-hint {
-  position: absolute;
-  top: 18px;
-  right: 18px;
+  white-space: nowrap;
 }
 
 .objective-hint.show,
-.inventory-hint.show {
+.inventory-hint.show,
+.interact-hint.show {
   opacity: 0.9;
 }
 
@@ -202,10 +231,23 @@ canvas {
   pointer-events: none;
 }
 
-.phone-alert {
-  font-size: 22px;
-  color: #b8f0a8;
-  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+.sms-alert {
+  display: none;
+  font-size: 26px;
+  font-weight: bold;
+  color: #ff3b30;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000;
+  white-space: nowrap;
+}
+
+.sms-alert.show {
+  display: block;
+  animation: sms-flash 0.9s steps(1, end) infinite;
+}
+
+@keyframes sms-flash {
+  0% { opacity: 1; }
+  60% { opacity: 0.15; }
 }
 
 .subtitle {

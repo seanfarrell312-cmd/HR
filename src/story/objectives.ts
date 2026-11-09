@@ -49,6 +49,14 @@ export const DAY1: Objective[] = [
     done: (s) => s.clock === 'office-desk',
   },
   {
+    // The walk out at the end of the day ("leave grounds", D1-10). In the S1
+    // build it follows the clock; S2 puts D1-07 to D1-09 before it
+    // (decisions 2026-11-08). Shown only once the head-home thought has played.
+    id: 'D1-RETURN',
+    task: (s) => (s.flags.has('heading-home') ? 'Head back to the front gate' : ''),
+    done: (s) => s.flags.has('returned-to-gate'),
+  },
+  {
     id: 'D1-07',
     task: () => S1_END,
     done: () => false,

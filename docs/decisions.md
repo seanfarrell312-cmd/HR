@@ -80,7 +80,7 @@ game. OPTIONS is shown greyed out until there are settings to offer.
 
 | Topic | Ruling |
 |---|---|
-| Chapel door | Opens **out into the nave**, hinged on the north side, so the open door swings clear of the relic table. |
+| Chapel door | Opens out into the nave, hinged on the north side. *Superseded the same day; see "S1 playtest changes, round 2".* |
 | Chapel key | Hangs on hooks **inside the office**, on the wall beside its door, so the player passes the desk and note to reach it. |
 | After the blessing | The clock gives a last falling chime and its shaking dies away; a beat of silence; sparkles drift out of it; then the ghost rises. Timings are in `PURIFY` in `src/data/story.ts` (ghost at 3.9 s). The clock can't be picked up until this finishes. |
 | Text size | All HUD and panel text is larger. |
@@ -102,3 +102,28 @@ rather than a fixed spot, so a player who explores first still hears it.
 
 The letter is long enough to scroll on short screens (mouse wheel or W/S).
 Thoughts now stay up longer the longer they are (at least 3 s).
+
+## 2026-11-08 — S1 playtest changes, round 2
+
+| Topic | Ruling |
+|---|---|
+| SMS alert | "New SMS - Press Q" in flashing red, directly under the objective (or its "(O) View Objectives" hint) in the top-right corner, until the text is read. |
+| Bottom-right hints | "(E) Interact" above "(I) View Inventory". |
+| Gate-code objective | "Enter the code on the gate keypad" appears when the player puts the phone away after reading the text, not as it opens. |
+| Church-approach thought | Now "This place feels so peaceful. Hard to believe they'd need someone like me." |
+| Clock chime | Silent until the church doors first open, then chimes without a break (every 2.4 s, down to 0.9 s with all candles lit). Full volume in the chapel, fading with distance from the chapel door, and muffled in the basement. `chimeVolume` in `src/world/storyProps.ts`. |
+| Chapel door | Opens **into the chapel** again, hinged on the south side, and folds back almost flat against the chapel's west wall into its empty south-west corner. It blocks no item, candle or the circle (tested against the real door mesh). |
+| Ghost thought | "...Huh. Kinda cute." plays once the ghost has risen and faded (about 7.3 s after the blessing), not as it appears. |
+| After the clock | "That wasn't too bad." on placing it. |
+| End of the day | The day ends with the walk out (D1-10, "leave grounds"): the thought "I guess I should head back to the bus stop.", then the objective "Head back to the front gate", completed on reaching the gate (either side of it). **Day 1 keeps D1-07 to D1-09** (chalice, first delivered relic, relic blessing) between the clock and this walk; they arrive in S2. Until then the S1 build plays the walk 5 s after the clock and shows the end-of-build message at the gate. |
+| Tree peek | On the walk home at the end of the day, a smiling ghost peeks out from behind the tree nearest the gate (plan 12, 18). It isn't there on the way in. It stays on the far side of the trunk from the player and leans out past the trunk's west edge, so it's peeking from any angle. Coming within 9 m makes it giggle, duck fully behind the trunk and vanish. One-shot (`d1-tree-peek`); optional. `TREE_PEEK` in `src/data/story.ts`. |
+| Ghost look | Ghosts follow the designer's reference image: lime-green rounded dome, slightly flared wavy hem, tall oval eyes, small smile, soft glow and a wisp of green mist. About the old size (0.9 m). `src/world/ghost.ts`. |
+| Office letter | Replaced with the designer's new text (11 short paragraphs), verbatim. |
+
+### PROVISIONAL (not yet ruled on)
+
+- The walk-out objective has the id `D1-RETURN` for now. In S2 it becomes
+  the "leave grounds" part of D1-10, after the relic is stored, under the
+  evening sky.
+- The peek trigger distance (9 m) and the ghost's hover height are first
+  guesses.
