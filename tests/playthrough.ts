@@ -10,6 +10,7 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'keypad-submit', code: GATE_CODE },
   { type: 'door-opened', id: 'church' },
   { type: 'read-note' },
+  { type: 'close-note' },
   { type: 'take', item: 'chapel-key' },
   // D1-04 and D1-05: prepare the ritual site.
   { type: 'door-opened', id: 'chapel' },
@@ -24,6 +25,8 @@ export const PLAYTHROUGH: StoryEvent[] = [
   // D1-06 and D1-07: bless the clock, take it to the desk.
   { type: 'take', item: 'cross' },
   { type: 'bless-clock' },
+  { type: 'clock-ghost-gone' },
+  { type: 'clock-thought-done' },
   { type: 'pickup-clock' },
   { type: 'place-clock' },
   // D1-08: the delivery.
@@ -31,6 +34,7 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'read-sms' },
   { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
   { type: 'take-relic' },
+  { type: 'relic-pickup-thought-done' },
   { type: 'relic-near-church', x: 0, y: 36, level: 0 },
   // D1-09: the two-stage blessing.
   { type: 'place-relic' },
@@ -41,10 +45,12 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'take', item: 'bible' },
   { type: 'begin-scripture' },
   { type: 'read-scripture' },
+  { type: 'relic-weakened' },
   { type: 'bless-relic' },
   { type: 'relic-ghost-gone' },
   { type: 'relic-thought-done' },
-  // D1-10: store it and leave.
+  // D1-10: Bible back, store the music box and leave.
+  { type: 'return-bible' },
   { type: 'pickup-relic' },
   { type: 'store-relic' },
   { type: 'head-home' },

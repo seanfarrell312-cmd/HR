@@ -112,6 +112,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'crucifix':
       // The standing crucifix on the altar, for the ritual table.
       if (s.inventory.has('crucifix') || s.flags.has('crucifix-staged')) return NONE;
+      // Too early: just its name, and E gives the thought.
+      if (!altarOpen(s)) return story('Crucifix', { type: 'take', item: 'crucifix' });
       return story('E  Take crucifix', { type: 'take', item: 'crucifix' });
     case 'clock': {
       if (s.clock !== 'ritual-table') return NONE;
@@ -133,8 +135,9 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 
     case 'chalice':
       if (s.chalice !== 'altar') return NONE;
-      // Too early, the story answers with a thought instead.
-      if (altarOpen(s) && s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
+      // Too early: just its name, and E gives the thought.
+      if (!altarOpen(s)) return story('Chalice', { type: 'pickup-chalice' });
+      if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
       return story('E  Take the chalice', { type: 'pickup-chalice' });
 
     case 'ritual-table': {
@@ -155,10 +158,13 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       if (s.relic !== 'ritual-table') return NONE;
       if (s.flags.has('relic-blessed')) {
         if (s.held_prop_id) return say('Music box', REMINDERS.handsFull);
+        if (s.inventory.has('bible')) return say('Music box', REMINDERS.bibleBack);
         return story('E  Pick up music box', { type: 'pickup-relic' });
       }
       // Rattling, then the two thoughts: nothing to do until the Bible is wanted.
       if (s.flags.has('relic-rattled') && !s.flags.has('bible-prompted')) return NONE;
+      // Shuddering again after the scripture.
+      if (s.flags.has('scripture-read') && !s.flags.has('relic-weakened')) return NONE;
       if (!tableReady(s)) return say('Music box', REMINDERS.tableNotReady);
       if (!s.inventory.has('cross')) return say('Music box', REMINDERS.needCross);
       if (s.flags.has('relic-rattled') && !s.flags.has('scripture-read')) {

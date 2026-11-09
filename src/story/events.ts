@@ -6,6 +6,8 @@ import {
   GATE_CODE,
   GATE_RETURN,
   HEAD_HOME_DELAY,
+  RATTLE_AGAIN,
+  RATTLE_FIRST,
   RATTLE_SECONDS,
   RELIC_ANNOY,
   REMINDERS,
@@ -33,18 +35,26 @@ export type StoryEvent =
   /** The player's position; fires the church-approach thought once, in range. */
   | { type: 'approach-church'; x: number; y: number; level: number }
   | { type: 'read-note' }
+  /** The note has been put down: the key objective follows. */
+  | { type: 'close-note' }
   | { type: 'take'; item: QuestItem }
   | { type: 'light-candle'; index: number }
   | { type: 'pickup-chalice' }
   /** Set whatever the player carries of the chalice and crucifix out on the ritual table. */
   | { type: 'stage-table' }
   | { type: 'bless-clock' }
+  /** The clock's ghost has risen and gone (from the view's timing). */
+  | { type: 'clock-ghost-gone' }
+  /** Timed, after the clock ghost thought: the desk objective shows. */
+  | { type: 'clock-thought-done' }
   | { type: 'pickup-clock' }
   | { type: 'place-clock' }
   /** The player's position; the drop-box thought once the music box is in it. */
   | { type: 'approach-drop-box'; x: number; y: number; level: number }
   /** Take the delivered relic out of the drop box. */
   | { type: 'take-relic' }
+  /** Timed, after the pickup thought: the ritual table objective shows. */
+  | { type: 'relic-pickup-thought-done' }
   /** The player's position; the "annoying" thought carrying the music box up to the church. */
   | { type: 'relic-near-church'; x: number; y: number; level: number }
   | { type: 'place-relic' }
@@ -60,6 +70,8 @@ export type StoryEvent =
   | { type: 'begin-scripture' }
   /** The scripture has been read and put away. */
   | { type: 'read-scripture' }
+  /** Timed: the shudder after the scripture has stopped; the second blessing can go ahead. */
+  | { type: 'relic-weakened' }
   /** Put the Bible back on its stand once the music box is cleansed. */
   | { type: 'return-bible' }
   /** The music box's ghost has risen and gone (from the view's timing). */
@@ -105,8 +117,8 @@ export type Effect =
   | { kind: 'sms'; id: string }
   /** A blessed relic settles, sparkles, then releases its ghost (timed by the view). */
   | { kind: 'purify'; relic: PurifiedRelic }
-  /** The relic fights the first blessing: a hard rattle that dies down. */
-  | { kind: 'rattle' }
+  /** The relic fights back: a rattle of this strength (1 = the first, hardest) that dies down. */
+  | { kind: 'rattle'; seconds: number; strength: number }
   /** Show the scripture panel (read from the Bible in hand). */
   | { kind: 'open-scripture' }
   | { kind: 'objective'; id: string }
@@ -156,6 +168,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.flags.has('note-read')) return [];
       s.flags.add('note-read');
       out.push({ kind: 'sfx', id: 'paper' });
+      break;
+
+    case 'close-note':
+      if (!s.flags.has('note-read') || s.flags.has('note-closed')) return [];
+      s.flags.add('note-closed');
       break;
 
     case 'take':
@@ -218,6 +235,20 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
     }
 
+    case 'clock-ghost-gone':
+      if (!s.flags.has('clock-blessed') || s.flags.has('clock-ghost-gone')) return [];
+      s.flags.add('clock-ghost-gone');
+      out.push(
+        { kind: 'say', text: THOUGHTS.ghost },
+        { kind: 'after', seconds: afterThought(THOUGHTS.ghost), event: { type: 'clock-thought-done' } },
+      );
+      break;
+
+    case 'clock-thought-done':
+      if (!s.flags.has('clock-ghost-gone') || s.flags.has('clock-thought-done')) return [];
+      s.flags.add('clock-thought-done');
+      break;
+
     case 'pickup-clock':
       if (s.clock !== 'ritual-table' || !s.flags.has('clock-blessed') || s.held_prop_id) return [];
       s.clock = 'held';
@@ -245,7 +276,16 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.relic = 'held';
       s.held_prop_id = 'music-box';
       s.flags.add('drop-box-approached');
-      out.push({ kind: 'sfx', id: 'pickup' }, { kind: 'say', text: THOUGHTS.relicPickup });
+      out.push(
+        { kind: 'sfx', id: 'pickup' },
+        { kind: 'say', text: THOUGHTS.relicPickup },
+        { kind: 'after', seconds: afterThought(THOUGHTS.relicPickup), event: { type: 'relic-pickup-thought-done' } },
+      );
+      break;
+
+    case 'relic-pickup-thought-done':
+      if (s.relic === 'drop-box' || s.relic === 'none' || s.flags.has('relic-pickup-thought-done')) return [];
+      s.flags.add('relic-pickup-thought-done');
       break;
 
     case 'relic-near-church':
@@ -272,13 +312,15 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
         // waits until it has.
         s.flags.add('relic-rattled');
         out.push(
-          { kind: 'rattle' },
+          { kind: 'rattle', ...RATTLE_FIRST },
           { kind: 'sfx', id: 'rattle' },
           { kind: 'after', seconds: RATTLE_SECONDS + THOUGHT_BEAT, event: { type: 'relic-settled' } },
         );
         break;
       }
       if (!s.flags.has('relic-settled') || !s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
+      // Still shuddering after the scripture.
+      if (!s.flags.has('relic-weakened')) return [];
       // Scripture, then cross again: the spirit is released.
       s.flags.add('relic-blessed');
       s.fired_scares.push('d1-relic-ghost');
@@ -320,6 +362,17 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       // Counts once the scripture has been opened and then put away.
       if (!s.flags.has('scripture-opened') || s.flags.has('scripture-read')) return [];
       s.flags.add('scripture-read');
+      // The spirit shudders again, weaker: the next blessing will hold.
+      out.push(
+        { kind: 'rattle', ...RATTLE_AGAIN },
+        { kind: 'sfx', id: 'rattle' },
+        { kind: 'after', seconds: RATTLE_AGAIN.seconds + THOUGHT_BEAT, event: { type: 'relic-weakened' } },
+      );
+      break;
+
+    case 'relic-weakened':
+      if (!s.flags.has('scripture-read') || s.flags.has('relic-weakened')) return [];
+      s.flags.add('relic-weakened');
       break;
 
     case 'return-bible':
@@ -345,6 +398,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'pickup-relic':
       if (s.relic !== 'ritual-table' || !s.flags.has('relic-blessed')) return [];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      // The Bible goes back on its stand before the music box comes away.
+      if (s.inventory.has('bible')) return flash(REMINDERS.bibleBack);
       s.relic = 'held';
       s.held_prop_id = 'music-box';
       out.push({ kind: 'sfx', id: 'pickup' });

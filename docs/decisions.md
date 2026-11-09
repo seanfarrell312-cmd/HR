@@ -275,3 +275,33 @@ Every timed beat after a thought waits for that thought's time on screen
 - **The pause** between "so late" clearing and the head-home thought is 2 s.
 - **Copy fixes.** I corrected spelling and capitals in the designer lines
   ("chalice", "I", "Let's", "likes"). "Woah" is kept as written.
+
+## 2026-11-09 — S2 playtest changes, round 3
+
+Designer rulings:
+
+| Topic | Ruling |
+|---|---|
+| Altar pieces, too early | Their prompt is just "Chalice" / "Crucifix" (no "Take") until D1-05 asks for them. E still gives the thought. |
+| Chapel key objective | Appears only once the office note has been put down, not while it is being read. |
+| Clock to the desk | "Put the clock on the supervisor's desk" appears after "...Huh. Kinda cute." has played. |
+| Bible stand | Back in its original spot just outside the circle's north-east corner. It moves into the circle on later days. Replaces round 2's spot between the eastern candles. |
+| Music box pickup | "Put the music box on the ritual table" waits until "An old music box..." has played. |
+| After the scripture | Closing the scripture makes the music box shudder again, to show the next blessing will work. "Bless the music box again" waits until it stops. |
+| After the blessing | New step before storing it: "Put the Bible back on the stand and pick up the music box", then "Put the music box on the table outside the chapel". |
+
+### PROVISIONAL (not yet ruled on)
+
+- **The second shudder** is weaker and shorter than the first: 55% strength
+  for 1.1 s, against 100% for 1.6 s. It uses the same rattle sound. The bless
+  prompt returns 0.4 s after it stops. No thought goes with it.
+- **The Bible must go back first.** Picking up the music box with the Bible
+  still in hand gives "I should put the Bible back on its stand first." This
+  replaces round 2's optional put-back.
+- **The new step is part of D1-10**, not a new objective number, so the doc's
+  D1-01 to D1-10 numbering is unchanged.
+- **Copy.** "Put the Bible back on the stand and pick up the music box": the
+  designer's "bible" and "Music Box" are written to match the other lines.
+- **The Bible stand** is the slim wooden one from round 2, at the original
+  footprint (x 11.8 to 12.3, y 54.4 to 54.9), 1.1 m tall. The open Bible on
+  it turns to face the centre of the circle.

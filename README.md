@@ -93,10 +93,13 @@ The church layout follows
   code, the ritual needs its preconditions and the holy circle, the ghost and
   every objective fire once even when every event is spammed, and D1-01 to
   D1-10 complete in order.
-- `tests/day1-s2.test.ts`: the S2 stage tests. The altar pieces stay put
-  until the objective asks, the table is set before the first blessing, the
-  Bible comes off its stand only when wanted and the next objective waits for
-  the scripture to close, no objective lands on top of its thought, the
+- `tests/day1-s2.test.ts`: the S2 stage tests. The key objective waits for
+  the note to be put down, the altar pieces stay put (and show only their
+  names) until the objective asks, the table is set before the first
+  blessing, the Bible comes off its stand only when wanted, the music box
+  shudders again after the scripture before the second blessing, the Bible
+  goes back before the music box comes away, no objective lands on top of its
+  thought, the
   delivery and relic can't be taken early or two at a time, each music box
   thought fires once and in order, the two-stage blessing needs scripture
   between holds, the evening and the shift end happen once, and the Day 2

@@ -49,8 +49,8 @@ export const SPOTS = {
   chaliceRitual: { x: 13.83, y: 52.65, z: 0.9 },
   crucifixRitual: { x: 13.83, y: 53.95, z: 0.9 },
   relicRitual: { x: 13.83, y: 53.3, z: 0.9 },
-  /** The Bible, lying open on top of its stand. */
-  bible: { x: 12.37, y: 53.1, z: 1.0 },
+  /** The Bible, lying open on top of its stand, just outside the circle. */
+  bible: { x: 12.05, y: 54.65, z: 1.1 },
   /** Cleaned-relic table outside the chapel door. */
   relicStored: { x: 7.4, y: 51.05, z: 0.85 },
   /** Inside the drop box at the gate, where the music box is heard from. */
@@ -145,6 +145,7 @@ export const REMINDERS = {
   needCross: 'I need the cross from the shelf.',
   scriptureFirst: 'I should read it some scripture first.',
   bibleFirst: 'I need the Bible from the stand.',
+  bibleBack: 'I should put the Bible back on its stand first.',
   standInCircle: 'I should stand in the holy circle.',
 };
 
@@ -160,6 +161,15 @@ export const SCRIPTURE = {
 
 /** Seconds the music box rattles against the first blessing before it is still. */
 export const RATTLE_SECONDS = 1.6;
+
+/**
+ * Once the scripture has been read the music box shudders again, weaker and
+ * shorter: the spirit is losing, so the next blessing will hold (S2 playtest,
+ * round 3). The bless prompt waits until it has stopped.
+ */
+export const RATTLE_AGAIN = { seconds: 1.1, strength: 0.55 };
+/** The first blessing's rattle, for the view. */
+export const RATTLE_FIRST = { seconds: RATTLE_SECONDS, strength: 1 };
 
 /** Seconds after the rattle stops before the "shut it up" thought. */
 export const THOUGHT_BEAT = 0.4;

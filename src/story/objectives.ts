@@ -26,7 +26,8 @@ export const DAY1: Objective[] = [
   },
   {
     id: 'D1-03',
-    task: (s) => (s.flags.has('note-read') ? 'Take the chapel key from the hooks by the office door' : 'Read the note on the office desk'),
+    // The key line follows once the note has been read and put down.
+    task: (s) => (s.flags.has('note-closed') ? 'Take the chapel key from the hooks by the office door' : 'Read the note on the office desk'),
     done: (s) => s.flags.has('note-read') && s.inventory.has('chapel-key'),
   },
   {
@@ -62,7 +63,8 @@ export const DAY1: Objective[] = [
   },
   {
     id: 'D1-07',
-    task: () => "Put the clock on the supervisor's desk",
+    // Waits until the ghost has gone and its thought has played.
+    task: (s) => (s.flags.has('clock-thought-done') ? "Put the clock on the supervisor's desk" : ''),
     done: (s) => s.clock === 'office-desk',
   },
   {
@@ -79,13 +81,16 @@ export const DAY1: Objective[] = [
   {
     id: 'D1-09',
     task: (s) => {
-      if (s.relic === 'held') return 'Put the music box on the ritual table';
+      // The pickup thought plays before the next line.
+      if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the music box on the ritual table' : '';
       if (!s.flags.has('relic-rattled')) return 'Stand in the holy circle and bless the music box';
       // Nothing new while it rattles and the two thoughts play out.
       if (!s.flags.has('bible-prompted')) return '';
       if (!s.inventory.has('bible') && !s.flags.has('scripture-read')) return 'Pick up the Bible from the stand';
       // Shown again only once the scripture has been read and put away.
       if (!s.flags.has('scripture-read')) return 'Read the music box some scripture';
+      // Nothing new while it shudders after the scripture.
+      if (!s.flags.has('relic-weakened')) return '';
       return 'Bless the music box again';
     },
     done: (s) => s.flags.has('relic-blessed'),
@@ -99,9 +104,8 @@ export const DAY1: Objective[] = [
       if (s.relic === 'relic-table') return s.flags.has('gate-prompted') ? 'Head back to the front gate' : '';
       // Waits until the ghost has gone and the wink thought has played.
       if (!s.flags.has('relic-thought-done')) return '';
-      return s.relic === 'held'
-        ? 'Put the music box on the table outside the chapel'
-        : 'Take the music box to the table outside the chapel';
+      if (s.relic === 'held') return 'Put the music box on the table outside the chapel';
+      return 'Put the Bible back on the stand and pick up the music box';
     },
     done: (s) => s.flags.has('returned-to-gate'),
   },

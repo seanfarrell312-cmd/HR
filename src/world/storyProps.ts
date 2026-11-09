@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { AREAS, DOORS, toWorld } from '../data/layout';
-import { CANDLES, PURIFY, RATTLE_SECONDS, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
+import { CANDLES, HOLY_CIRCLE, PURIFY, RATTLE_SECONDS, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
 import type { GameState } from '../state/store';
 import type { PurifiedRelic } from '../story/events';
 import { siteReady } from '../story/table';
@@ -77,6 +77,9 @@ function standingCrucifixModel(): THREE.Group {
  * A Bible lying open: a dark red cover with two pages rising in a shallow V.
  * Spine along local z; read from the +z edge.
  */
+/** Turn of the Bible on its stand so its reading edge faces the circle centre. */
+const BIBLE_FACING = Math.atan2(HOLY_CIRCLE.x - SPOTS.bible.x, -(HOLY_CIRCLE.y - SPOTS.bible.y));
+
 function openBookModel(): THREE.Group {
   const g = new THREE.Group();
   const cover = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.22), lambert('#5a1e1e'));
@@ -230,6 +233,7 @@ export class StoryProps {
   /** Which relic the current ghost came from (the music box ghost winks). */
   private relicGhostOf: PurifiedRelic = 'clock';
   private rattleT = -1;
+  private rattle = { seconds: RATTLE_SECONDS, strength: 1 };
   private tuneTimer = 1;
   /** The ghost peeking from behind the tree near the gate. */
   private peeker: GhostModel;
@@ -259,9 +263,9 @@ export class StoryProps {
     this.chalice = tagged(chaliceModel(), 'chalice');
     this.crucifix = tagged(standingCrucifixModel(), 'crucifix');
     this.bible = tagged(at(openBookModel(), SPOTS.bible), 'bible');
-    // Facing the reader in the circle (west), tilted up towards them.
+    // Facing the reader in the circle, tilted up towards them.
     this.bible.rotation.order = 'YXZ';
-    this.bible.rotation.set(0.3, -Math.PI / 2, 0);
+    this.bible.rotation.set(0.3, BIBLE_FACING, 0);
     this.musicBox = musicBoxModel();
     tagged(this.musicBox.group, 'music-box');
 
@@ -363,9 +367,10 @@ export class StoryProps {
     return this.purification !== null;
   }
 
-  /** The music box fights the first blessing: a hard rattle that dies away. */
-  startRattle(): void {
+  /** The music box fights back: a rattle that dies away (strength 1 = the first blessing's). */
+  startRattle(seconds = RATTLE_SECONDS, strength = 1): void {
     this.rattleT = 0;
+    this.rattle = { seconds, strength };
   }
 
   startPurification(relic: PurifiedRelic): void {
@@ -534,10 +539,10 @@ export class StoryProps {
 
     if (this.rattleT >= 0) {
       this.rattleT += fxDt;
-      const k = Math.max(0, 1 - this.rattleT / RATTLE_SECONDS);
+      const k = Math.max(0, 1 - this.rattleT / this.rattle.seconds) * this.rattle.strength;
       shake = Math.max(shake, 1.6 * k);
-      lid = LID_OPEN - Math.abs(Math.sin(now * 31)) * 0.9 * k;
-      if (this.rattleT >= RATTLE_SECONDS) this.rattleT = -1;
+      lid = Math.min(lid, LID_OPEN) - Math.abs(Math.sin(now * 31)) * 0.9 * k;
+      if (this.rattleT >= this.rattle.seconds) this.rattleT = -1;
     }
     // Blessed: the last of the shaking dies away and the lid eases shut.
     const p = this.purification;

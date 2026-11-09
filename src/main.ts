@@ -4,7 +4,7 @@ import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
 import { environmentLook } from './data/environment';
 import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS, THOUGHTS } from './data/story';
+import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS } from './data/story';
 import { PlayerController } from './player/controller';
 import { createInitialState, type EnvironmentPreset, type GameState } from './state/store';
 import { startDay } from './story/day';
@@ -83,12 +83,9 @@ props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onTune = (volume) => sfx.tune(volume);
 props.onCue = (cue, relic) => {
   if (cue === 'ghost') sfx.play('release');
-  // The thought waits until the ghost has risen and gone. The music box's
-  // also brings on its next objective, so it goes through the story.
-  else if (cue === 'ghost-gone') {
-    if (relic === 'clock') hud.say(THOUGHTS.ghost);
-    else dispatch({ type: 'relic-ghost-gone' });
-  }
+  // The thought waits until the ghost has risen and gone; it goes through the
+  // story because the next objective waits for it in turn.
+  else if (cue === 'ghost-gone') dispatch({ type: relic === 'clock' ? 'clock-ghost-gone' : 'relic-ghost-gone' });
   else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : 'box-wind-down');
   else sfx.play(cue);
 };
@@ -147,7 +144,7 @@ function handleEffect(e: Effect): void {
       props.startPurification(e.relic);
       break;
     case 'rattle':
-      props.startRattle();
+      props.startRattle(e.seconds, e.strength);
       break;
     case 'open-scripture':
       openPanel('bible');
@@ -254,6 +251,8 @@ function closePanel(): void {
   if (panel === 'phone') dispatch({ type: 'read-sms' });
   // The next step of the blessing follows once the scripture has been read and closed.
   if (panel === 'bible') dispatch({ type: 'read-scripture' });
+  // The key objective follows once the note has been read and put down.
+  if (panel === 'note') dispatch({ type: 'close-note' });
   panel = null;
   player.frozen = false;
   hud.closePanel();

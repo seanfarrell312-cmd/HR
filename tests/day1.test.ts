@@ -230,7 +230,8 @@ describe('Day 1 playthrough', () => {
     expect(s.inbox).toEqual(['gateCode', 'delivery1']);
     expect(s.candles_lit.size).toBe(4);
     expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(2);
-    expect(fx.filter((f) => f.kind === 'rattle')).toHaveLength(1);
+    // Once for the first blessing, once after the scripture.
+    expect(fx.filter((f) => f.kind === 'rattle')).toHaveLength(2);
     expect(fx.filter((f) => f.kind === 'open-door')).toHaveLength(1);
     expect(fx.filter((f) => f.kind === 'end-day')).toHaveLength(1);
     expect(s.fired_scares).toEqual(['d1-clock-ghost', 'd1-relic-ghost']);
