@@ -14,14 +14,18 @@ export const PLAYTHROUGH: StoryEvent[] = [
   { type: 'take', item: 'chapel-key' },
   // D1-04 and D1-05: prepare the ritual site.
   { type: 'door-opened', id: 'chapel' },
+  { type: 'chapel-thought-done' },
   { type: 'take', item: 'matches' },
   { type: 'light-candle', index: 0 },
   { type: 'light-candle', index: 1 },
   { type: 'light-candle', index: 2 },
   { type: 'light-candle', index: 3 },
+  { type: 'candles-thought-done' },
   { type: 'pickup-chalice' },
   { type: 'take', item: 'crucifix' },
   { type: 'stage-table' },
+  { type: 'now-cooking' },
+  { type: 'cross-prompt' },
   // D1-06 and D1-07: bless the clock, take it to the desk.
   { type: 'take', item: 'cross' },
   { type: 'bless-clock' },

@@ -16,7 +16,9 @@ export interface Objective {
 export const DAY1: Objective[] = [
   {
     id: 'D1-01',
-    task: (s) => (s.sms_read.has('gateCode') ? 'Enter the code on the gate keypad' : 'Check your phone (Q)'),
+    // Nothing until the text arrives, a few seconds into the day.
+    task: (s) =>
+      !s.inbox.includes('gateCode') ? '' : s.sms_read.has('gateCode') ? 'Enter the code on the gate keypad' : 'Check your phone (Q)',
     done: (s) => s.flags.has('gate-unlocked'),
   },
   {
@@ -35,6 +37,8 @@ export const DAY1: Objective[] = [
     id: 'D1-04',
     task: (s) => {
       if (!s.flags.has('chapel-opened')) return 'Unlock the chapel';
+      // The chapel-door thought plays first.
+      if (!s.flags.has('chapel-thought-done')) return '';
       if (!s.inventory.has('matches')) return 'Pick up the matches from the shelf';
       return `Light the candles around the holy circle (${s.candles_lit.size}/4)`;
     },
@@ -46,6 +50,8 @@ export const DAY1: Objective[] = [
     // pieces only come away once this objective is current.
     id: 'D1-05',
     task: (s) => {
+      // The candles thought plays first.
+      if (!s.flags.has('candles-thought-done')) return '';
       const chaliceAtAltar = s.chalice === 'altar';
       const crucifixAtAltar = !s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
       if (chaliceAtAltar && crucifixAtAltar) return 'Fetch the chalice and crucifix from the altar';
@@ -57,8 +63,13 @@ export const DAY1: Objective[] = [
   },
   {
     id: 'D1-06',
+    // "Now we're cooking." and a pause first.
     task: (s) =>
-      s.inventory.has('cross') ? 'Stand in the holy circle and bless the clock' : 'Take the cross from the chapel shelf',
+      !s.flags.has('cross-prompted')
+        ? ''
+        : s.inventory.has('cross')
+          ? 'Stand in the holy circle and bless the clock'
+          : 'Take the cross from the chapel shelf',
     done: (s) => s.flags.has('clock-blessed'),
   },
   {

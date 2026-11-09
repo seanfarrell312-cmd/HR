@@ -138,6 +138,7 @@ describe('candles, table and blessing (D1-04 to D1-06)', () => {
     applyEvent(s, { type: 'take', item: 'matches' });
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
+    applyEvent(s, { type: 'candles-thought-done' });
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
     run(s, [{ type: 'pickup-chalice' }, { type: 'take', item: 'crucifix' }, { type: 'stage-table' }]);
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
@@ -150,6 +151,7 @@ describe('candles, table and blessing (D1-04 to D1-06)', () => {
     const s = playedTo(step('take', 2), createInitialState());
     run(s, [{ type: 'take', item: 'matches' }, { type: 'take', item: 'cross' }]);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
+    applyEvent(s, { type: 'candles-thought-done' });
     run(s, [{ type: 'pickup-chalice' }, { type: 'take', item: 'crucifix' }, { type: 'stage-table' }]);
     const outside = { x: 9, y: 52.7, level: 0 as const };
     expect(inHolyCircle(outside)).toBe(false);

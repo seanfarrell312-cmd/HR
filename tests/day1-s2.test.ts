@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { ENVIRONMENTS } from '../src/data/environment';
 import {
   afterThought,
+  COOKING_BEAT,
+  CROSS_PAUSE,
   DELIVERY_DELAY,
+  GATE_TEXT_DELAY,
   HEAD_HOME_DELAY,
   HOLY_CIRCLE,
   RATTLE_AGAIN,
@@ -32,6 +35,22 @@ const inside = { x: 3.7, y: 1.2, level: 0 as const };
 const flashes = (fx: Effect[]) => fx.filter((f) => f.kind === 'flash').map((f) => (f as { text: string }).text);
 const says = (fx: Effect[]) => fx.filter((f) => f.kind === 'say').map((f) => (f as { text: string }).text);
 
+describe('arrival (D1-01)', () => {
+  it('shows no objective until the gate-code text arrives', () => {
+    const s = createInitialState();
+    expect(currentObjective(s).task(s)).toBe('');
+    applyEvent(s, { type: 'receive-sms', id: 'gateCode' });
+    expect(currentObjective(s).task(s)).toBe('Check your phone (Q)');
+    applyEvent(s, { type: 'read-sms' });
+    expect(currentObjective(s).task(s)).toBe('Enter the code on the gate keypad');
+  });
+
+  it('sends the text after the day card and the control guide', () => {
+    // Day card and guide at 3.2 s; the text a few seconds after.
+    expect(GATE_TEXT_DELAY).toBeGreaterThanOrEqual(3.2 + 3);
+  });
+});
+
 describe('the note and the key (D1-03)', () => {
   it('asks for the key only once the note has been put down', () => {
     const s = at(step('read-note'));
@@ -57,7 +76,14 @@ describe('into the chapel (D1-04)', () => {
     expect(s.objective_id).toBe('D1-04');
     expect(currentObjective(s).task(s)).toBe('Unlock the chapel');
     s.open_doors.add('chapel');
-    applyEvent(s, { type: 'door-opened', id: 'chapel' });
+    const fx = applyEvent(s, { type: 'door-opened', id: 'chapel' });
+    expect(says(fx)).toEqual([THOUGHTS.chapelOpen]);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.chapelOpen), event: { type: 'chapel-thought-done' } });
+    // Opening it again says nothing more.
+    expect(applyEvent(s, { type: 'door-opened', id: 'chapel' })).toEqual([]);
+    // The matches line waits for the thought.
+    expect(currentObjective(s).task(s)).toBe('');
+    applyEvent(s, { type: 'chapel-thought-done' });
     expect(currentObjective(s).task(s)).toBe('Pick up the matches from the shelf');
     applyEvent(s, { type: 'take', item: 'matches' });
     expect(currentObjective(s).task(s)).toBe('Light the candles around the holy circle (0/4)');
@@ -79,6 +105,49 @@ describe('preparing the ritual table (D1-05)', () => {
     // Even with full hands, the thought rather than "my hands are full".
     s.held_prop_id = 'clock';
     expect(resolve('item:chalice', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'pickup-chalice' } });
+  });
+
+  it('thinks about the energies after the last candle, then asks for the altar pieces', () => {
+    const s = at(step('light-candle', 4));
+    const fx = applyEvent(s, { type: 'light-candle', index: 3 });
+    expect(says(fx)).toEqual([THOUGHTS.candlesLit]);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.candlesLit), event: { type: 'candles-thought-done' } });
+    expect(s.objective_id).toBe('D1-05');
+    // Not yet: the thought is still playing.
+    expect(currentObjective(s).task(s)).toBe('');
+    expect(applyEvent(s, { type: 'pickup-chalice' })).toEqual([{ kind: 'say', text: THOUGHTS.chaliceEarly }]);
+    expect(resolve('item:chalice', s, inCircle).prompt).toBe('Chalice');
+    applyEvent(s, { type: 'candles-thought-done' });
+    expect(currentObjective(s).task(s)).toBe('Fetch the chalice and crucifix from the altar');
+    expect(resolve('item:chalice', s, inCircle).prompt).toBe('E  Take the chalice');
+  });
+
+  it("says \"Now we're cooking\" once the table is set, then pauses before the cross", () => {
+    const s = at(step('stage-table'));
+    const fx = applyEvent(s, { type: 'stage-table' });
+    expect(says(fx)).toEqual([]);
+    expect(fx).toContainEqual({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
+    expect(s.objective_id).toBe('D1-06');
+    expect(currentObjective(s).task(s)).toBe('');
+    const cooking = applyEvent(s, { type: 'now-cooking' });
+    expect(says(cooking)).toEqual([THOUGHTS.tableSet]);
+    expect(cooking).toContainEqual({
+      kind: 'after',
+      seconds: afterThought(THOUGHTS.tableSet) + CROSS_PAUSE,
+      event: { type: 'cross-prompt' },
+    });
+    expect(applyEvent(s, { type: 'now-cooking' })).toEqual([]);
+    expect(currentObjective(s).task(s)).toBe('');
+    applyEvent(s, { type: 'cross-prompt' });
+    expect(currentObjective(s).task(s)).toBe('Take the cross from the chapel shelf');
+  });
+
+  it('only thinks "cooking" once both pieces are down', () => {
+    const s = at(step('pickup-chalice'));
+    applyEvent(s, { type: 'pickup-chalice' });
+    const fx = applyEvent(s, { type: 'stage-table' });
+    expect(fx.filter((f) => f.kind === 'after')).toEqual([]);
+    expect(applyEvent(s, { type: 'now-cooking' })).toEqual([]);
   });
 
   it('offers to take the altar pieces once the objective asks', () => {

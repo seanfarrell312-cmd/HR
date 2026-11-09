@@ -305,3 +305,31 @@ Designer rulings:
 - **The Bible stand** is the slim wooden one from round 2, at the original
   footprint (x 11.8 to 12.3, y 54.4 to 54.9), 1.1 m tall. The open Bible on
   it turns to face the centre of the circle.
+
+## 2026-11-09 — S2 playtest changes, round 4
+
+Designer rulings:
+
+| Topic | Ruling |
+|---|---|
+| Arrival | Day card, bus pulling away, control guide, then the gate-code text's alert and the "Check your phone (Q)" objective. No objective shows before the text arrives. |
+| Chapel door | Opening it on Day 1: "That must be the clock." |
+| Candles | Lighting the fourth: "Hmm, maybe a little something extra to get the energies right." Then the chalice and crucifix objective. |
+| Table set | Once both pieces are down and the clock chimes harder: "Now we're cooking." A pause, then the cross objective. |
+
+As before, each objective after one of these thoughts waits until the
+thought has cleared, plus 0.6 s. That includes the matches line after the
+chapel door, which the designer didn't mention.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Text timing.** The gate-code text arrives 6.5 s into the day. The day
+  card fades at 3.2 s, when the guide appears, and the bus is out of sight by
+  then. Day 2 uses the same delay, with no guide.
+- **"Now we're cooking."** It comes 1.2 s after the table is set, so a couple
+  of the faster chimes are heard first. The pause after it is 1.5 s, on top
+  of the usual gap.
+- **The altar pieces** open only once the candles thought has played: they
+  show "Chalice" / "Crucifix" until the objective appears.
+- **Day 1 only.** The three new thoughts are tied to Day 1 for now. Later
+  days get their own lines in S3.

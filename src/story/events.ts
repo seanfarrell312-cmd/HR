@@ -1,6 +1,8 @@
 import {
   afterThought,
   CHURCH_APPROACH,
+  COOKING_BEAT,
+  CROSS_PAUSE,
   DELIVERY_DELAY,
   DROP_BOX_APPROACH,
   GATE_CODE,
@@ -39,6 +41,14 @@ export type StoryEvent =
   | { type: 'close-note' }
   | { type: 'take'; item: QuestItem }
   | { type: 'light-candle'; index: number }
+  /** Timed, after the chapel-door thought: the matches objective shows. */
+  | { type: 'chapel-thought-done' }
+  /** Timed, after the candles thought: the altar pieces are asked for. */
+  | { type: 'candles-thought-done' }
+  /** Timed, a beat after the table is set: "Now we're cooking." */
+  | { type: 'now-cooking' }
+  /** Timed, a pause after that thought: the cross objective shows. */
+  | { type: 'cross-prompt' }
   | { type: 'pickup-chalice' }
   /** Set whatever the player carries of the chalice and crucifix out on the ritual table. */
   | { type: 'stage-table' }
@@ -214,6 +224,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
         s.flags.add('crucifix-staged');
       }
       out.push({ kind: 'sfx', id: 'place' });
+      // Both down on Day 1: the clock chimes harder, then the thought.
+      if (tableReady(s) && s.day_index === 1) out.push({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
       break;
     }
 
@@ -222,6 +234,37 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (!s.inventory.has('matches')) return flash('I need the matches from the shelf.');
       s.candles_lit.add(e.index);
       out.push({ kind: 'sfx', id: 'strike' });
+      // The last candle: a thought, then the altar pieces are asked for.
+      if (s.candles_lit.size === 4 && s.day_index === 1) {
+        out.push(
+          { kind: 'say', text: THOUGHTS.candlesLit },
+          { kind: 'after', seconds: afterThought(THOUGHTS.candlesLit), event: { type: 'candles-thought-done' } },
+        );
+      }
+      break;
+
+    case 'candles-thought-done':
+      if (s.candles_lit.size < 4 || s.flags.has('candles-thought-done')) return [];
+      s.flags.add('candles-thought-done');
+      break;
+
+    case 'chapel-thought-done':
+      if (!s.flags.has('chapel-opened') || s.flags.has('chapel-thought-done')) return [];
+      s.flags.add('chapel-thought-done');
+      break;
+
+    case 'now-cooking':
+      if (!tableReady(s) || s.flags.has('cooking-said')) return [];
+      s.flags.add('cooking-said');
+      out.push(
+        { kind: 'say', text: THOUGHTS.tableSet },
+        { kind: 'after', seconds: afterThought(THOUGHTS.tableSet) + CROSS_PAUSE, event: { type: 'cross-prompt' } },
+      );
+      break;
+
+    case 'cross-prompt':
+      if (!s.flags.has('cooking-said') || s.flags.has('cross-prompted')) return [];
+      s.flags.add('cross-prompted');
       break;
 
     case 'bless-clock': {
@@ -449,8 +492,16 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'door-opened':
-      // Only matters for objectives; the door itself is already open.
-      if (e.id === 'chapel') s.flags.add('chapel-opened');
+      // Only matters for the story; the door itself is already open.
+      if (e.id === 'chapel' && !s.flags.has('chapel-opened')) {
+        s.flags.add('chapel-opened');
+        if (s.day_index === 1) {
+          out.push(
+            { kind: 'say', text: THOUGHTS.chapelOpen },
+            { kind: 'after', seconds: afterThought(THOUGHTS.chapelOpen), event: { type: 'chapel-thought-done' } },
+          );
+        }
+      }
       break;
   }
 
@@ -479,7 +530,7 @@ export function blessBlocker(s: GameState): string | null {
  * own rules in S3.
  */
 export function altarOpen(s: GameState): boolean {
-  return s.objective_id === 'D1-05';
+  return s.objective_id === 'D1-05' && s.flags.has('candles-thought-done');
 }
 
 const near = (p: { x: number; y: number; level: number }, c: { x: number; y: number; r: number }): boolean =>

@@ -4,7 +4,7 @@ import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
 import { environmentLook } from './data/environment';
 import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS } from './data/story';
+import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, GATE_TEXT_DELAY, OFFICE_NOTE, S2_END, SCRIPTURE, SMS } from './data/story';
 import { PlayerController } from './player/controller';
 import { createInitialState, type EnvironmentPreset, type GameState } from './state/store';
 import { startDay } from './story/day';
@@ -23,8 +23,6 @@ import { zoneAt } from './world/zones';
 const REACH = 2.9;
 /** Seconds to fade to black at the end of a shift, and back in. */
 const DAY_FADE = 1.4;
-/** Seconds after arrival before the supervisor's text comes in. */
-const SMS_DELAY = 2.5;
 /** Seconds the day card is on screen (matches the CSS title-fade animation). */
 const TITLE_SECONDS = 3.2;
 
@@ -173,7 +171,7 @@ function beginDay(): void {
   if (state.day_index === 1) hud.showGuide(CONTROLS_GUIDE.lines, TITLE_SECONDS, CONTROLS_GUIDE.seconds);
   else hud.hideGuide();
   sfx.engine(5);
-  smsTimer = SMS_DELAY;
+  smsTimer = GATE_TEXT_DELAY;
 }
 
 /** Put the world in step with a fresh day's state: doors shut, effects cleared, player at the gate. */

@@ -115,6 +115,13 @@ export const THOUGHTS = {
   gateOpen: 'Nice, it worked.',
   churchApproach: "This place feels so peaceful. Hard to believe they'd need someone like me.",
   keyBeforeNote: 'Huh, a key. I should really read the note they left me first.',
+  // Designer copy, 2026-11-09 playtest round 4.
+  /** As the chapel door opens on Day 1. */
+  chapelOpen: 'That must be the clock.',
+  /** Once the fourth candle is lit; then the altar pieces are asked for. */
+  candlesLit: 'Hmm, maybe a little something extra to get the energies right.',
+  /** Once the table is set and the clock starts chiming harder. */
+  tableSet: "Now we're cooking.",
   ghost: '...Huh. Kinda cute.',
   clockPlaced: "That wasn't too bad.",
   // S2 lines (designer copy, 2026-11-09 playtest).
@@ -185,6 +192,18 @@ export function thoughtSeconds(text: string): number {
 export const THOUGHT_GAP = 0.6;
 /** Seconds after a thought before what follows it. */
 export const afterThought = (text: string): number => thoughtSeconds(text) + THOUGHT_GAP;
+
+/**
+ * Seconds from arrival to the supervisor's gate-code text and the first
+ * objective: after the day card (3.2 s), the bus pulling away and the control
+ * guide (from 3.2 s), so each lands on its own (S2 playtest round 4).
+ */
+export const GATE_TEXT_DELAY = 6.5;
+
+/** Seconds after the table is set, as the clock chimes harder, before "Now we're cooking." */
+export const COOKING_BEAT = 1.2;
+/** Pause between "Now we're cooking." clearing and the cross objective. */
+export const CROSS_PAUSE = 1.5;
 
 /** Pause between the "so late" thought clearing and the head-home thought. */
 export const LATE_PAUSE = 2;

@@ -93,7 +93,9 @@ The church layout follows
   code, the ritual needs its preconditions and the holy circle, the ghost and
   every objective fire once even when every event is spammed, and D1-01 to
   D1-10 complete in order.
-- `tests/day1-s2.test.ts`: the S2 stage tests. The key objective waits for
+- `tests/day1-s2.test.ts`: the S2 stage tests. No objective shows before the
+  gate-code text, the chapel, candle and table thoughts each play before the
+  objective that follows them, the key objective waits for
   the note to be put down, the altar pieces stay put (and show only their
   names) until the objective asks, the table is set before the first
   blessing, the Bible comes off its stand only when wanted, the music box
