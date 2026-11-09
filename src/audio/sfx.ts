@@ -54,6 +54,15 @@ export class Sfx {
         this.tone('sine', 110, 0, 0.18, 0.5);
         this.hiss(0, 0.06, 600, 0.3);
         break;
+      case 'wind-down':
+        // One last chime that sags in pitch and dies, then the clock's works stop.
+        this.glide('sine', 880, 560, 0, 1.3, 0.22);
+        this.glide('sine', 1318, 840, 0, 1.0, 0.08);
+        this.tone('square', 90, 1.35, 0.06, 0.12);
+        break;
+      case 'sparkle':
+        for (let i = 0; i < 9; i++) this.tone('sine', 1900 + Math.random() * 1500, i * 0.11, 0.35, 0.05);
+        break;
       case 'paper':
         this.hiss(0, 0.08, 4000, 0.25);
         this.hiss(0.12, 0.08, 3500, 0.2);
@@ -97,6 +106,22 @@ export class Sfx {
     const osc = ctx.createOscillator();
     osc.type = type;
     osc.frequency.value = freq;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(level, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    osc.connect(gain).connect(this.master);
+    osc.start(t);
+    osc.stop(t + length);
+  }
+
+  private glide(type: OscillatorType, from: number, to: number, delay: number, length: number, level: number): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, t);
+    osc.frequency.exponentialRampToValueAtTime(to, t + length);
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(level, t);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + length);

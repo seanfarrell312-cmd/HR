@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GATE_CODE, HOLY_CIRCLE } from '../src/data/story';
+import { CHURCH_APPROACH, GATE_CODE, HOLY_CIRCLE, THOUGHTS } from '../src/data/story';
 import { createInitialState, type GameState } from '../src/state/store';
 import { applyEvent, type Effect, type StoryEvent } from '../src/story/events';
 import { HoldMeter } from '../src/story/hold';
@@ -40,6 +40,38 @@ function withChurchOpen(s: GameState, events: StoryEvent[]): Effect[] {
     return applyEvent(s, e);
   });
 }
+
+describe('church-approach thought', () => {
+  const unlocked = () => {
+    const s = createInitialState();
+    applyEvent(s, { type: 'keypad-submit', code: GATE_CODE });
+    return s;
+  };
+  const say = (fx: Effect[]) => fx.filter((f) => f.kind === 'say');
+
+  it('stays quiet out of range, outside the gate, or below ground', () => {
+    const s = unlocked();
+    expect(applyEvent(s, { type: 'approach-church', x: 0, y: 2, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'approach-church', x: -38, y: 28, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'approach-church', x: 0, y: 55, level: -1 })).toEqual([]);
+    const locked = createInitialState();
+    expect(applyEvent(locked, { type: 'approach-church', x: 0, y: 40, level: 0 })).toEqual([]);
+  });
+
+  it('fires once, about halfway up the path, however long the player lingers', () => {
+    const s = unlocked();
+    const halfway = CHURCH_APPROACH.y - CHURCH_APPROACH.r + 0.5;
+    expect(say(applyEvent(s, { type: 'approach-church', x: 0, y: halfway, level: 0 }))).toEqual([
+      { kind: 'say', text: THOUGHTS.churchApproach },
+    ]);
+    expect(applyEvent(s, { type: 'approach-church', x: 0, y: 45, level: 0 })).toEqual([]);
+  });
+
+  it('also fires for a player who reaches the church from across the grounds', () => {
+    const s = unlocked();
+    expect(say(applyEvent(s, { type: 'approach-church', x: 18, y: 44, level: 0 }))).toHaveLength(1);
+  });
+});
 
 describe('gate keypad (D1-01)', () => {
   it('rejects a wrong code and keeps the gate locked', () => {
@@ -95,7 +127,7 @@ describe('candles and blessing (D1-04, D1-05)', () => {
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
     applyEvent(s, { type: 'take', item: 'crucifix' });
-    expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toContain('ghost');
+    expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toContain('purify');
     expect(s.flags.has('clock-blessed')).toBe(true);
   });
 
@@ -112,7 +144,7 @@ describe('candles and blessing (D1-04, D1-05)', () => {
   it('releases the ghost exactly once, however often the blessing fires', () => {
     const s = createInitialState();
     const fx = run(s, [...PLAYTHROUGH.slice(6, 13), { type: 'bless-clock' }, { type: 'bless-clock' }]);
-    expect(fx.filter((f) => f.kind === 'ghost')).toHaveLength(1);
+    expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(1);
     expect(s.fired_scares).toEqual(['d1-clock-ghost']);
   });
 });
@@ -159,7 +191,7 @@ describe('S1 playthrough', () => {
     expect(s.completed_objectives).toEqual(['D1-01', 'D1-02', 'D1-03', 'D1-04', 'D1-05', 'D1-06']);
     expect(s.inbox).toEqual(['gateCode']);
     expect(s.candles_lit.size).toBe(4);
-    expect(fx.filter((f) => f.kind === 'ghost')).toHaveLength(1);
+    expect(fx.filter((f) => f.kind === 'purify')).toHaveLength(1);
     expect(fx.filter((f) => f.kind === 'open-door')).toHaveLength(1);
   });
 

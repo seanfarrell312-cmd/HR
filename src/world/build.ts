@@ -118,7 +118,9 @@ function doorView(door: Door): DoorView {
         { pivot: doorLeaf(door, 1, door.width / 2), sign: 1 as const },
         { pivot: doorLeaf(door, -1, door.width / 2), sign: -1 as const },
       ]
-    : [{ pivot: doorLeaf(door, 1, door.width), sign: 1 as const }];
+    : [door.hinge === 'high'
+        ? { pivot: doorLeaf(door, -1, door.width), sign: -1 as const }
+        : { pivot: doorLeaf(door, 1, door.width), sign: 1 as const }];
   return { door, leaves, amount: 0, target: 0 };
 }
 

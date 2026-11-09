@@ -1,17 +1,22 @@
 import type { Sms } from '../data/story';
 
-// DOM overlay: crosshair, prompt and hold meter, task line, subtitles and
-// feedback, the phone, note and keypad panels, the day title card, the pause
-// screen and the developer debug panel.
+// DOM overlay: crosshair, prompt and hold meter, the objective box, subtitles
+// and feedback, the phone, note, keypad and inventory panels, the day title
+// card, the pause screen and the developer debug panel.
 
-export type Panel = 'phone' | 'note' | 'keypad';
+export type Panel = 'phone' | 'note' | 'keypad' | 'inventory';
+
+/** Seconds the objective stays up before it folds away to "(O) View Objectives". */
+export const OBJECTIVE_SECONDS = 5;
 
 export class Hud {
   private prompt: HTMLElement;
   private message: HTMLElement;
   private subtitle: HTMLElement;
-  private task: HTMLElement;
-  private tools: HTMLElement;
+  private objective: HTMLElement;
+  private objectiveText: HTMLElement;
+  private objectiveHint: HTMLElement;
+  private inventoryHint: HTMLElement;
   private phoneAlert: HTMLElement;
   private holdRing: HTMLElement;
   private title: HTMLElement;
@@ -22,6 +27,7 @@ export class Hud {
   private panelBody: HTMLElement;
   private messageTimer = 0;
   private subtitleTimer = 0;
+  private objectiveTimer = 0;
 
   constructor(root: HTMLElement) {
     root.insertAdjacentHTML(
@@ -29,9 +35,9 @@ export class Hud {
       `<div class="crosshair"></div>
        <div class="hold-ring"></div>
        <div class="prompt"></div>
-       <div class="task"></div>
-       <div class="tools"></div>
-       <div class="phone-alert"></div>
+       <div class="objective"><div class="objective-label">Objective</div><div class="objective-text"></div></div>
+       <div class="objective-hint">(O) View Objectives</div>
+       <div class="corner-hints"><div class="phone-alert"></div><div class="inventory-hint">(I) View Inventory</div></div>
        <div class="subtitle"></div>
        <div class="message"></div>
        <div class="title-card"></div>
@@ -47,6 +53,8 @@ export class Hud {
            <tr><td>E</td><td>Interact</td></tr>
            <tr><td>Hold click</td><td>Bless</td></tr>
            <tr><td>Q</td><td>Phone</td></tr>
+           <tr><td>O</td><td>Objectives</td></tr>
+           <tr><td>I</td><td>Inventory</td></tr>
            <tr><td>Esc</td><td>Pause</td></tr>
            <tr><td>\`</td><td>Debug panel</td></tr>
          </table>
@@ -56,8 +64,10 @@ export class Hud {
     this.prompt = q('.prompt');
     this.message = q('.message');
     this.subtitle = q('.subtitle');
-    this.task = q('.task');
-    this.tools = q('.tools');
+    this.objective = q('.objective');
+    this.objectiveText = q('.objective-text');
+    this.objectiveHint = q('.objective-hint');
+    this.inventoryHint = q('.inventory-hint');
     this.phoneAlert = q('.phone-alert');
     this.holdRing = q('.hold-ring');
     this.title = q('.title-card');
@@ -72,18 +82,32 @@ export class Hud {
     if (this.prompt.textContent !== text) this.prompt.textContent = text;
   }
 
-  setTask(text: string): void {
-    const t = text ? `Task: ${text}` : '';
-    if (this.task.textContent === t) return;
-    this.task.textContent = t;
-    this.task.classList.remove('pulse');
-    void this.task.offsetWidth; // restart the animation
-    this.task.classList.add('pulse');
+  /** Current objective; a new one is shown in full for OBJECTIVE_SECONDS. */
+  setObjective(text: string): void {
+    if (this.objectiveText.textContent === text) return;
+    this.objectiveText.textContent = text;
+    if (text) {
+      this.showObjective();
+      this.objective.classList.remove('pulse');
+      void this.objective.offsetWidth; // restart the animation
+      this.objective.classList.add('pulse');
+    } else {
+      this.objectiveTimer = 0;
+      this.objective.classList.remove('show');
+      this.objectiveHint.classList.remove('show');
+    }
   }
 
-  setTools(names: string[]): void {
-    const t = names.join('  ·  ');
-    if (this.tools.textContent !== t) this.tools.textContent = t;
+  /** Bring the objective back for OBJECTIVE_SECONDS (the O key). */
+  showObjective(): void {
+    if (!this.objectiveText.textContent) return;
+    this.objectiveTimer = OBJECTIVE_SECONDS;
+    this.objective.classList.add('show');
+    this.objectiveHint.classList.remove('show');
+  }
+
+  setInventoryHint(visible: boolean): void {
+    this.inventoryHint.classList.toggle('show', visible);
   }
 
   setPhoneAlert(unread: boolean): void {
@@ -104,14 +128,15 @@ export class Hud {
   }
 
   /** The protagonist's subtitled thought (doc 3.2). */
-  say(text: string, seconds = 3): void {
+  say(text: string, seconds = Math.max(3, text.length / 14)): void {
     this.subtitle.textContent = text;
     this.subtitle.classList.add('show');
     this.subtitleTimer = seconds;
   }
 
-  showTitle(text: string): void {
-    this.title.textContent = text;
+  /** Day card: a title with an optional smaller line under it (e.g. the time). */
+  showTitle(text: string, sub?: string): void {
+    this.title.innerHTML = `<div>${esc(text)}</div>${sub ? `<div class="title-card-sub">${esc(sub)}</div>` : ''}`;
     this.title.classList.remove('show');
     void this.title.offsetWidth;
     this.title.classList.add('show');
@@ -120,7 +145,10 @@ export class Hud {
   openPanel(kind: Panel, html: string, hint: string): void {
     this.panel.className = `panel show ${kind}`;
     this.panelBody.innerHTML = html;
-    this.panel.querySelector('.panel-hint')!.textContent = hint;
+    this.panelBody.scrollTop = 0;
+    // Tell the player when there's more below (a long letter on a short screen).
+    const overflows = this.panelBody.scrollHeight > this.panelBody.clientHeight + 4;
+    this.panel.querySelector('.panel-hint')!.textContent = overflows ? `Scroll or W/S for more · ${hint}` : hint;
   }
 
   updatePanel(html: string): void {
@@ -143,8 +171,21 @@ export class Hud {
     return `<div class="keypad-title">GATE</div><div class="keypad-digits">${slots}</div>`;
   }
 
+  static inventoryHtml(items: string[]): string {
+    const list = items.length
+      ? `<ul class="inventory-list">${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`
+      : '<p class="empty">Nothing yet.</p>';
+    return `<div class="panel-title">Inventory</div>${list}`;
+  }
+
   static noteHtml(text: string): string {
-    return `<div class="note-text">${esc(text).replace(/\n/g, '<br>')}</div>`;
+    const paragraphs = text.split(/\n\s*\n/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`);
+    return `<div class="note-text">${paragraphs.join('')}</div>`;
+  }
+
+  /** Scroll an open panel that overflows (the note on short screens). */
+  scrollPanel(dy: number): void {
+    this.panelBody.scrollTop += dy;
   }
 
   setPaused(paused: boolean, hint: string): void {
@@ -161,6 +202,13 @@ export class Hud {
     if (this.messageTimer > 0) {
       this.messageTimer -= dt;
       if (this.messageTimer <= 0) this.message.classList.remove('show');
+    }
+    if (this.objectiveTimer > 0) {
+      this.objectiveTimer -= dt;
+      if (this.objectiveTimer <= 0) {
+        this.objective.classList.remove('show');
+        this.objectiveHint.classList.add('show');
+      }
     }
     if (this.subtitleTimer > 0) {
       this.subtitleTimer -= dt;

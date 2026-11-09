@@ -40,13 +40,13 @@ canvas {
 }
 
 .prompt {
-  top: calc(50% + 22px);
-  font-size: 16px;
+  top: calc(50% + 26px);
+  font-size: 24px;
 }
 
 .message {
   bottom: 14%;
-  font-size: 20px;
+  font-size: 28px;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -89,7 +89,7 @@ canvas {
 
 .pause h1 {
   margin: 0;
-  font-size: 44px;
+  font-size: 60px;
   letter-spacing: 0.08em;
 }
 
@@ -99,12 +99,13 @@ canvas {
 }
 
 .pause .hint {
-  font-size: 20px;
+  font-size: 28px;
   margin-bottom: 20px;
 }
 
 .controls td {
-  padding: 2px 12px;
+  padding: 3px 14px;
+  font-size: 21px;
 }
 
 .controls td:first-child {
@@ -127,19 +128,42 @@ canvas {
   display: none;
 }
 
-.task {
+.objective {
   position: absolute;
-  top: 12px;
-  right: 14px;
-  max-width: 42vw;
-  text-align: right;
-  font-size: 15px;
-  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+  top: 16px;
+  right: 16px;
+  max-width: min(520px, 46vw);
+  padding: 12px 18px 14px;
+  background: rgba(8, 10, 12, 0.66);
+  border-left: 5px solid #ffd75e;
+  text-shadow: 0 1px 2px #000;
   pointer-events: none;
+  opacity: 0;
+  transform: translateX(12px);
+  transition: opacity 0.35s, transform 0.35s;
 }
 
-.task.pulse {
-  animation: task-pulse 1.2s ease-out;
+.objective.show {
+  opacity: 1;
+  transform: none;
+}
+
+.objective-label {
+  font-size: 16px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #ffd75e;
+  margin-bottom: 6px;
+}
+
+.objective-text {
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.objective.pulse .objective-text {
+  animation: task-pulse 1.6s ease-out;
 }
 
 @keyframes task-pulse {
@@ -147,23 +171,41 @@ canvas {
   100% { color: #f2efe8; }
 }
 
-.tools,
-.phone-alert {
-  position: absolute;
-  bottom: 12px;
-  font-size: 13px;
-  text-shadow: 0 1px 2px #000;
+.objective-hint,
+.inventory-hint {
+  font-size: 22px;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0;
+  transition: opacity 0.35s;
 }
 
-.tools {
-  left: 14px;
+.objective-hint {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.objective-hint.show,
+.inventory-hint.show {
+  opacity: 0.9;
+}
+
+.corner-hints {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
 }
 
 .phone-alert {
-  right: 14px;
+  font-size: 22px;
   color: #b8f0a8;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
 }
 
 .subtitle {
@@ -171,9 +213,9 @@ canvas {
   left: 50%;
   bottom: 22%;
   transform: translateX(-50%);
-  max-width: 70vw;
+  max-width: 76vw;
   text-align: center;
-  font-size: 19px;
+  font-size: 28px;
   font-style: italic;
   text-shadow: 0 1px 2px #000, 0 0 5px #000;
   opacity: 0;
@@ -190,12 +232,21 @@ canvas {
   inset: 0;
   display: flex;
   align-items: center;
+  flex-direction: column;
   justify-content: center;
-  font-size: 56px;
+  text-align: center;
+  font-size: 80px;
   letter-spacing: 0.2em;
   text-shadow: 0 2px 8px #000;
   opacity: 0;
   pointer-events: none;
+}
+
+.title-card-sub {
+  margin-top: 10px;
+  font-size: 40px;
+  letter-spacing: 0.3em;
+  opacity: 0.85;
 }
 
 .title-card.show {
@@ -218,8 +269,9 @@ canvas {
   padding: 18px 22px 12px;
   background: rgba(14, 14, 16, 0.92);
   border: 1px solid #555;
-  min-width: 260px;
-  max-width: min(460px, 86vw);
+  min-width: 340px;
+  max-width: min(620px, 90vw);
+  font-size: 22px;
 }
 
 .panel.show {
@@ -231,13 +283,24 @@ canvas {
   color: #2b2620;
   border-color: #b8ad92;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 16px;
-  line-height: 1.45;
+  font-size: 19px;
+  line-height: 1.4;
+  max-width: min(780px, 92vw);
+}
+
+/* A long letter scrolls (mouse wheel or W/S) on short screens. */
+.panel.note .panel-body {
+  max-height: calc(88vh - 70px);
+  overflow-y: auto;
+}
+
+.note-text p {
+  margin: 0 0 0.8em;
 }
 
 .panel-hint {
-  margin-top: 12px;
-  font-size: 12px;
+  margin-top: 14px;
+  font-size: 17px;
   opacity: 0.6;
   text-align: right;
 }
@@ -247,14 +310,42 @@ canvas {
   border-radius: 10px;
   padding: 8px 12px;
   margin-bottom: 8px;
-  font-size: 15px;
+  font-size: 21px;
   line-height: 1.35;
 }
 
 .sms .from {
-  font-size: 12px;
+  font-size: 16px;
   opacity: 0.7;
   margin-bottom: 2px;
+}
+
+.panel-title {
+  margin-bottom: 12px;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.inventory-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inventory-list li {
+  padding: 8px 4px;
+  border-top: 1px solid #3a3a3a;
+}
+
+.inventory-list li:first-child {
+  border-top: 0;
+}
+
+.empty {
+  opacity: 0.6;
+  text-align: center;
 }
 
 .keypad-title {
@@ -268,7 +359,7 @@ canvas {
   justify-content: center;
   gap: 12px;
   margin: 12px 0 4px;
-  font-size: 36px;
+  font-size: 48px;
   color: #9eff8f;
 }
 

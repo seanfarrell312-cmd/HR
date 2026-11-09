@@ -49,6 +49,11 @@ export interface Door {
   swing: 1 | -1;
   /** Two leaves hinged at either side of the opening, meeting in the middle. */
   double?: boolean;
+  /**
+   * Which end of the opening a single leaf hangs from: 'low' (smaller x or y,
+   * the default) or 'high'.
+   */
+  hinge?: 'low' | 'high';
 }
 
 export interface Prop {
@@ -184,7 +189,9 @@ export const DOORS: Door[] = [
   { id: 'church', label: 'Church doors', x: 0, y: 50, axis: 'x', width: 3, height: 3.6, level: 0, swing: 1, double: true },
   { id: 'office', label: 'Office door', x: -8, y: 52.9, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: -1 },
   { id: 'storage', label: 'Storage closet', x: -8, y: 61.7, axis: 'y', width: 1.2, height: 2.3, level: 0, swing: -1 },
-  { id: 'chapel', label: 'Chapel door', x: 8, y: 52.7, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: 1 },
+  // Opens out into the nave, hinged on the north side so it swings clear of
+  // the relic table (decisions 2026-11-08).
+  { id: 'chapel', label: 'Chapel door', x: 8, y: 52.7, axis: 'y', width: 1.4, height: 2.3, level: 0, swing: -1, hinge: 'high' },
   { id: 'basement', label: 'Basement door', x: 6.4, y: 67.4, axis: 'x', width: 1.4, height: 2.3, level: 0, swing: 1 },
   { id: 'shed', label: 'Shed door', x: 26, y: 72, axis: 'x', width: 1.6, height: 2.3, level: 0, swing: 1 },
 ];
@@ -288,7 +295,7 @@ export const PROPS: Prop[] = [
   { id: 'aisle', label: 'Aisle carpet', rect: rect(-0.8, 50.2, 0.8, 64.6), height: 0.02, level: 0, color: '#a11d22', shape: 'flat', solid: false },
   { id: 'altar', label: 'Altar', rect: rect(-2.8, 64.8, 2.8, 66.3), height: 1.1, level: 0, color: '#c8c3ba' },
   { id: 'relic-table', label: 'Cleaned-relic table', rect: rect(6.9, 50.3, 7.85, 51.8), height: 0.85, level: 0, color: WOOD },
-  { id: 'keys', label: 'Key hooks', rect: rect(-7.85, 51.1, -7.75, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false, interact: 'chapel-key' },
+  { id: 'keys', label: 'Key hooks', rect: rect(-8.25, 51.1, -8.15, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false, interact: 'chapel-key' },
 
   // Office.
   { id: 'office-desk', label: 'Desk', rect: rect(-14.6, 51.2, -13.6, 54.2), height: 0.8, level: 0, color: DARK_WOOD, interact: 'office-desk' },

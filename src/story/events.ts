@@ -1,4 +1,4 @@
-import { GATE_CODE, S1_END, SMS, THOUGHTS } from '../data/story';
+import { CHURCH_APPROACH, GATE_CODE, S1_END, SMS, THOUGHTS, WRONG_CODE } from '../data/story';
 import type { GameState, QuestItem } from '../state/store';
 import { advanceObjectives } from './objectives';
 
@@ -10,6 +10,8 @@ export type StoryEvent =
   | { type: 'receive-sms'; id: string }
   | { type: 'read-sms' }
   | { type: 'keypad-submit'; code: string }
+  /** The player's position; fires the church-approach thought once, in range. */
+  | { type: 'approach-church'; x: number; y: number; level: number }
   | { type: 'read-note' }
   | { type: 'take'; item: QuestItem }
   | { type: 'light-candle'; index: number }
@@ -18,7 +20,18 @@ export type StoryEvent =
   | { type: 'place-clock' }
   | { type: 'door-opened'; id: string };
 
-export type SfxId = 'buzz' | 'beep' | 'error' | 'unlock' | 'pickup' | 'strike' | 'release' | 'place' | 'paper';
+export type SfxId =
+  | 'buzz'
+  | 'beep'
+  | 'error'
+  | 'unlock'
+  | 'pickup'
+  | 'strike'
+  | 'release'
+  | 'place'
+  | 'paper'
+  | 'wind-down'
+  | 'sparkle';
 
 export type Effect =
   | { kind: 'sfx'; id: SfxId }
@@ -26,7 +39,8 @@ export type Effect =
   | { kind: 'flash'; text: string }
   | { kind: 'open-door'; id: string }
   | { kind: 'sms'; id: string }
-  | { kind: 'ghost' }
+  /** The blessed clock settles, sparkles, then releases its ghost (timed by the view). */
+  | { kind: 'purify' }
   | { kind: 'objective'; id: string };
 
 export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
@@ -46,11 +60,18 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'keypad-submit':
       if (s.flags.has('gate-unlocked')) return [];
       if (e.code !== GATE_CODE) {
-        out.push({ kind: 'sfx', id: 'error' }, { kind: 'flash', text: 'Wrong code.' });
+        out.push({ kind: 'sfx', id: 'error' }, { kind: 'flash', text: WRONG_CODE });
         return out;
       }
       s.flags.add('gate-unlocked');
       out.push({ kind: 'sfx', id: 'unlock' }, { kind: 'open-door', id: 'gate' }, { kind: 'say', text: THOUGHTS.gateOpen });
+      break;
+
+    case 'approach-church':
+      if (s.flags.has('church-approached') || !s.flags.has('gate-unlocked')) return [];
+      if (e.level !== 0 || Math.hypot(e.x - CHURCH_APPROACH.x, e.y - CHURCH_APPROACH.y) > CHURCH_APPROACH.r) return [];
+      s.flags.add('church-approached');
+      out.push({ kind: 'say', text: THOUGHTS.churchApproach });
       break;
 
     case 'read-note':
@@ -81,7 +102,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (why) return [{ kind: 'flash', text: why }];
       s.flags.add('clock-blessed');
       s.fired_scares.push('d1-clock-ghost');
-      out.push({ kind: 'sfx', id: 'release' }, { kind: 'ghost' }, { kind: 'say', text: THOUGHTS.ghost });
+      // The release sound and the ghost thought play when the ghost appears.
+      out.push({ kind: 'purify' });
       break;
     }
 

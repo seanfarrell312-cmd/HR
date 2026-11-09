@@ -15,7 +15,7 @@ export type EnvironmentPreset =
 export type QuestItem = 'chapel-key' | 'matches' | 'crucifix';
 
 /** One-shot story facts. Once set, never unset within a run. */
-export type Flag = 'sms-read' | 'gate-unlocked' | 'note-read' | 'clock-blessed' | 's1-complete';
+export type Flag = 'sms-read' | 'gate-unlocked' | 'church-approached' | 'note-read' | 'clock-blessed' | 's1-complete';
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';
 

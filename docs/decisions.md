@@ -75,3 +75,30 @@ their earlier game's: "Happy Resting" in a heavy outlined face, "a game by
 seanologues", and START and OPTIONS buttons, on a blue background. The title
 is green (the reverse of the reference's blue-on-green); START enters the
 game. OPTIONS is shown greyed out until there are settings to offer.
+
+## 2026-11-08 — S1 playtest changes
+
+| Topic | Ruling |
+|---|---|
+| Chapel door | Opens **out into the nave**, hinged on the north side, so the open door swings clear of the relic table. |
+| Chapel key | Hangs on hooks **inside the office**, on the wall beside its door, so the player passes the desk and note to reach it. |
+| After the blessing | The clock gives a last falling chime and its shaking dies away; a beat of silence; sparkles drift out of it; then the ghost rises. Timings are in `PURIFY` in `src/data/story.ts` (ghost at 3.9 s). The clock can't be picked up until this finishes. |
+| Text size | All HUD and panel text is larger. |
+| Objectives | Shown large in the top-right corner for 5 s whenever the objective changes, then replaced by "(O) View Objectives". O shows it again for 5 s. The game keeps running. |
+| Inventory | The bottom-corner item list is replaced by "(I) View Inventory". I pauses the game (sound keeps playing) and opens a centred "Inventory" panel; I or E closes it. |
+
+## 2026-11-08 — Day 1 script pass
+
+The designer's updated Day 1 text (spreadsheet "D1 messages and text") is now
+in `src/data/story.ts`: the day card ("First Day", "4PM"), the supervisor's
+text, the wrong-code line, the gate, key and ghost thoughts, and the office
+letter (now addressed to "Monsignor" from St. Mary's, naming Mrs. Kettle's
+clock and the gate drop box). Spelling was tidied without rewording.
+
+New: a one-time thought, "The grounds are really nice. Hard to believe they'd
+need someone like me.", the first time the player comes within 25 m of the
+church doors after the gate opens (about halfway up the path). A radius
+rather than a fixed spot, so a player who explores first still hears it.
+
+The letter is long enough to scroll on short screens (mouse wheel or W/S).
+Thoughts now stay up longer the longer they are (at least 3 s).

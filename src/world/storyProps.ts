@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { toWorld } from '../data/layout';
-import { CANDLES, SPOTS, type ItemSpot } from '../data/story';
+import { CANDLES, PURIFY, SPOTS, type ItemSpot } from '../data/story';
 import type { GameState } from '../state/store';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
 // called every frame and derives everything from state, so a reset or a
-// debug jump never leaves a stale prop behind. Only the ghost and the bus are
-// timed effects, started by events.
+// debug jump never leaves a stale prop behind. Only the purification (sparkles
+// and ghost) and the bus are timed effects, started by events.
 
 const lambert = (color: string) => new THREE.MeshLambertMaterial({ color, flatShading: true });
 const basic = (color: string, opacity = 1) =>
@@ -64,6 +64,29 @@ interface Ghost {
   startZ: number;
 }
 
+interface Sparkle {
+  mesh: THREE.Mesh;
+  mat: THREE.MeshBasicMaterial;
+  delay: number;
+  angle: number;
+  speed: number;
+}
+
+/** A blessed clock settling down: wind-down, silence, sparkles, ghost. */
+interface Purification {
+  t: number;
+  origin: THREE.Vector3;
+  sparkles: Sparkle[];
+  fired: Set<PurifyCue>;
+}
+
+export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost';
+
+const SPARKLE_COUNT = 22;
+const SPARKLE_LIFE = 1.6;
+const SPARKLE_SPREAD = 0.9;
+const sparkleGeometry = new THREE.OctahedronGeometry(0.028);
+
 export class StoryProps {
   readonly root = new THREE.Group();
   readonly raycastTargets: THREE.Object3D[] = [];
@@ -81,6 +104,10 @@ export class StoryProps {
   private bus: THREE.Group | null = null;
   private busT = 0;
   private chimeTimer = 2;
+  private purification: Purification | null = null;
+
+  /** Fired as the purification reaches each beat, for sound and subtitles. */
+  onCue: (cue: PurifyCue) => void = () => {};
 
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
@@ -128,6 +155,7 @@ export class StoryProps {
 
   /** Remove timed effects, e.g. on reset. */
   clearEffects(): void {
+    this.endPurification();
     for (const g of this.ghosts) this.root.remove(g.group);
     this.ghosts = [];
     if (this.bus) this.root.remove(this.bus);
@@ -156,7 +184,65 @@ export class StoryProps {
     this.root.add(bus);
   }
 
-  spawnGhost(): void {
+  /** True from the blessing until the ghost has appeared and the sparkles are gone. */
+  get purifying(): boolean {
+    return this.purification !== null;
+  }
+
+  startPurification(): void {
+    this.endPurification();
+    const origin = new THREE.Vector3(...toWorld(SPOTS.clockRitual.x, SPOTS.clockRitual.y, 0, SPOTS.clockRitual.z + 0.22));
+    const sparkles: Sparkle[] = [];
+    for (let i = 0; i < SPARKLE_COUNT; i++) {
+      const mat = basic(i % 3 === 0 ? '#ffffff' : '#fff1a8', 0.95);
+      const mesh = new THREE.Mesh(sparkleGeometry, mat);
+      mesh.visible = false;
+      this.root.add(mesh);
+      sparkles.push({ mesh, mat, delay: (i / SPARKLE_COUNT) * SPARKLE_SPREAD, angle: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 0.5 });
+    }
+    this.purification = { t: 0, origin, sparkles, fired: new Set(['wind-down']) };
+    this.onCue('wind-down');
+  }
+
+  private endPurification(): void {
+    if (!this.purification) return;
+    for (const s of this.purification.sparkles) {
+      this.root.remove(s.mesh);
+      s.mat.dispose();
+    }
+    this.purification = null;
+  }
+
+  private updatePurification(dt: number): void {
+    const p = this.purification;
+    if (!p) return;
+    p.t += dt;
+    const cue = (name: PurifyCue, at: number) => {
+      if (p.t < at || p.fired.has(name)) return;
+      p.fired.add(name);
+      if (name === 'ghost') this.spawnGhost();
+      this.onCue(name);
+    };
+    cue('sparkle', PURIFY.sparkleAt);
+    cue('ghost', PURIFY.ghostAt);
+
+    // Sparkles spiral up and out of the clock and fade.
+    for (const s of p.sparkles) {
+      const age = p.t - PURIFY.sparkleAt - s.delay;
+      s.mesh.visible = age > 0 && age < SPARKLE_LIFE;
+      if (!s.mesh.visible) continue;
+      const k = age / SPARKLE_LIFE;
+      const r = 0.06 + age * s.speed * 0.35;
+      const a = s.angle + age * 2.4;
+      s.mesh.position.set(p.origin.x + Math.cos(a) * r, p.origin.y + age * s.speed * 0.8, p.origin.z + Math.sin(a) * r);
+      s.mesh.rotation.y = age * 7;
+      s.mesh.scale.setScalar(1 - 0.6 * k);
+      s.mat.opacity = 0.95 * (1 - k * k);
+    }
+    if (p.t > Math.max(PURIFY.ghostAt, PURIFY.sparkleAt + SPARKLE_SPREAD + SPARKLE_LIFE)) this.endPurification();
+  }
+
+  private spawnGhost(): void {
     const group = new THREE.Group();
     const mats = [basic('#8dff6e', 0.85), basic('#101810', 0.9)];
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.34, 0.7, 7, 1, true), mats[0]);
@@ -179,7 +265,12 @@ export class StoryProps {
     this.ghosts.push({ group, mats, light, t: 0, baseY: y, startX: x, startZ: z });
   }
 
-  sync(s: GameState, dt: number, hold: { active: boolean; progress: number }, listener: THREE.Vector3): void {
+  /**
+   * `paused` freezes timed effects (purification, ghost, bus) while the
+   * inventory is open; the clock keeps chiming so the world still sounds alive.
+   */
+  sync(s: GameState, dt: number, hold: { active: boolean; progress: number }, listener: THREE.Vector3, paused = false): void {
+    const fxDt = paused ? 0 : dt;
     this.note.visible = true;
     this.key.visible = !s.inventory.has('chapel-key');
     this.matches.visible = !s.inventory.has('matches');
@@ -205,10 +296,13 @@ export class StoryProps {
     // Agitation rises with each lit candle until the blessing (D1-04).
     const restless = s.clock === 'ritual-table' && !s.flags.has('clock-blessed');
     const agitation = restless ? s.candles_lit.size / 4 : 0;
-    if (agitation > 0) {
-      this.clock.position.x += (Math.random() - 0.5) * 0.03 * agitation;
-      this.clock.position.z += (Math.random() - 0.5) * 0.03 * agitation;
-      this.clock.rotation.z = (Math.random() - 0.5) * 0.12 * agitation;
+    // Once blessed, the shaking dies away instead of stopping dead.
+    const settling = this.purification && s.clock === 'ritual-table' ? Math.max(0, 1 - this.purification.t / PURIFY.windDown) : 0;
+    const shake = Math.max(agitation, settling);
+    if (shake > 0) {
+      this.clock.position.x += (Math.random() - 0.5) * 0.03 * shake;
+      this.clock.position.z += (Math.random() - 0.5) * 0.03 * shake;
+      this.clock.rotation.z = (Math.random() - 0.5) * 0.12 * shake;
     }
     if (restless) {
       this.chimeTimer -= dt;
@@ -223,8 +317,9 @@ export class StoryProps {
     this.heldCrucifix.visible = hold.active && hold.progress > 0;
     this.heldCrucifix.position.y = -0.45 + hold.progress * 0.2;
 
-    this.updateGhosts(dt);
-    this.updateBus(dt);
+    this.updatePurification(fxDt);
+    this.updateGhosts(fxDt);
+    this.updateBus(fxDt);
   }
 
   private updateGhosts(dt: number): void {

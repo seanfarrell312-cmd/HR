@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DOOR_PRESETS } from '../src/data/doorPresets';
-import { AREAS, DOORS, PLAYER_RADIUS, TELEPORTS, TRANSITIONS, WALLS } from '../src/data/layout';
+import { AREAS, DOORS, PLAYER_RADIUS, PROPS, TELEPORTS, TRANSITIONS, WALLS } from '../src/data/layout';
+import { SPOTS } from '../src/data/story';
 import { blocked, doorOnWall, staticColliders } from '../src/world/collision';
 import { zoneAt } from '../src/world/zones';
 
@@ -41,6 +42,25 @@ describe('layout data', () => {
       (d) => d.x >= chapel.x1 - 0.01 && d.x <= chapel.x2 + 0.01 && d.y >= chapel.y1 - 0.01 && d.y <= chapel.y2 + 0.01,
     );
     expect(entrances.map((d) => d.id)).toEqual(['chapel']);
+  });
+
+  it('swings the chapel door out into the nave, clear of the relic table', () => {
+    const door = DOORS.find((d) => d.id === 'chapel')!;
+    expect(door.axis).toBe('y');
+    // Open, a y-axis leaf stands out from its hinge along x, on the swing side.
+    const hingeY = door.hinge === 'high' ? door.y + door.width / 2 : door.y - door.width / 2;
+    const tipX = door.x + door.swing * door.width;
+    expect(zoneAt((door.x + tipX) / 2, hingeY - 0.1, 0)?.id).toBe('nave');
+    const table = PROPS.find((p) => p.id === 'relic-table')!.rect;
+    const leaf = { x1: Math.min(door.x, tipX), x2: Math.max(door.x, tipX), y1: hingeY - 0.3, y2: hingeY + 0.3 };
+    const overlaps = leaf.x1 < table.x2 && leaf.x2 > table.x1 && leaf.y1 < table.y2 && leaf.y2 > table.y1;
+    expect(overlaps).toBe(false);
+  });
+
+  it('keeps the chapel key inside the office, by its door', () => {
+    expect(zoneAt(SPOTS.chapelKey.x, SPOTS.chapelKey.y, 0)?.id).toBe('office');
+    const hooks = PROPS.find((p) => p.id === 'keys')!.rect;
+    expect(zoneAt((hooks.x1 + hooks.x2) / 2, (hooks.y1 + hooks.y2) / 2, 0)?.id).toBe('office');
   });
 
   it('only locks doors that exist', () => {

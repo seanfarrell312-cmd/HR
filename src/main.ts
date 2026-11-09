@@ -3,7 +3,7 @@ import './style.css';
 import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
 import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, OFFICE_NOTE, SMS } from './data/story';
+import { BLESS_SECONDS, DAY_TITLES, OFFICE_NOTE, SMS, THOUGHTS } from './data/story';
 import { PlayerController } from './player/controller';
 import { createInitialState, type GameState } from './state/store';
 import { applyEvent, type Effect, type StoryEvent } from './story/events';
@@ -54,6 +54,12 @@ const raycaster = new THREE.Raycaster(undefined, undefined, 0, REACH);
 const centre = new THREE.Vector2(0, 0);
 const blessMeter = new HoldMeter(BLESS_SECONDS);
 props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
+props.onCue = (cue) => {
+  if (cue === 'ghost') {
+    sfx.play('release');
+    hud.say(THOUGHTS.ghost);
+  } else sfx.play(cue);
+};
 
 let state: GameState = createInitialState();
 const fixed = staticColliders();
@@ -101,11 +107,11 @@ function handleEffect(e: Effect): void {
     case 'sms':
       hud.setPhoneAlert(true);
       break;
-    case 'ghost':
-      props.spawnGhost();
+    case 'purify':
+      props.startPurification();
       break;
     case 'objective':
-      break; // the task line follows state every frame
+      break; // the objective box follows state every frame
   }
 }
 
@@ -113,7 +119,8 @@ function handleEffect(e: Effect): void {
 function beginDay(): void {
   props.clearEffects();
   props.startIntro();
-  hud.showTitle(`Day ${state.day_index}`);
+  const card = DAY_TITLES[state.day_index];
+  hud.showTitle(card?.title ?? `Day ${state.day_index}`, card?.time);
   sfx.engine(5);
   smsTimer = SMS_DELAY;
 }
@@ -138,7 +145,7 @@ function onFirstStart(): void {
   beginDay();
 }
 
-// --- Panels: phone, note, keypad -------------------------------------------
+// --- Panels: phone, note, keypad, inventory -------------------------------
 
 function openPanel(kind: Panel): void {
   panel = kind;
@@ -151,10 +158,18 @@ function openPanel(kind: Panel): void {
   } else if (kind === 'note') {
     hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
     dispatch({ type: 'read-note' });
+  } else if (kind === 'inventory') {
+    hud.openPanel('inventory', Hud.inventoryHtml(inventoryNames()), 'I to close');
   } else {
     keypadEntry = '';
     hud.openPanel('keypad', Hud.keypadHtml(keypadEntry), 'Type the code · Backspace to clear · E to step back');
   }
+}
+
+function inventoryNames(): string[] {
+  const names = [...state.inventory].map((i) => TOOL_NAMES[i]);
+  if (state.held_prop_id === 'clock') names.push('Mantel clock (carrying)');
+  return names;
 }
 
 function closePanel(): void {
@@ -282,6 +297,10 @@ document.addEventListener('mousedown', (e) => {
 document.addEventListener('mouseup', (e) => {
   if (e.button === 0) primaryDown = false;
 });
+// With the mouse captured, wheel events go to the canvas, not the panel.
+document.addEventListener('wheel', (e) => {
+  if (panel === 'note') hud.scrollPanel(e.deltaY);
+});
 window.addEventListener('blur', () => {
   primaryDown = false;
 });
@@ -300,7 +319,9 @@ document.addEventListener('keydown', (e) => {
   if (!player.active || e.repeat) return;
 
   if (panel) {
-    if (e.code === 'KeyE' || (e.code === 'KeyQ' && panel === 'phone')) closePanel();
+    if (e.code === 'KeyE' || (e.code === 'KeyQ' && panel === 'phone') || (e.code === 'KeyI' && panel === 'inventory')) closePanel();
+    else if (panel === 'note' && (e.code === 'KeyW' || e.code === 'ArrowUp')) hud.scrollPanel(-80);
+    else if (panel === 'note' && (e.code === 'KeyS' || e.code === 'ArrowDown')) hud.scrollPanel(80);
     else if (panel === 'keypad') keypadKey(e);
     return;
   }
@@ -311,6 +332,14 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyQ') {
     openPanel('phone');
+    return;
+  }
+  if (e.code === 'KeyI') {
+    openPanel('inventory');
+    return;
+  }
+  if (e.code === 'KeyO') {
+    hud.showObjective();
     return;
   }
   if (!debugVisible) return;
@@ -396,9 +425,16 @@ renderer.setAnimationLoop(() => {
   player.allowFast = debugVisible;
   player.update(dt, colliders);
 
-  if (smsTimer > 0 && player.active) {
+  // The inventory pauses the world; sound carries on.
+  const worldPaused = panel === 'inventory';
+
+  if (smsTimer > 0 && player.active && !worldPaused) {
     smsTimer -= dt;
     if (smsTimer <= 0) dispatch({ type: 'receive-sms', id: 'gateCode' });
+  }
+
+  if (started && !worldPaused && !state.flags.has('church-approached')) {
+    dispatch({ type: 'approach-church', x: player.x, y: player.y, level: player.level });
   }
 
   for (const v of world.doors.values()) {
@@ -409,15 +445,17 @@ renderer.setAnimationLoop(() => {
   }
 
   target = player.active && !panel ? findTarget() : null;
+  // The clock can't be picked up until it has finished settling.
+  if (target === 'item:clock' && props.purifying) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);
   hud.setPrompt(res.prompt);
-  hud.setTask(started ? currentObjective(state).task(state) : '');
-  hud.setTools([...state.inventory].map((i) => TOOL_NAMES[i]).concat(state.held_prop_id === 'clock' ? ['Carrying: clock'] : []));
+  hud.setObjective(started ? currentObjective(state).task(state) : '');
+  hud.setInventoryHint(started);
   hud.update(dt);
   hud.setDebug(debugVisible, debugText());
 
-  props.sync(state, dt, { active: !!res.hold && primaryDown, progress: blessMeter.progress }, camera.position);
+  props.sync(state, dt, { active: !!res.hold && primaryDown, progress: blessMeter.progress }, camera.position, worldPaused);
   renderer.render(scene, camera);
 });
