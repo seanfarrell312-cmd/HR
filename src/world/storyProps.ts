@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { AREAS, DOORS, toWorld } from '../data/layout';
-import { CANDLES, PURIFY, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
+import { CANDLES, PURIFY, RATTLE_SECONDS, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
 import type { GameState } from '../state/store';
 import type { PurifiedRelic } from '../story/events';
+import { siteReady } from '../story/table';
 import { ghostModel, type GhostModel } from './ghost';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
@@ -40,7 +41,8 @@ function clockModel(): THREE.Group {
   return g;
 }
 
-function crucifixModel(): THREE.Group {
+/** The small hand cross held up for blessings. */
+function crossModel(): THREE.Group {
   const g = new THREE.Group();
   const m = lambert('#c9a43a');
   const upright = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.3, 0.02), m);
@@ -48,6 +50,26 @@ function crucifixModel(): THREE.Group {
   const bar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.02), m);
   bar.position.y = 0.21;
   g.add(upright, bar);
+  return g;
+}
+
+/** The larger standing crucifix: a stepped flat base, a taller cross and a small figure. */
+function standingCrucifixModel(): THREE.Group {
+  const g = new THREE.Group();
+  const m = lambert('#d4af37');
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.11), m);
+  base.position.y = 0.015;
+  const step = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.07), m);
+  step.position.y = 0.045;
+  const upright = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.025), m);
+  upright.position.y = 0.27;
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.035, 0.025), m);
+  bar.position.y = 0.38;
+  const figure = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.11, 0.012), lambert('#efe4c8'));
+  figure.position.set(0, 0.33, 0.018);
+  const arms = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.016, 0.012), lambert('#efe4c8'));
+  arms.position.set(0, 0.375, 0.018);
+  g.add(base, step, upright, bar, figure, arms);
   return g;
 }
 
@@ -121,8 +143,6 @@ export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost' | 'ghost-gone';
 const GHOST_LIFE = 3.4;
 /** Seconds for the tree ghost to giggle, duck behind the trunk and fade. */
 const PEEK_HIDE = 1.3;
-/** Seconds the music box rattles against the first blessing before it settles. */
-const RATTLE_SECONDS = 1.6;
 /** How far the music box lid opens (radians). */
 const LID_OPEN = 1.25;
 
@@ -159,17 +179,18 @@ export class StoryProps {
   private note: THREE.Object3D;
   private key: THREE.Object3D;
   private matches: THREE.Object3D;
-  private crucifix: THREE.Object3D;
+  private cross: THREE.Object3D;
   private clock: THREE.Group;
   private chalice: THREE.Object3D;
-  private stagedCrucifix: THREE.Object3D;
+  /** The standing crucifix: on the altar, or set out on the ritual table. */
+  private crucifix: THREE.Object3D;
   private musicBox: MusicBoxView;
   private heldChalice: THREE.Group;
   private heldMusicBox: MusicBoxView;
   private candles: CandleView[] = [];
   private deskMarker: THREE.Mesh;
   private heldClock: THREE.Group;
-  private heldCrucifix: THREE.Group;
+  private heldCross: THREE.Group;
   /** The released ghost; one model, reused, with its light always in the scene. */
   private relicGhost: GhostModel;
   private relicGhostT = -1;
@@ -201,11 +222,10 @@ export class StoryProps {
     this.note = tagged(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.005, 0.28), basic('#f4f1e6')), SPOTS.officeNote), 'office-note');
     this.key = tagged(at(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.04), lambert('#d8b440')), SPOTS.chapelKey), 'chapel-key');
     this.matches = tagged(at(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.06), lambert('#b8321f')), SPOTS.matches), 'matches');
-    this.crucifix = tagged(at(crucifixModel(), SPOTS.crucifix), 'crucifix');
+    this.cross = tagged(at(crossModel(), SPOTS.cross), 'cross');
     this.clock = tagged(clockModel(), 'clock') as THREE.Group;
     this.chalice = tagged(chaliceModel(), 'chalice');
-    this.stagedCrucifix = at(crucifixModel(), SPOTS.crucifixRitual);
-    this.stagedCrucifix.rotation.y = -Math.PI / 2;
+    this.crucifix = tagged(standingCrucifixModel(), 'crucifix');
     this.musicBox = musicBoxModel();
     tagged(this.musicBox.group, 'music-box');
 
@@ -235,14 +255,14 @@ export class StoryProps {
     // Low and slightly right, clear of the crosshair.
     this.heldClock.position.set(0.16, -0.52, -0.8);
     this.heldClock.scale.setScalar(0.7);
-    this.heldCrucifix = crucifixModel();
-    this.heldCrucifix.position.set(0.22, -0.45, -0.5);
+    this.heldCross = crossModel();
+    this.heldCross.position.set(0.22, -0.45, -0.5);
     this.heldChalice = chaliceModel();
     this.heldChalice.position.set(0.17, -0.4, -0.62);
     this.heldMusicBox = musicBoxModel();
     this.heldMusicBox.group.position.set(0.15, -0.38, -0.62);
     this.heldMusicBox.group.rotation.set(0.35, 0, 0);
-    camera.add(this.heldClock, this.heldCrucifix, this.heldChalice, this.heldMusicBox.group);
+    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldMusicBox.group);
 
     // Lights stay in the scene at zero intensity: adding one later would make
     // Three.js recompile every shader and hitch.
@@ -252,9 +272,9 @@ export class StoryProps {
     this.peeker.group.visible = false;
     this.root.add(this.relicGhost.group, this.peeker.group);
 
-    this.root.add(this.note, this.key, this.matches, this.crucifix, this.clock, this.deskMarker);
-    this.root.add(this.chalice, this.stagedCrucifix, this.musicBox.group);
-    this.raycastTargets.push(this.note, this.key, this.matches, this.crucifix, this.clock, this.chalice, this.musicBox.group);
+    this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
+    this.root.add(this.chalice, this.crucifix, this.musicBox.group);
+    this.raycastTargets.push(this.note, this.key, this.matches, this.cross, this.clock, this.chalice, this.crucifix, this.musicBox.group);
   }
 
   /** Remove timed effects, e.g. on reset. */
@@ -374,9 +394,7 @@ export class StoryProps {
     this.note.visible = true;
     this.key.visible = !s.inventory.has('chapel-key');
     this.matches.visible = !s.inventory.has('matches');
-    // The shelf crucifix is gone once taken; staged, it stands on the ritual table.
-    this.crucifix.visible = !s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
-    this.stagedCrucifix.visible = s.flags.has('crucifix-staged');
+    this.cross.visible = !s.inventory.has('cross');
 
     for (const [i, c] of this.candles.entries()) {
       const lit = s.candles_lit.has(i);
@@ -395,9 +413,10 @@ export class StoryProps {
     // Face the player's approach: west on the ritual table, east on the desk.
     this.clock.rotation.set(0, s.clock === 'office-desk' ? Math.PI / 2 : -Math.PI / 2, 0);
 
-    // Agitation rises with each lit candle until the blessing (D1-04).
+    // The clock only gets agitated once the whole ritual site is prepared:
+    // candles lit and the table set (decisions 2026-11-09, S2 playtest).
     const restless = s.clock === 'ritual-table' && !s.flags.has('clock-blessed');
-    const agitation = restless ? s.candles_lit.size / 4 : 0;
+    const agitation = restless && siteReady(s) ? 1 : 0;
     // Once blessed, the shaking dies away instead of stopping dead.
     const settling = this.purification && s.clock === 'ritual-table' ? Math.max(0, 1 - this.purification.t / PURIFY.windDown) : 0;
     const shake = Math.max(agitation, settling);
@@ -420,9 +439,9 @@ export class StoryProps {
     this.syncChalice(s);
     this.syncMusicBox(s, dt, fxDt, listener);
 
-    // Crucifix rises into view while a blessing is held.
-    this.heldCrucifix.visible = hold.active && hold.progress > 0;
-    this.heldCrucifix.position.y = -0.45 + hold.progress * 0.2;
+    // The hand cross rises into view while a blessing is held.
+    this.heldCross.visible = hold.active && hold.progress > 0;
+    this.heldCross.position.y = -0.45 + hold.progress * 0.2;
 
     const cam = this.camera.getWorldPosition(new THREE.Vector3());
     this.updatePurification(fxDt);
@@ -431,10 +450,16 @@ export class StoryProps {
     this.updateBus(fxDt);
   }
 
+  /** The chalice and standing crucifix: side by side on the altar, carried, or on the ritual table. */
   private syncChalice(s: GameState): void {
     this.chalice.visible = s.chalice !== 'held';
     this.heldChalice.visible = s.chalice === 'held';
     at(this.chalice, s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : SPOTS.chaliceAltar);
+    const staged = s.flags.has('crucifix-staged');
+    this.crucifix.visible = staged || !s.inventory.has('crucifix');
+    at(this.crucifix, staged ? SPOTS.crucifixRitual : SPOTS.crucifixAltar);
+    // Face whoever stands before it: south down the nave, west from the circle.
+    this.crucifix.rotation.y = staged ? -Math.PI / 2 : 0;
   }
 
   /**

@@ -5,8 +5,9 @@ environmental scares and a three-day story. Desktop browser game built with
 TypeScript, Three.js and Vite.
 
 **Status: S2 (complete Day 1) built, awaiting the S2 gate.** Day 1 runs
-from the bus through the clock, the chalice, the first delivered relic and the
-walk home at dusk (D1-01 to D1-10), then resets into Day 2, which is S3.
+from the bus through preparing the ritual site (candles, then the chalice and
+crucifix from the altar), the clock, the first delivered relic and the walk
+home at dusk (D1-01 to D1-10), then resets into Day 2, which is S3.
 Live build:
 https://gentle-mud-09ee6761e.6.azurestaticapps.net (deploys on every push
 to `main`).
@@ -92,10 +93,16 @@ The church layout follows
   code, the ritual needs its preconditions and the holy circle, the ghost and
   every objective fire once even when every event is spammed, and D1-01 to
   D1-10 complete in order.
-- `tests/day1-s2.test.ts`: the S2 stage tests. Chalice, delivery and relic
-  can't be taken early or two at a time, the two-stage blessing needs
-  scripture between holds, the evening and the shift end happen once, and the
-  Day 2 reset puts tools back while keeping the clock on the desk.
+- `tests/day1-s2.test.ts`: the S2 stage tests. The table is set before the
+  first blessing (either piece first, before or after the candles), the
+  delivery and relic can't be taken early or two at a time, each music box
+  thought fires once and in order, the two-stage blessing needs scripture
+  between holds, the evening and the shift end happen once, and the Day 2
+  reset puts the tools and altar pieces back while keeping the clock on the
+  desk.
+- `tests/controls.test.ts`: the mouse-glitch filter keeps real movement and
+  drops one-off jumps; each day starts facing east with the church on the
+  left.
 - `tests/interact.test.ts`: lock feedback, open/close, never closing a door
   on the player.
 

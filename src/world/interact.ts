@@ -2,7 +2,7 @@ import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
 import { HOLY_CIRCLE, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { blessBlocker, type StoryEvent } from '../story/events';
+import { blessBlocker, tableReady, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -107,8 +107,12 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'matches':
       if (s.inventory.has('matches')) return NONE;
       return story('E  Take matches', { type: 'take', item: 'matches' });
+    case 'cross':
+      if (s.inventory.has('cross')) return NONE;
+      return story('E  Take cross', { type: 'take', item: 'cross' });
     case 'crucifix':
-      if (s.inventory.has('crucifix')) return NONE;
+      // The standing crucifix on the altar, for the ritual table.
+      if (s.inventory.has('crucifix') || s.flags.has('crucifix-staged')) return NONE;
       return story('E  Take crucifix', { type: 'take', item: 'crucifix' });
     case 'clock': {
       if (s.clock !== 'ritual-table') return NONE;
@@ -130,17 +134,22 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 
     case 'chalice':
       if (s.chalice !== 'altar') return NONE;
-      if (s.clock !== 'office-desk') return say('Chalice', REMINDERS.chaliceEarly);
       if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
       return story('E  Take the chalice', { type: 'pickup-chalice' });
 
-    case 'ritual-table':
-      if (s.held_prop_id === 'chalice') return story('E  Set out the chalice and crucifix', { type: 'stage-chalice' });
+    case 'ritual-table': {
+      const chalice = s.chalice === 'held';
+      const crucifix = s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
+      if (chalice || crucifix) {
+        const what = chalice && crucifix ? 'the chalice and crucifix' : chalice ? 'the chalice' : 'the crucifix';
+        return story(`E  Set out ${what}`, { type: 'stage-table' });
+      }
       if (s.held_prop_id === 'music-box' && s.relic === 'held' && !s.flags.has('relic-blessed')) {
-        if (s.chalice !== 'ritual-table') return say('Ritual table', REMINDERS.tableNotReady);
+        if (!tableReady(s)) return say('Ritual table', REMINDERS.tableNotReady);
         return story('E  Put the music box down', { type: 'place-relic' });
       }
       return NONE;
+    }
 
     case 'music-box': {
       if (s.relic !== 'ritual-table') return NONE;
@@ -148,6 +157,10 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         if (s.held_prop_id) return say('Music box', REMINDERS.handsFull);
         return story('E  Pick up music box', { type: 'pickup-relic' });
       }
+      // Still rattling from the first blessing.
+      if (s.flags.has('relic-rattled') && !s.flags.has('relic-settled')) return NONE;
+      if (!tableReady(s)) return say('Music box', REMINDERS.tableNotReady);
+      if (!s.inventory.has('cross')) return say('Music box', REMINDERS.needCross);
       if (!inHolyCircle(player)) return say('Music box', REMINDERS.standInCircle);
       if (s.flags.has('relic-rattled') && !s.flags.has('scripture-read')) return say('Music box', REMINDERS.scriptureFirst);
       return {
@@ -158,7 +171,7 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     }
 
     case 'bible':
-      if (!s.flags.has('relic-rattled') || s.flags.has('scripture-read')) return NONE;
+      if (!s.flags.has('relic-settled') || s.flags.has('scripture-read')) return NONE;
       return { prompt: 'E  Read scripture', action: { kind: 'read-bible' } };
 
     case 'relic-table':

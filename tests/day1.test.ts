@@ -126,28 +126,31 @@ describe('office and chapel key (D1-03)', () => {
   });
 });
 
-describe('candles and blessing (D1-04, D1-05)', () => {
+describe('candles, table and blessing (D1-04 to D1-06)', () => {
   it('cannot light candles without matches', () => {
     const s = createInitialState();
     applyEvent(s, { type: 'light-candle', index: 0 });
     expect(s.candles_lit.size).toBe(0);
   });
 
-  it('refuses the blessing until candles are lit and the crucifix is in hand', () => {
+  it('refuses the blessing until candles are lit, the table is set and the cross is in hand', () => {
     const s = createInitialState();
     applyEvent(s, { type: 'take', item: 'matches' });
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
-    applyEvent(s, { type: 'take', item: 'crucifix' });
+    run(s, [{ type: 'pickup-chalice' }, { type: 'take', item: 'crucifix' }, { type: 'stage-table' }]);
+    expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toEqual(['flash']);
+    applyEvent(s, { type: 'take', item: 'cross' });
     expect(kinds(applyEvent(s, { type: 'bless-clock' }))).toContain('purify');
     expect(s.flags.has('clock-blessed')).toBe(true);
   });
 
   it('only offers the hold-to-bless action from inside the holy circle', () => {
     const s = createInitialState();
-    run(s, [{ type: 'take', item: 'matches' }, { type: 'take', item: 'crucifix' }]);
+    run(s, [{ type: 'take', item: 'matches' }, { type: 'take', item: 'cross' }]);
     run(s, [0, 1, 2, 3].map((index) => ({ type: 'light-candle', index }) as StoryEvent));
+    run(s, [{ type: 'pickup-chalice' }, { type: 'take', item: 'crucifix' }, { type: 'stage-table' }]);
     const outside = { x: 9, y: 52.7, level: 0 as const };
     expect(inHolyCircle(outside)).toBe(false);
     expect(resolve('item:clock', s, outside).hold).toBeUndefined();
@@ -162,7 +165,7 @@ describe('candles and blessing (D1-04, D1-05)', () => {
   });
 });
 
-describe('clock delivery (D1-06)', () => {
+describe('clock delivery (D1-07)', () => {
   it('cannot pick up the clock before it is blessed', () => {
     const s = createInitialState();
     applyEvent(s, { type: 'pickup-clock' });
@@ -188,7 +191,7 @@ describe('clock delivered', () => {
     const fx = withChurchOpen(s, PLAYTHROUGH.slice(0, step('place-clock') + 1));
     expect(fx).toContainEqual({ kind: 'say', text: THOUGHTS.clockPlaced });
     expect(fx.some((f) => f.kind === 'after' && f.event.type === 'head-home')).toBe(false);
-    expect(s.objective_id).toBe('D1-07');
+    expect(s.objective_id).toBe('D1-08');
     expect(applyEvent(s, { type: 'head-home' })).toEqual([]);
   });
 });

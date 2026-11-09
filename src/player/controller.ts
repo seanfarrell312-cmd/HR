@@ -6,6 +6,13 @@ const WALK_SPEED = 3.4;
 const FAST_SPEED = 10;
 const MOUSE_SENSITIVITY = 0.0022;
 const MAX_PITCH = Math.PI / 2 - 0.05;
+/**
+ * Chrome and Edge on Windows sometimes report one wildly large mouse movement
+ * while the pointer is locked, which whips the view round (S2 playtest,
+ * 2026-11-09). A single event this far beyond the recent movement is dropped.
+ */
+const SPIKE_PIXELS = 150;
+const SPIKE_RATIO = 6;
 
 /** First-person walker: pointer-lock look, WASD movement, circle collision. */
 export class PlayerController {
@@ -26,6 +33,8 @@ export class PlayerController {
   frozen = false;
 
   private keys = new Set<string>();
+  /** Smoothed size of recent mouse movements, to tell a fast flick from a glitch. */
+  private recentMove = 0;
 
   constructor(
     readonly camera: THREE.PerspectiveCamera,
@@ -37,6 +46,8 @@ export class PlayerController {
     document.addEventListener('mousemove', (e) => {
       const dragging = this.dragLook && (e.buttons & 2) === 2;
       if (this.frozen || (!this.locked && !dragging)) return;
+      if (isMouseSpike(e.movementX, e.movementY, this.recentMove)) return;
+      this.recentMove = this.recentMove * 0.7 + Math.hypot(e.movementX, e.movementY) * 0.3;
       this.yaw += e.movementX * MOUSE_SENSITIVITY;
       this.pitch = THREE.MathUtils.clamp(this.pitch - e.movementY * MOUSE_SENSITIVITY, -MAX_PITCH, MAX_PITCH);
     });
@@ -46,6 +57,7 @@ export class PlayerController {
     document.addEventListener('visibilitychange', () => this.clearInput());
     document.addEventListener('pointerlockchange', () => {
       if (!this.locked) this.clearInput();
+      this.recentMove = 0;
     });
   }
 
@@ -97,4 +109,14 @@ export class PlayerController {
     this.camera.rotation.y = -this.yaw;
     this.camera.rotation.x = this.pitch;
   }
+}
+
+/**
+ * True for a mouse movement that is a browser glitch rather than the player:
+ * far bigger than any real movement just before it. A genuine fast flick
+ * builds up over several events, so it is never mistaken for one.
+ */
+export function isMouseSpike(dx: number, dy: number, recent: number): boolean {
+  const size = Math.hypot(dx, dy);
+  return size > SPIKE_PIXELS && size > SPIKE_RATIO * Math.max(recent, 10);
 }

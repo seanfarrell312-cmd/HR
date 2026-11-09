@@ -69,7 +69,7 @@ describe('layout data', () => {
     const clear = (r: { x1: number; y1: number; x2: number; y2: number }) =>
       !(leaf.x1 < r.x2 && leaf.x2 > r.x1 && leaf.y1 < r.y2 && leaf.y2 > r.y1);
     for (const p of PROPS.filter((p) => p.level === 0)) expect(clear(p.rect), p.id).toBe(true);
-    for (const c of [...CANDLES, SPOTS.matches, SPOTS.crucifix, SPOTS.clockRitual]) {
+    for (const c of [...CANDLES, SPOTS.matches, SPOTS.cross, SPOTS.clockRitual]) {
       expect(clear({ x1: c.x - 0.15, y1: c.y - 0.15, x2: c.x + 0.15, y2: c.y + 0.15 })).toBe(true);
     }
   });

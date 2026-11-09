@@ -37,11 +37,14 @@ export const SPOTS = {
   // Inside the office, on the wall beside its door (decisions 2026-11-08).
   chapelKey: { x: -8.27, y: 51.35, z: 1.45 },
   matches: { x: 8.55, y: 54.0, z: 1.2 },
-  crucifix: { x: 8.55, y: 54.9, z: 1.2 },
+  /** The hand cross for blessings, on the chapel shelf. */
+  cross: { x: 8.55, y: 54.9, z: 1.2 },
   clockRitual: { x: 13.45, y: 53.3, z: 0.9 },
   clockDesk: { x: -14.1, y: 52.9, z: 0.8 },
-  // S2 (decisions 2026-11-09).
-  chaliceAltar: { x: 0, y: 65.1, z: 1.1 },
+  // S2 (decisions 2026-11-09). The chalice and the standing crucifix live
+  // side by side on the nave altar, ready for each day's table setting.
+  chaliceAltar: { x: -0.3, y: 65.1, z: 1.1 },
+  crucifixAltar: { x: 0.3, y: 65.15, z: 1.1 },
   /** The ritual table's sockets: chalice and crucifix either side of the relic. */
   chaliceRitual: { x: 13.45, y: 52.65, z: 0.9 },
   crucifixRitual: { x: 13.45, y: 53.95, z: 0.9 },
@@ -76,12 +79,12 @@ export const SMS: Record<string, Sms> = {
   delivery1: {
     id: 'delivery1',
     from: 'Supervisor',
-    text: "Something just came through the drop box by the gate. Could you bring it in and give it the usual treatment? Leave it on the table outside the chapel when you're done.",
+    text: "Nice work on the clock! Another one just came through the drop box at the front gate. You can open it from the hatch on the inside. Bring it in and give it the usual treatment, then leave it on the table outside the chapel.",
   },
 };
 
-/** Seconds after the ritual table is ready before the delivery text arrives. */
-export const DELIVERY_DELAY = 4;
+/** Seconds after the clock is on the desk before the delivery text arrives. */
+export const DELIVERY_DELAY = 5;
 
 /** The card shown as each day begins (designer copy, 2026-11-08). */
 export const DAY_TITLES: Record<number, { title: string; time: string }> = {
@@ -112,8 +115,14 @@ export const THOUGHTS = {
   keyBeforeNote: 'Huh, a key. I should really read the note they left me first.',
   ghost: '...Huh. Kinda cute.',
   clockPlaced: "That wasn't too bad.",
-  // PROVISIONAL S2 lines (decisions 2026-11-09).
-  relicRattle: 'Stubborn little thing. Maybe some scripture will settle it.',
+  // S2 lines (designer copy, 2026-11-09 playtest).
+  /** Nearing the drop box once the music box is in it. */
+  dropBox: 'Sounds like another noisy one.',
+  relicPickup: 'An old music box. I think my mother had one of these.',
+  /** Carrying the still-playing music box up towards the church. */
+  relicAnnoying: "Man, this thing's annoying. I should hurry.",
+  /** Once the first blessing's rattle has died away. */
+  relicSettled: 'Well that shut it up at least, but it looks like this spirit is a stubborn one.',
   relicGhost: 'Did it just wink at me?',
   /** A few seconds after the music box is put away; then the walk back to the gate. */
   headHome: 'I guess I should head back to the bus stop.',
@@ -121,11 +130,11 @@ export const THOUGHTS = {
 
 /** Reminders when something is tried too early (doc 5.4). PROVISIONAL copy. */
 export const REMINDERS = {
-  chaliceEarly: 'I should finish with the clock first.',
   handsFull: 'My hands are full.',
   hatchInside: "The hatch is on the inside of the gate.",
   dropBoxEmpty: "Nothing's been delivered yet.",
-  tableNotReady: 'The chalice and crucifix need setting out first.',
+  tableNotReady: 'The chalice and crucifix need setting out on the table first.',
+  needCross: 'I need the cross from the shelf.',
   scriptureFirst: 'I should read from the Bible first.',
   standInCircle: 'I should stand in the holy circle.',
 };
@@ -139,6 +148,25 @@ export const SCRIPTURE = {
     'The LORD lift up his countenance upon thee, and give thee peace.',
   ],
 };
+
+/** Seconds the music box rattles against the first blessing before it is still. */
+export const RATTLE_SECONDS = 1.6;
+
+/**
+ * Seconds after the rattle stops before the "shut it up" thought, and after
+ * the wink thought before the music box's next objective shows.
+ */
+export const THOUGHT_BEAT = 0.4;
+export const STORE_OBJECTIVE_DELAY = 3;
+
+/** The "sounds like another noisy one" thought: this close to the drop box. */
+export const DROP_BOX_APPROACH = { x: SPOTS.dropBox.x, y: SPOTS.dropBox.y, r: 10 };
+
+/**
+ * The "this thing's annoying" thought: carrying the still-possessed music box
+ * this close to the church doors (about two thirds of the way up the path).
+ */
+export const RELIC_ANNOY = { x: 0, y: 50, r: 17 };
 
 /** Seconds between putting the music box away and the head-home thought (D1-10). */
 export const HEAD_HOME_DELAY = 5;
@@ -171,3 +199,9 @@ export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
 
 /** Shown as Day 2 begins, until S3 builds it. */
 export const S2_END = 'End of the S2 build. Day 2 comes in S3.';
+
+/**
+ * First-day control guide (designer copy, 2026-11-09), shown once the day card
+ * has faded. It fades after `seconds`, or as soon as the phone is opened.
+ */
+export const CONTROLS_GUIDE = { lines: ['Use the mouse to look around.', 'WASD to move'], seconds: 60 };

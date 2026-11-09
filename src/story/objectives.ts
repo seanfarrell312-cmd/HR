@@ -1,5 +1,6 @@
 import { S2_END } from '../data/story';
 import type { GameState } from '../state/store';
+import { tableReady } from './table';
 
 // Day 1 objectives (doc 6.1), built in S1 and S2. Each completes on validated
 // state, never on approach, and the sequencer only moves forward. Day 2's
@@ -29,6 +30,8 @@ export const DAY1: Objective[] = [
     done: (s) => s.flags.has('note-read') && s.inventory.has('chapel-key'),
   },
   {
+    // Preparing the ritual site, part one. The table (D1-05) can be set first
+    // or in between; its objective then completes the moment this one does.
     id: 'D1-04',
     task: (s) =>
       s.inventory.has('matches')
@@ -37,23 +40,29 @@ export const DAY1: Objective[] = [
     done: (s) => s.candles_lit.size === 4,
   },
   {
+    // Preparing the ritual site, part two (decisions 2026-11-09, S2 playtest:
+    // moved ahead of the first blessing and repeated each day).
     id: 'D1-05',
-    task: (s) =>
-      s.inventory.has('crucifix')
-        ? 'Stand in the holy circle and bless the clock'
-        : 'Take the crucifix from the chapel shelf',
-    done: (s) => s.flags.has('clock-blessed'),
+    task: (s) => {
+      const chaliceAtAltar = s.chalice === 'altar';
+      const crucifixAtAltar = !s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
+      if (chaliceAtAltar && crucifixAtAltar) return 'Fetch the chalice and crucifix from the altar';
+      if (chaliceAtAltar) return 'Fetch the chalice from the altar';
+      if (crucifixAtAltar) return 'Fetch the crucifix from the altar';
+      return 'Set the chalice and crucifix out on the ritual table';
+    },
+    done: (s) => tableReady(s),
   },
   {
     id: 'D1-06',
-    task: () => "Put the clock on the supervisor's desk",
-    done: (s) => s.clock === 'office-desk',
+    task: (s) =>
+      s.inventory.has('cross') ? 'Stand in the holy circle and bless the clock' : 'Take the cross from the chapel shelf',
+    done: (s) => s.flags.has('clock-blessed'),
   },
   {
     id: 'D1-07',
-    task: (s) =>
-      s.chalice === 'held' ? 'Set the chalice and crucifix out on the ritual table' : 'Fetch the chalice from the altar',
-    done: (s) => s.chalice === 'ritual-table',
+    task: () => "Put the clock on the supervisor's desk",
+    done: (s) => s.clock === 'office-desk',
   },
   {
     id: 'D1-08',
@@ -71,6 +80,8 @@ export const DAY1: Objective[] = [
     task: (s) => {
       if (s.relic === 'held') return 'Put the music box on the ritual table';
       if (!s.flags.has('relic-rattled')) return 'Stand in the holy circle and bless the music box';
+      // Nothing new until it has gone still and the thought has played.
+      if (!s.flags.has('relic-settled')) return '';
       if (!s.flags.has('scripture-read')) return 'Read from the Bible on the stand';
       return 'Bless the music box again';
     },
@@ -83,6 +94,8 @@ export const DAY1: Objective[] = [
     id: 'D1-10',
     task: (s) => {
       if (s.relic === 'relic-table') return s.flags.has('heading-home') ? 'Head back to the front gate' : '';
+      // Waits until the ghost has gone and the wink thought has played.
+      if (!s.flags.has('relic-thought-done')) return '';
       return s.relic === 'held'
         ? 'Put the music box on the table outside the chapel'
         : 'Take the music box to the table outside the chapel';

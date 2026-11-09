@@ -1,17 +1,25 @@
 import {
   CHURCH_APPROACH,
   DELIVERY_DELAY,
+  DROP_BOX_APPROACH,
   GATE_CODE,
   GATE_RETURN,
   HEAD_HOME_DELAY,
+  RATTLE_SECONDS,
+  RELIC_ANNOY,
   REMINDERS,
   SMS,
+  STORE_OBJECTIVE_DELAY,
+  THOUGHT_BEAT,
   THOUGHTS,
   TREE_PEEK,
   WRONG_CODE,
 } from '../data/story';
 import type { GameState, QuestItem } from '../state/store';
 import { advanceObjectives } from './objectives';
+import { tableReady } from './table';
+
+export { siteReady, tableReady } from './table';
 
 // The single place story state changes. Every event is validated against the
 // current state and is a no-op when it has already happened, so key spam,
@@ -27,19 +35,28 @@ export type StoryEvent =
   | { type: 'read-note' }
   | { type: 'take'; item: QuestItem }
   | { type: 'light-candle'; index: number }
+  | { type: 'pickup-chalice' }
+  /** Set whatever the player carries of the chalice and crucifix out on the ritual table. */
+  | { type: 'stage-table' }
   | { type: 'bless-clock' }
   | { type: 'pickup-clock' }
   | { type: 'place-clock' }
-  // S2: D1-07 to D1-10.
-  | { type: 'pickup-chalice' }
-  /** Set the carried chalice and the crucifix out on the ritual table. */
-  | { type: 'stage-chalice' }
+  /** The player's position; the drop-box thought once the music box is in it. */
+  | { type: 'approach-drop-box'; x: number; y: number; level: number }
   /** Take the delivered relic out of the drop box. */
   | { type: 'take-relic' }
+  /** The player's position; the "annoying" thought carrying the music box up to the church. */
+  | { type: 'relic-near-church'; x: number; y: number; level: number }
   | { type: 'place-relic' }
   /** First hold rattles the relic; after scripture, the second releases it. */
   | { type: 'bless-relic' }
+  /** Timed: the rattle has died away. */
+  | { type: 'relic-settled' }
   | { type: 'read-scripture' }
+  /** The music box's ghost has risen and gone (from the view's timing). */
+  | { type: 'relic-ghost-gone' }
+  /** Timed: a beat after the wink thought, the music box's next objective shows. */
+  | { type: 'relic-thought-done' }
   | { type: 'pickup-relic' }
   /** Put the cleansed relic on the table outside the chapel. */
   | { type: 'store-relic' }
@@ -130,7 +147,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'take':
       if (s.inventory.has(e.item)) return [];
-      // A staged crucifix is on the ritual table, not back on the shelf.
+      // A staged crucifix is on the ritual table, not back on the altar.
       if (e.item === 'crucifix' && s.flags.has('crucifix-staged')) return [];
       if (e.item === 'chapel-key' && !s.flags.has('note-read')) {
         return [{ kind: 'say', text: THOUGHTS.keyBeforeNote }];
@@ -138,6 +155,32 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
       break;
+
+    case 'pickup-chalice':
+      if (s.chalice !== 'altar') return [];
+      if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      s.chalice = 'held';
+      s.held_prop_id = 'chalice';
+      out.push({ kind: 'sfx', id: 'pickup' });
+      break;
+
+    case 'stage-table': {
+      // Preparing the table (D1-05): the chalice and the standing crucifix
+      // either side of the relic socket. Either can go down first.
+      const chalice = s.chalice === 'held';
+      const crucifix = s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
+      if (!chalice && !crucifix) return [];
+      if (chalice) {
+        s.chalice = 'ritual-table';
+        s.held_prop_id = null;
+      }
+      if (crucifix) {
+        s.inventory.delete('crucifix');
+        s.flags.add('crucifix-staged');
+      }
+      out.push({ kind: 'sfx', id: 'place' });
+      break;
+    }
 
     case 'light-candle':
       if (e.index < 0 || e.index > 3 || s.candles_lit.has(e.index)) return [];
@@ -171,23 +214,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'sfx', id: 'place' }, { kind: 'say', text: THOUGHTS.clockPlaced });
       break;
 
-    case 'pickup-chalice':
-      if (s.chalice !== 'altar') return [];
-      if (s.clock !== 'office-desk') return flash(REMINDERS.chaliceEarly);
-      if (s.held_prop_id) return flash(REMINDERS.handsFull);
-      s.chalice = 'held';
-      s.held_prop_id = 'chalice';
-      out.push({ kind: 'sfx', id: 'pickup' });
-      break;
-
-    case 'stage-chalice':
-      if (s.chalice !== 'held') return [];
-      s.chalice = 'ritual-table';
-      s.held_prop_id = null;
-      // The crucifix leaves the pocket for its socket on the table.
-      s.inventory.delete('crucifix');
-      s.flags.add('crucifix-staged');
-      out.push({ kind: 'sfx', id: 'place' });
+    case 'approach-drop-box':
+      if (s.relic !== 'drop-box' || s.flags.has('drop-box-approached')) return [];
+      if (!near(e, DROP_BOX_APPROACH)) return [];
+      s.flags.add('drop-box-approached');
+      out.push({ kind: 'say', text: THOUGHTS.dropBox });
       break;
 
     case 'take-relic':
@@ -195,12 +226,20 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
       s.relic = 'held';
       s.held_prop_id = 'music-box';
-      out.push({ kind: 'sfx', id: 'pickup' });
+      s.flags.add('drop-box-approached');
+      out.push({ kind: 'sfx', id: 'pickup' }, { kind: 'say', text: THOUGHTS.relicPickup });
+      break;
+
+    case 'relic-near-church':
+      if (s.relic !== 'held' || s.flags.has('relic-rattled') || s.flags.has('relic-annoyed')) return [];
+      if (!near(e, RELIC_ANNOY)) return [];
+      s.flags.add('relic-annoyed');
+      out.push({ kind: 'say', text: THOUGHTS.relicAnnoying });
       break;
 
     case 'place-relic':
       if (s.relic !== 'held') return [];
-      if (s.chalice !== 'ritual-table') return flash(REMINDERS.tableNotReady);
+      if (!tableReady(s)) return flash(REMINDERS.tableNotReady);
       s.relic = 'ritual-table';
       s.held_prop_id = null;
       out.push({ kind: 'sfx', id: 'place' });
@@ -208,14 +247,20 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'bless-relic': {
       if (s.relic !== 'ritual-table' || s.flags.has('relic-blessed')) return [];
-      if (!s.flags.has('crucifix-staged')) return flash(REMINDERS.tableNotReady);
+      if (!tableReady(s)) return flash(REMINDERS.tableNotReady);
+      if (!s.inventory.has('cross')) return flash(REMINDERS.needCross);
       if (!s.flags.has('relic-rattled')) {
-        // Cross: the relic fights it, rattles and settles.
+        // Cross: the relic fights it, rattles and goes still; the thought
+        // waits until it has.
         s.flags.add('relic-rattled');
-        out.push({ kind: 'rattle' }, { kind: 'sfx', id: 'rattle' }, { kind: 'say', text: THOUGHTS.relicRattle });
+        out.push(
+          { kind: 'rattle' },
+          { kind: 'sfx', id: 'rattle' },
+          { kind: 'after', seconds: RATTLE_SECONDS + THOUGHT_BEAT, event: { type: 'relic-settled' } },
+        );
         break;
       }
-      if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
+      if (!s.flags.has('relic-settled') || !s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
       // Scripture, then cross again: the spirit is released.
       s.flags.add('relic-blessed');
       s.fired_scares.push('d1-relic-ghost');
@@ -223,10 +268,30 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
     }
 
+    case 'relic-settled':
+      if (!s.flags.has('relic-rattled') || s.flags.has('relic-settled')) return [];
+      s.flags.add('relic-settled');
+      out.push({ kind: 'say', text: THOUGHTS.relicSettled });
+      break;
+
     case 'read-scripture':
-      if (!s.flags.has('relic-rattled') || s.flags.has('scripture-read')) return [];
+      if (!s.flags.has('relic-settled') || s.flags.has('scripture-read')) return [];
       s.flags.add('scripture-read');
       out.push({ kind: 'sfx', id: 'paper' });
+      break;
+
+    case 'relic-ghost-gone':
+      if (!s.flags.has('relic-blessed') || s.flags.has('relic-ghost-gone')) return [];
+      s.flags.add('relic-ghost-gone');
+      out.push(
+        { kind: 'say', text: THOUGHTS.relicGhost },
+        { kind: 'after', seconds: STORE_OBJECTIVE_DELAY, event: { type: 'relic-thought-done' } },
+      );
+      break;
+
+    case 'relic-thought-done':
+      if (!s.flags.has('relic-ghost-gone') || s.flags.has('relic-thought-done')) return [];
+      s.flags.add('relic-thought-done');
       break;
 
     case 'pickup-relic':
@@ -274,7 +339,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
   for (const id of advanceObjectives(s)) {
     out.push({ kind: 'objective', id });
-    // The ritual table is ready: the first delivery is on its way (D1-08).
+    // The clock is on the desk: the first delivery is on its way (D1-08).
     if (id === 'D1-07') out.push({ kind: 'after', seconds: DELIVERY_DELAY, event: { type: 'receive-sms', id: 'delivery1' } });
     // Out through the gate: the shift is over.
     if (id === 'D1-10') out.push({ kind: 'end-day' });
@@ -286,6 +351,10 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 export function blessBlocker(s: GameState): string | null {
   if (s.clock !== 'ritual-table') return 'The clock needs to be on the ritual table.';
   if (s.candles_lit.size < 4) return 'The candles need lighting first.';
-  if (!s.inventory.has('crucifix')) return 'I need the crucifix from the shelf.';
+  if (!tableReady(s)) return REMINDERS.tableNotReady;
+  if (!s.inventory.has('cross')) return REMINDERS.needCross;
   return null;
 }
+
+const near = (p: { x: number; y: number; level: number }, c: { x: number; y: number; r: number }): boolean =>
+  p.level === 0 && Math.hypot(p.x - c.x, p.y - c.y) <= c.r;

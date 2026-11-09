@@ -4,32 +4,42 @@ import { applyEvent, type Effect, type StoryEvent } from '../src/story/events';
 
 /** Every Day 1 event in order, as a player would trigger them. */
 export const PLAYTHROUGH: StoryEvent[] = [
-  // S1: D1-01 to D1-06.
+  // D1-01 to D1-03: gate, church, note and key.
   { type: 'receive-sms', id: 'gateCode' },
   { type: 'read-sms' },
   { type: 'keypad-submit', code: GATE_CODE },
   { type: 'door-opened', id: 'church' },
   { type: 'read-note' },
   { type: 'take', item: 'chapel-key' },
+  // D1-04 and D1-05: prepare the ritual site.
   { type: 'take', item: 'matches' },
   { type: 'light-candle', index: 0 },
   { type: 'light-candle', index: 1 },
   { type: 'light-candle', index: 2 },
   { type: 'light-candle', index: 3 },
+  { type: 'pickup-chalice' },
   { type: 'take', item: 'crucifix' },
+  { type: 'stage-table' },
+  // D1-06 and D1-07: bless the clock, take it to the desk.
+  { type: 'take', item: 'cross' },
   { type: 'bless-clock' },
   { type: 'pickup-clock' },
   { type: 'place-clock' },
-  // S2: D1-07 to D1-10.
-  { type: 'pickup-chalice' },
-  { type: 'stage-chalice' },
+  // D1-08: the delivery.
   { type: 'receive-sms', id: 'delivery1' },
   { type: 'read-sms' },
+  { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
   { type: 'take-relic' },
+  { type: 'relic-near-church', x: 0, y: 36, level: 0 },
+  // D1-09: the two-stage blessing.
   { type: 'place-relic' },
   { type: 'bless-relic' },
+  { type: 'relic-settled' },
   { type: 'read-scripture' },
   { type: 'bless-relic' },
+  { type: 'relic-ghost-gone' },
+  { type: 'relic-thought-done' },
+  // D1-10: store it and leave.
   { type: 'pickup-relic' },
   { type: 'store-relic' },
   { type: 'head-home' },

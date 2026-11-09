@@ -170,3 +170,67 @@ Designer rulings before building S2:
   for things tried early, the Day 2 card ("Second Day", "4PM"). The verse on
   the Bible stand is Numbers 6:24-26, King James Version (public domain).
 - **Dusk colours** and the music box tune are first passes.
+
+## 2026-11-09 — S2 playtest changes
+
+Designer rulings after playing S2:
+
+| Topic | Ruling |
+|---|---|
+| Start of each day | The player starts facing east along the road, the way the bus drives off, with the church on the left. Day 2 starts the same way. |
+| Control guide | After the Day 1 card: "Use the mouse to look around." / "WASD to move". It fades after a minute, or as soon as the player opens the phone with Q. First day only. |
+| Ritual table | Setting out the chalice and crucifix is part of preparing the ritual site, **before the first blessing**, and is repeated each day. |
+| Cross and crucifix | Two different things. The **cross** is the small hand cross from the chapel shelf, held up for blessings. The **crucifix** is larger, with a flat base it stands on; it sits on the **altar next to the chalice** and is set out on the ritual table. |
+| Clock chime | Only speeds up once the candles are lit **and** the table is set. |
+| Delivery text | Rewritten to send the player to the drop box (provisional copy below). The music box and its tune stay. |
+| Music box thoughts | Nearing the drop box: "Sounds like another noisy one." Picking it up: "An old music box. I think my mother had one of these." Carrying it up to the church: "Man, this thing's annoying. I should hurry." After the first blessing, once it has rattled and gone still: "Well that shut it up at least, but it looks like this spirit is a stubborn one." |
+| Storing the music box | Its objective only appears after "Did it just wink at me?" |
+| Camera | Must never turn on its own, near the tree ghost, in the holy circle or anywhere else. |
+
+This reorders the doc's Day 1 table (doc 6.1). Objective ids now run:
+
+| Id | Objective |
+|---|---|
+| D1-01 | Read the code, open the gate (unchanged) |
+| D1-02 | Into the church (unchanged) |
+| D1-03 | Office note and chapel key (unchanged) |
+| D1-04 | Matches from the shelf, light the four candles |
+| D1-05 | Chalice and crucifix from the altar, set out on the ritual table (was D1-07) |
+| D1-06 | Cross from the shelf, bless the clock (was D1-05) |
+| D1-07 | Clock to the supervisor's desk (was D1-06) |
+| D1-08 to D1-10 | Delivery, two-stage blessing, store and leave (unchanged) |
+
+D1-04 and D1-05 can be done in either order: the objective box asks for the
+candles first, and a table already set completes the moment the last candle
+is lit. The chalice and crucifix can be fetched at any time, before the note
+too. They stay on the ritual table for the music box blessing, then go back
+to the altar overnight.
+
+The camera jumps were not caused by the game: nothing in the code turns the
+view. The likely cause is a Chrome/Edge bug on Windows where one mouse event
+under pointer lock reports a huge movement. The game now asks for raw mouse
+input (`unadjustedMovement`, which also skips Windows mouse acceleration, so
+looking may feel slightly different) and drops any single movement far
+bigger than the movement just before it.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Delivery text:** "Nice work on the clock! Another one just came through
+  the drop box at the front gate. You can open it from the hatch on the
+  inside. Bring it in and give it the usual treatment, then leave it on the
+  table outside the chapel." It now arrives 5 s after the clock is put on the
+  desk, so "That wasn't too bad." has finished first.
+- **Office note.** The designer's letter still says "There should be matches
+  and a crucifix on the shelf" and doesn't mention the altar or setting the
+  table. It is left as written for the designer to revise.
+- **Trigger distances.** "Another noisy one" fires within 10 m of the drop
+  box. "This thing's annoying" fires within 17 m of the church doors, about
+  two thirds of the way up the path. The "shut it up" thought comes 0.4 s
+  after the rattle stops. The store objective comes 3 s after the wink
+  thought.
+- **Reminders:** "The chalice and crucifix need setting out on the table
+  first." and "I need the cross from the shelf."
+- **Standing crucifix look:** gold, stepped base, pale figure.
+- **Chime:** calm and steady until the site is ready, then fast and shaking
+  at once (no gradual build).
+- **Control guide position:** upper centre, under the day card.

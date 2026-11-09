@@ -11,8 +11,13 @@ export type EnvironmentPreset =
   | 'D3_BLACK_FOG'
   | 'RESTORED';
 
-/** Invisible quest inventory (doc 5.2): keys and small tools. */
-export type QuestItem = 'chapel-key' | 'matches' | 'crucifix';
+/**
+ * Invisible quest inventory (doc 5.2): keys and small tools. The cross is the
+ * small hand cross from the chapel shelf, held up for blessings; the crucifix
+ * is the larger standing one from the altar, set out on the ritual table
+ * (decisions 2026-11-09, S2 playtest).
+ */
+export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix';
 
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
 export type HeldProp = 'clock' | 'chalice' | 'music-box';
@@ -24,9 +29,14 @@ export type Flag =
   | 'note-read'
   | 'clock-blessed'
   | 'crucifix-staged'
+  | 'drop-box-approached'
+  | 'relic-annoyed'
   | 'relic-rattled'
+  | 'relic-settled'
   | 'scripture-read'
   | 'relic-blessed'
+  | 'relic-ghost-gone'
+  | 'relic-thought-done'
   | 'heading-home'
   | 'returned-to-gate';
 

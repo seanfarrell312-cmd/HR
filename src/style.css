@@ -250,6 +250,26 @@ canvas {
   60% { opacity: 0.15; }
 }
 
+.guide {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 30px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000;
+  opacity: 0;
+  transition: opacity 1.5s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.guide.show {
+  opacity: 1;
+}
+
 .subtitle {
   position: absolute;
   left: 50%;

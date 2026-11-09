@@ -4,7 +4,7 @@ import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
 import { environmentLook } from './data/environment';
 import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS, THOUGHTS } from './data/story';
+import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, OFFICE_NOTE, S2_END, SCRIPTURE, SMS, THOUGHTS } from './data/story';
 import { PlayerController } from './player/controller';
 import { createInitialState, type EnvironmentPreset, type GameState } from './state/store';
 import { startDay } from './story/day';
@@ -24,6 +24,8 @@ const REACH = 2.6;
 const DAY_FADE = 1.4;
 /** Seconds after arrival before the supervisor's text comes in. */
 const SMS_DELAY = 2.5;
+/** Seconds the day card is on screen (matches the CSS title-fade animation). */
+const TITLE_SECONDS = 3.2;
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -80,8 +82,12 @@ props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onTune = (volume) => sfx.tune(volume);
 props.onCue = (cue, relic) => {
   if (cue === 'ghost') sfx.play('release');
-  // The thought waits until the ghost has risen and gone.
-  else if (cue === 'ghost-gone') hud.say(relic === 'clock' ? THOUGHTS.ghost : THOUGHTS.relicGhost);
+  // The thought waits until the ghost has risen and gone. The music box's
+  // also brings on its next objective, so it goes through the story.
+  else if (cue === 'ghost-gone') {
+    if (relic === 'clock') hud.say(THOUGHTS.ghost);
+    else dispatch({ type: 'relic-ghost-gone' });
+  }
   else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : 'box-wind-down');
   else sfx.play(cue);
 };
@@ -162,6 +168,9 @@ function beginDay(): void {
   props.startIntro();
   const card = DAY_TITLES[state.day_index];
   hud.showTitle(card?.title ?? `Day ${state.day_index}`, card?.time);
+  // The control guide follows the card, on the first day only.
+  if (state.day_index === 1) hud.showGuide(CONTROLS_GUIDE.lines, TITLE_SECONDS, CONTROLS_GUIDE.seconds);
+  else hud.hideGuide();
   sfx.engine(5);
   smsTimer = SMS_DELAY;
 }
@@ -211,6 +220,8 @@ function openPanel(kind: Panel): void {
   player.frozen = true;
   primaryDown = false;
   if (kind === 'phone') {
+    // Opening the phone shows the player has found their feet: drop the guide.
+    hud.hideGuide();
     hud.openPanel('phone', Hud.phoneHtml(state.inbox.map((id) => SMS[id])), 'Q or E to put away');
     hud.setPhoneAlert(false);
   } else if (kind === 'note') {
@@ -307,20 +318,32 @@ function lockPointer(): void {
   sfx.unlock();
   let result: unknown;
   try {
-    result = renderer.domElement.requestPointerLock();
+    // Raw mouse input where the browser offers it: no OS acceleration, and it
+    // avoids the Windows pointer-lock jumps that whip the view round.
+    result = renderer.domElement.requestPointerLock({ unadjustedMovement: true });
   } catch {
     startDragLook();
     return;
   }
   if (result instanceof Promise) {
-    result.catch(() => {
-      // Chrome refuses a re-lock for about a second after Escape; anything
-      // else means this page can't capture the mouse at all (embedded
-      // previews, sandboxed frames), so play on without it.
-      if (performance.now() - lastUnlock < 2000) hud.setPaused(true, 'Click again to resume');
-      else startDragLook();
+    result.catch((err: unknown) => {
+      // Some browsers and systems can't give raw input: lock without it.
+      if (err instanceof DOMException && err.name === 'NotSupportedError') {
+        const plain = renderer.domElement.requestPointerLock() as unknown;
+        if (plain instanceof Promise) plain.catch(() => lockFailed());
+        return;
+      }
+      lockFailed();
     });
   }
+}
+
+function lockFailed(): void {
+  // Chrome refuses a re-lock for about a second after Escape; anything else
+  // means this page can't capture the mouse at all (embedded previews,
+  // sandboxed frames), so play on without it.
+  if (performance.now() - lastUnlock < 2000) hud.setPaused(true, 'Click again to resume');
+  else startDragLook();
 }
 
 function startDragLook(): void {
@@ -447,7 +470,7 @@ function shown(o: THREE.Object3D): boolean {
   return true;
 }
 
-const TOOL_NAMES: Record<string, string> = { 'chapel-key': 'Chapel key', matches: 'Matches', crucifix: 'Crucifix' };
+const TOOL_NAMES: Record<string, string> = { 'chapel-key': 'Chapel key', matches: 'Matches', cross: 'Cross', crucifix: 'Standing crucifix' };
 const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box' };
 
 let fps = 0;
@@ -512,6 +535,8 @@ renderer.setAnimationLoop(() => {
     // Position checks; each event is a no-op once it has fired.
     const at = { x: player.x, y: player.y, level: player.level };
     if (!state.flags.has('church-approached')) dispatch({ type: 'approach-church', ...at });
+    if (state.relic === 'drop-box' && !state.flags.has('drop-box-approached')) dispatch({ type: 'approach-drop-box', ...at });
+    if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
     if (state.flags.has('heading-home')) {
       if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
       dispatch({ type: 'reach-gate', ...at });

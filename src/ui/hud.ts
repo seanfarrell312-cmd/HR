@@ -28,6 +28,10 @@ export class Hud {
   private debug: HTMLElement;
   private panel: HTMLElement;
   private panelBody: HTMLElement;
+  private guide: HTMLElement;
+  /** Seconds until the control guide appears, then until it fades; -1 when off. */
+  private guideDelay = -1;
+  private guideTimer = 0;
   private messageTimer = 0;
   private subtitleTimer = 0;
   private objectiveTimer = 0;
@@ -46,6 +50,7 @@ export class Hud {
          <div class="sms-alert">New SMS - Press Q</div>
        </div>
        <div class="corner-hints"><div class="interact-hint">(E) Interact</div><div class="inventory-hint">(I) View Inventory</div></div>
+       <div class="guide"></div>
        <div class="subtitle"></div>
        <div class="message"></div>
        <div class="fade"></div>
@@ -73,6 +78,7 @@ export class Hud {
     this.prompt = q('.prompt');
     this.message = q('.message');
     this.subtitle = q('.subtitle');
+    this.guide = q('.guide');
     this.objective = q('.objective');
     this.objectiveText = q('.objective-text');
     this.objectiveHint = q('.objective-hint');
@@ -156,6 +162,20 @@ export class Hud {
     this.title.classList.add('show');
   }
 
+  /** First-day control guide: appears after `delay`, fades after `seconds`. */
+  showGuide(lines: string[], delay: number, seconds: number): void {
+    this.guide.innerHTML = lines.map((l) => `<div>${esc(l)}</div>`).join('');
+    this.guide.classList.remove('show');
+    this.guideDelay = delay;
+    this.guideTimer = seconds;
+  }
+
+  hideGuide(): void {
+    this.guideDelay = -1;
+    this.guideTimer = 0;
+    this.guide.classList.remove('show');
+  }
+
   /** Fade the screen to black (end of a shift) or back in. */
   setFade(black: boolean): void {
     this.fade.classList.toggle('show', black);
@@ -224,6 +244,13 @@ export class Hud {
   }
 
   update(dt: number): void {
+    if (this.guideDelay >= 0) {
+      this.guideDelay -= dt;
+      if (this.guideDelay < 0) this.guide.classList.add('show');
+    } else if (this.guideTimer > 0) {
+      this.guideTimer -= dt;
+      if (this.guideTimer <= 0) this.guide.classList.remove('show');
+    }
     if (this.messageTimer > 0) {
       this.messageTimer -= dt;
       if (this.messageTimer <= 0) this.message.classList.remove('show');

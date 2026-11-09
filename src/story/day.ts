@@ -17,7 +17,8 @@ export function startDay(prev: GameState, day: 2 | 3): GameState {
   s.fired_scares = [...prev.fired_scares];
   s.inbox = [...prev.inbox];
   s.sms_read = new Set(prev.inbox);
-  // The cleansed clock is set dressing now (D1-06).
+  // The cleansed clock is set dressing now (D1-07). The chalice and crucifix
+  // are back on the altar, so the table is set again each day.
   if (prev.clock === 'office-desk' || prev.clock === 'held') s.clock = 'office-desk';
   // Staff clear finished relics from the table between shifts.
   if (prev.relic === 'relic-table' || prev.relic === 'removed') s.relic = 'removed';

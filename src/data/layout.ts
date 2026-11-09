@@ -329,7 +329,11 @@ export const PROPS: Prop[] = [
 
 // --- Spawns and debug teleports -------------------------------------------
 
-export const ARRIVAL: Spawn = { x: 0, y: -5, level: 0, yaw: 0 };
+/**
+ * Each day starts on the road outside the gate facing east, the way the bus
+ * drives off, with the church on the left (decisions 2026-11-09).
+ */
+export const ARRIVAL: Spawn = { x: 0, y: -5, level: 0, yaw: Math.PI / 2 };
 
 export const TELEPORTS: Teleport[] = [
   { key: '1', label: 'Arrival (outside gate)', ...ARRIVAL },
