@@ -333,3 +333,27 @@ chapel door, which the designer didn't mention.
   show "Chalice" / "Crucifix" until the objective appears.
 - **Day 1 only.** The three new thoughts are tied to Day 1 for now. Later
   days get their own lines in S3.
+
+## 2026-11-10 — Gate-code text, automatic gate, one text at a time
+
+Designer rulings:
+
+| Topic | Ruling |
+|---|---|
+| Gate-code text | "Afternoon! I forgot to mention, the gate code is 4173. Your instructions should be in my office. Just hang a left once you get into the church." |
+| Front gate | Opens when the code is entered, then shuts itself after 10 seconds. |
+| Keypad sticker | A label pasted above the keypad screen: "Caution: gate is automatic and closes after 10 seconds". |
+| Phone | Only the newest text shows. Each new one replaces the one before. |
+
+### PROVISIONAL (not yet ruled on)
+
+- **Every opening.** The gate shuts itself 10 s after any opening, including
+  when it's opened again by hand with E later in the day. That matches the
+  sticker. Once the code is in, the gate stays unlocked for the rest of the
+  day.
+- **No closing on the player.** If the player is standing in the gateway
+  when the 10 s are up, the gate waits and shuts as soon as they step clear.
+- **Paused** (inventory open), the countdown stops, like the other timers.
+- **No sound** for the gate closing yet. One can come with the audio pass.
+- **Walk home.** The end-of-day check covers the area just inside the gate,
+  so the shift still ends at the gate without opening it.

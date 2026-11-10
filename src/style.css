@@ -410,6 +410,22 @@ canvas {
   text-align: center;
 }
 
+/* A sticker pasted above the keypad screen. */
+.keypad-caution {
+  margin: 0 auto 14px;
+  max-width: 280px;
+  padding: 6px 10px;
+  background: #e8c43a;
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 2px solid #1a1a1a;
+  transform: rotate(-1.5deg);
+}
+
 .keypad-title {
   text-align: center;
   letter-spacing: 0.3em;

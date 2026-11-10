@@ -93,6 +93,9 @@ The church layout follows
   code, the ritual needs its preconditions and the holy circle, the ghost and
   every objective fire once even when every event is spammed, and D1-01 to
   D1-10 complete in order.
+- `tests/gate-phone.test.ts`: the gate-code text, the gate shutting itself
+  10 s after opening (and waiting for a player in the gateway), and the phone
+  showing only the newest text.
 - `tests/day1-s2.test.ts`: the S2 stage tests. No objective shows before the
   gate-code text, the chapel, candle and table thoughts each play before the
   objective that follows them, the key objective waits for

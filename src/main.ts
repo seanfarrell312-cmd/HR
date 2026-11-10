@@ -3,8 +3,18 @@ import './style.css';
 import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
 import { environmentLook } from './data/environment';
-import { ARRIVAL, TELEPORTS } from './data/layout';
-import { BLESS_SECONDS, CONTROLS_GUIDE, DAY_TITLES, GATE_TEXT_DELAY, OFFICE_NOTE, S2_END, SCRIPTURE, SMS } from './data/story';
+import { ARRIVAL, DOORS, PLAYER_RADIUS, TELEPORTS } from './data/layout';
+import {
+  BLESS_SECONDS,
+  CONTROLS_GUIDE,
+  DAY_TITLES,
+  GATE_OPEN_SECONDS,
+  GATE_TEXT_DELAY,
+  OFFICE_NOTE,
+  phoneMessages,
+  S2_END,
+  SCRIPTURE,
+} from './data/story';
 import { PlayerController } from './player/controller';
 import { createInitialState, type EnvironmentPreset, type GameState } from './state/store';
 import { startDay } from './story/day';
@@ -14,7 +24,8 @@ import { currentObjective } from './story/objectives';
 import { Hud, type Panel } from './ui/hud';
 import { showTitleScreen } from './ui/title';
 import { buildWorld, poseDoor } from './world/build';
-import { closedDoorColliders, staticColliders, type Collider } from './world/collision';
+import { AutoClose } from './world/autoClose';
+import { circleHitsRect, closedDoorColliders, doorRect, staticColliders, type Collider } from './world/collision';
 import { lockState, resolve, type Action } from './world/interact';
 import { StoryProps } from './world/storyProps';
 import { zoneAt } from './world/zones';
@@ -107,9 +118,17 @@ function refreshColliders(): void {
   colliders = [...fixed, ...closedDoorColliders(state.open_doors)];
 }
 
+/** The front gate shuts itself a few seconds after it opens. */
+const gateCloser = new AutoClose(GATE_OPEN_SECONDS);
+const gateDoor = DOORS.find((d) => d.id === 'gate')!;
+
 function setDoor(id: string, open: boolean): void {
   if (open) state.open_doors.add(id);
   else state.open_doors.delete(id);
+  if (id === 'gate') {
+    if (open) gateCloser.opened();
+    else gateCloser.cancel();
+  }
   const v = world.doors.get(id);
   if (v) v.target = open ? 1 : 0;
   refreshColliders();
@@ -180,6 +199,7 @@ function enterDay(next: GameState): void {
   state = next;
   pending = [];
   dayFade = -1;
+  gateCloser.cancel();
   for (const v of world.doors.values()) {
     v.amount = v.target = 0;
     poseDoor(v);
@@ -221,7 +241,7 @@ function openPanel(kind: Panel): void {
   if (kind === 'phone') {
     // Opening the phone shows the player has found their feet: drop the guide.
     hud.hideGuide();
-    hud.openPanel('phone', Hud.phoneHtml(state.inbox.map((id) => SMS[id])), 'Q or E to put away');
+    hud.openPanel('phone', Hud.phoneHtml(phoneMessages(state.inbox)), 'Q or E to put away');
     hud.setPhoneAlert(false);
   } else if (kind === 'note') {
     hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
@@ -529,6 +549,10 @@ renderer.setAnimationLoop(() => {
     smsTimer -= dt;
     if (smsTimer <= 0) dispatch({ type: 'receive-sms', id: 'gateCode' });
   }
+
+  // Never shut the gate on the player: wait until they're clear of it.
+  const inGateway = player.level === 0 && circleHitsRect(player.x, player.y, PLAYER_RADIUS + 0.05, doorRect(gateDoor));
+  if (!worldPaused && gateCloser.update(dt, inGateway)) setDoor('gate', false);
 
   if (!worldPaused && pending.length) {
     for (const p of pending) p.seconds -= dt;

@@ -1,4 +1,4 @@
-import { thoughtSeconds, type Sms } from '../data/story';
+import { GATE_CAUTION, thoughtSeconds, type Sms } from '../data/story';
 
 // DOM overlay: crosshair, prompt and hold meter, the objective box and SMS
 // alert (top right), control reminders (bottom right), subtitles
@@ -207,7 +207,7 @@ export class Hud {
 
   static keypadHtml(entered: string): string {
     const slots = [0, 1, 2, 3].map((i) => `<span>${entered[i] ?? '_'}</span>`).join('');
-    return `<div class="keypad-title">GATE</div><div class="keypad-digits">${slots}</div>`;
+    return `<div class="keypad-caution">${esc(GATE_CAUTION)}</div><div class="keypad-title">GATE</div><div class="keypad-digits">${slots}</div>`;
   }
 
   static inventoryHtml(items: string[]): string {
