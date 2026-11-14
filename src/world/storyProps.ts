@@ -1,7 +1,17 @@
 import * as THREE from 'three';
 import { AREAS, DOORS, toWorld } from '../data/layout';
-import { CANDLES, HOLY_CIRCLE, PURIFY, RATTLE_SECONDS, SPOTS, TREE_PEEK, type ItemSpot } from '../data/story';
-import type { GameState } from '../state/store';
+import {
+  CANDLES,
+  HOLY_CIRCLE,
+  PRANK_SECONDS,
+  PURIFY,
+  RATTLE_SECONDS,
+  RELIC_TABLE_SLOTS,
+  SPOTS,
+  TREE_PEEK,
+  type ItemSpot,
+} from '../data/story';
+import type { GameState, RelicKind } from '../state/store';
 import type { PurifiedRelic } from '../story/events';
 import { siteReady } from '../story/table';
 import { ghostModel, type GhostModel } from './ghost';
@@ -144,6 +154,29 @@ function musicBoxModel(): MusicBoxView {
   return { group: g, lid };
 }
 
+/** A china teacup on its saucer (Day 2's first relic, a PLACEHOLDER). */
+function teacupModel(): THREE.Group {
+  const g = new THREE.Group();
+  const china = lambert('#f3efe6');
+  const blue = lambert('#3d62a8');
+  const saucer = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 0.015, 14), china);
+  saucer.position.y = 0.0075;
+  const cupPts = [[0.001, 0], [0.03, 0], [0.034, 0.006], [0.055, 0.06], [0.05, 0.06], [0.03, 0.012], [0.001, 0.012]].map(
+    ([x, y]) => new THREE.Vector2(x, y),
+  );
+  const cup = new THREE.Group();
+  cup.position.y = 0.015;
+  cup.add(new THREE.Mesh(new THREE.LatheGeometry(cupPts, 14), china));
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.053, 0.05, 0.008, 14, 1, true), blue);
+  band.position.y = 0.05;
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.005, 5, 10), china);
+  handle.position.set(0.058, 0.035, 0);
+  cup.add(band, handle);
+  g.add(saucer, cup);
+  g.userData.cup = cup;
+  return g;
+}
+
 interface CandleView {
   flame: THREE.Mesh;
   light: THREE.PointLight;
@@ -169,6 +202,12 @@ interface Purification {
 
 /** 'ghost' as it appears; 'ghost-gone' once it has risen and vanished. */
 export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost' | 'ghost-gone';
+
+/** Where a relic sits on the cleaned-relic table: the slot it went into today. */
+function storedSpot(s: GameState, kind: RelicKind): ItemSpot | null {
+  const i = s.relics_stored.indexOf(kind);
+  return i < 0 ? null : RELIC_TABLE_SLOTS[Math.min(i, RELIC_TABLE_SLOTS.length - 1)];
+}
 
 /** Seconds the clock ghost is on screen: rise, smile, fade. */
 const GHOST_LIFE = 3.4;
@@ -222,6 +261,12 @@ export class StoryProps {
   private musicBox: MusicBoxView;
   private heldChalice: THREE.Group;
   private heldMusicBox: MusicBoxView;
+  private teacup: THREE.Group;
+  private heldTeacup: THREE.Group;
+  private clinkTimer = 1;
+  /** The Day 2 prankster ghost behind the garden bench (D2-02). */
+  private prankster: GhostModel;
+  private prankT = -1;
   private candles: CandleView[] = [];
   private deskMarker: THREE.Mesh;
   private heldClock: THREE.Group;
@@ -251,6 +296,9 @@ export class StoryProps {
   /** Called when the possessed music box plays its tune, with volume 0..1. */
   onTune: (volume: number) => void = () => {};
 
+  /** Called when the possessed teacup rattles on its saucer, with volume 0..1. */
+  onClink: (volume: number) => void = () => {};
+
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
 
@@ -268,6 +316,9 @@ export class StoryProps {
     this.bible.rotation.set(0.3, BIBLE_FACING, 0);
     this.musicBox = musicBoxModel();
     tagged(this.musicBox.group, 'music-box');
+    this.teacup = tagged(teacupModel(), 'teacup') as THREE.Group;
+    // Larger than life so it reads on the tables from a few steps away.
+    this.teacup.scale.setScalar(1.7);
 
     for (const [i, c] of CANDLES.entries()) {
       const stand = new THREE.Group();
@@ -312,7 +363,11 @@ export class StoryProps {
     this.heldMusicBox = musicBoxModel();
     this.heldMusicBox.group.position.set(0.15, -0.38, -0.62);
     this.heldMusicBox.group.rotation.set(0.35, 0, 0);
-    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldCrucifix, this.heldBible, this.heldMusicBox.group);
+    this.heldTeacup = teacupModel();
+    this.heldTeacup.position.set(0.15, -0.36, -0.55);
+    this.heldTeacup.rotation.set(0.35, 0, 0);
+    this.heldTeacup.scale.setScalar(1.3);
+    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldCrucifix, this.heldBible, this.heldMusicBox.group, this.heldTeacup);
 
     // Lights stay in the scene at zero intensity: adding one later would make
     // Three.js recompile every shader and hitch.
@@ -320,11 +375,24 @@ export class StoryProps {
     this.relicGhost.group.visible = false;
     this.peeker = ghostModel(false);
     this.peeker.group.visible = false;
-    this.root.add(this.relicGhost.group, this.peeker.group);
+    this.prankster = ghostModel(false);
+    this.prankster.group.visible = false;
+    this.root.add(this.relicGhost.group, this.peeker.group, this.prankster.group);
 
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
-    this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group);
-    this.raycastTargets.push(this.note, this.key, this.matches, this.cross, this.clock, this.chalice, this.crucifix, this.bible, this.musicBox.group);
+    this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup);
+    this.raycastTargets.push(
+      this.note,
+      this.key,
+      this.matches,
+      this.cross,
+      this.clock,
+      this.chalice,
+      this.crucifix,
+      this.bible,
+      this.musicBox.group,
+      this.teacup,
+    );
   }
 
   /** Remove timed effects, e.g. on reset. */
@@ -336,6 +404,9 @@ export class StoryProps {
     this.relicGhost.setWink(0);
     this.peekHideT = 0;
     this.rattleT = -1;
+    this.prankT = -1;
+    this.prankster.group.visible = false;
+    this.prankster.setTongue(0);
     if (this.bus) this.root.remove(this.bus);
     this.bus = null;
   }
@@ -373,10 +444,17 @@ export class StoryProps {
     this.rattle = { seconds, strength };
   }
 
+  /** The prankster ghost pops up behind the garden bench, blows a raspberry and floats off (D2-02). */
+  startPrank(): void {
+    this.prankT = 0;
+    this.prankster.group.visible = true;
+  }
+
   startPurification(relic: PurifiedRelic): void {
     this.endPurification();
     const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
-    const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + (relic === 'clock' ? 0.22 : 0.12)));
+    const lift = relic === 'clock' ? 0.22 : relic === 'teacup' ? 0.08 : 0.12;
+    const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + lift));
     const sparkles: Sparkle[] = [];
     for (let i = 0; i < SPARKLE_COUNT; i++) {
       const mat = basic(i % 3 === 0 ? '#ffffff' : '#fff1a8', 0.95);
@@ -491,6 +569,7 @@ export class StoryProps {
 
     this.syncChalice(s);
     this.syncMusicBox(s, dt, fxDt, listener);
+    this.syncTeacup(s, dt, listener);
 
     // The hand cross rises into view while a blessing is held.
     this.heldCross.visible = hold.cross && hold.active && hold.progress > 0;
@@ -500,6 +579,7 @@ export class StoryProps {
     this.updatePurification(fxDt);
     this.updateRelicGhost(fxDt, cam);
     this.updatePeeker(s, fxDt, cam);
+    this.updatePrank(fxDt, cam);
     this.updateBus(fxDt);
   }
 
@@ -507,7 +587,10 @@ export class StoryProps {
   private syncChalice(s: GameState): void {
     this.chalice.visible = s.chalice !== 'held';
     this.heldChalice.visible = s.chalice === 'held';
-    at(this.chalice, s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : SPOTS.chaliceAltar);
+    at(
+      this.chalice,
+      s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : s.chalice === 'garden-bench' ? SPOTS.chaliceBench : SPOTS.chaliceAltar,
+    );
     const staged = s.flags.has('crucifix-staged');
     const carried = s.inventory.has('crucifix') && !staged;
     this.crucifix.visible = !carried;
@@ -525,15 +608,16 @@ export class StoryProps {
    */
   private syncMusicBox(s: GameState, dt: number, fxDt: number, listener: THREE.Vector3): void {
     const box = this.musicBox;
-    const onTable = s.relic === 'ritual-table' || s.relic === 'relic-table';
-    box.group.visible = onTable;
-    this.heldMusicBox.group.visible = s.relic === 'held';
-    at(box.group, s.relic === 'relic-table' ? SPOTS.relicStored : SPOTS.relicRitual);
+    const current = s.relic_kind === 'music-box';
+    const stored = storedSpot(s, 'music-box');
+    box.group.visible = (current && s.relic === 'ritual-table') || !!stored;
+    this.heldMusicBox.group.visible = current && s.relic === 'held';
+    at(box.group, stored ?? SPOTS.relicRitual);
     box.group.rotation.set(0, -Math.PI / 2, 0);
 
-    const possessed = (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-rattled');
+    const possessed = current && (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-rattled');
     const now = performance.now() / 1000;
-    let lid = s.flags.has('relic-blessed') ? 0 : LID_OPEN;
+    let lid = !current || s.flags.has('relic-blessed') ? 0 : LID_OPEN;
     let shake = possessed ? 0.35 : 0;
     if (possessed) lid = LID_OPEN - 0.35 + Math.abs(Math.sin(now * 5)) * 0.35;
 
@@ -553,7 +637,7 @@ export class StoryProps {
     }
     box.lid.rotation.x = -lid;
     this.heldMusicBox.lid.rotation.x = -lid;
-    if (shake > 0 && s.relic === 'ritual-table') {
+    if (shake > 0 && current && s.relic === 'ritual-table') {
       box.group.position.x += (Math.random() - 0.5) * 0.03 * shake;
       box.group.position.z += (Math.random() - 0.5) * 0.03 * shake;
       box.group.rotation.z = (Math.random() - 0.5) * 0.12 * shake;
@@ -567,6 +651,65 @@ export class StoryProps {
         const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
         this.onTune(listener.y < -3 ? 0 : tuneVolume(d));
       }
+    }
+  }
+
+  /**
+   * Day 2's teacup: in the drop box, carried, on the ritual table, then on
+   * the cleaned-relic table. While possessed the cup hops and rattles on its
+   * saucer every so often; once blessed it settles and sits still.
+   */
+  private syncTeacup(s: GameState, dt: number, listener: THREE.Vector3): void {
+    const current = s.relic_kind === 'teacup';
+    const stored = storedSpot(s, 'teacup');
+    this.teacup.visible = (current && s.relic === 'ritual-table') || !!stored;
+    this.heldTeacup.visible = current && s.relic === 'held';
+    at(this.teacup, stored ?? SPOTS.relicRitual);
+    this.teacup.rotation.set(0, -Math.PI / 2, 0);
+
+    const possessed = current && (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-blessed');
+    // Quieter once it has heard some scripture.
+    let agitation = possessed ? (s.flags.has('scripture-read') ? 0.35 : 1) : 0;
+    const p = this.purification;
+    if (p && p.relic === 'teacup') agitation = Math.max(0, 1 - p.t / PURIFY.windDown) * 0.6;
+    const now = performance.now() / 1000;
+    // Bursts of hopping: the cup jumps on its saucer in short fits.
+    const fit = Math.max(0, Math.sin(now * 1.7)) ** 3;
+    const hop = agitation * fit * Math.abs(Math.sin(now * 28)) * 0.025;
+    for (const g of [this.teacup, this.heldTeacup]) {
+      const cup = g.userData.cup as THREE.Group;
+      cup.position.y = 0.015 + hop;
+      cup.rotation.z = agitation * fit * Math.sin(now * 23) * 0.15;
+    }
+
+    if (possessed) {
+      this.clinkTimer -= dt;
+      if (this.clinkTimer <= 0 && fit > 0.4) {
+        this.clinkTimer = 1.2;
+        const src = s.relic === 'drop-box' ? SPOTS.dropBox : SPOTS.relicRitual;
+        const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
+        this.onClink(listener.y < -3 ? 0 : tuneVolume(d) * agitation);
+      }
+    }
+  }
+
+  /** The prankster rises from behind the bench, tongue out, wobbles, then drifts off west and fades. */
+  private updatePrank(dt: number, cam: THREE.Vector3): void {
+    if (this.prankT < 0) return;
+    this.prankT += dt;
+    const t = this.prankT;
+    const g = this.prankster;
+    const [bx, , bz] = toWorld(SPOTS.chaliceBench.x, SPOTS.chaliceBench.y + 0.9, 0);
+    const pop = Math.min(1, t / 0.3);
+    const away = Math.max(0, t - 1.4);
+    g.group.position.set(bx - away * 1.6, -0.3 + pop * 0.75 + away * 0.9 + Math.sin(t * 9) * 0.03, bz - away * 0.6);
+    g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), Math.sin(t * 14) * 0.08 * (1 - Math.min(1, away)));
+    g.setTongue(t > 0.25 && t < 1.3 ? 1 : 0);
+    g.setFade(t < PRANK_SECONDS - 0.8 ? 1 : Math.max(0, (PRANK_SECONDS - t) / 0.8));
+    if (t >= PRANK_SECONDS) {
+      this.prankT = -1;
+      g.group.visible = false;
+      g.setTongue(0);
     }
   }
 

@@ -505,7 +505,9 @@ describe('Day 2 reset', () => {
     const { after } = day2();
     expect(after.inventory.size).toBe(0);
     expect(after.candles_lit.size).toBe(0);
-    expect(after.chalice).toBe('altar');
+    // The crucifix is back on the altar; a prankster ghost has the chalice (D2-02).
+    expect(after.chalice).toBe('garden-bench');
+    expect(after.relics_stored).toEqual([]);
     expect(after.flags.has('crucifix-staged')).toBe(false);
     expect(after.inventory.has('bible')).toBe(false);
     expect(after.relic).toBe('removed');

@@ -411,3 +411,68 @@ Designer rulings:
   thought or sound. It works with full hands and on every day, not just
   Days 1–2, because nothing removes it.
 - **Size.** The seat is 45 cm square and 5 cm thick, on 5 cm legs.
+
+## 2026-11-13 — S2 approved; S3 begins
+
+The designer approved the S2 gate (complete Day 1). Work moves to S3,
+complete Day 2 (doc 6.2, 9.1). Deferred to the texture pass: the blocks
+above each door opening should take their wall's colour or material
+instead of the fixed darker grey.
+
+## 2026-11-13 — S3 part 1: Day 2 start, the garden chalice, relic 1
+
+The designer chose (2026-11-13): placeholder relics picked by Claude, draft
+copy for Claude to write and the designer to revise, Day 2 delivered in three
+playable parts with a playtest after each, and the doc's recommendation for
+the two-handed blessing (M05: crucifix in the right hand, holy-water rod in
+the left, Bible on its stand in front).
+
+Part 1 covers D2-01 to D2-04. After the first relic is put away the
+objective reads "End of S3 part 1. The clown doll comes next."
+
+### PROVISIONAL (not yet ruled on)
+
+- **Relic 1 is a china teacup on its saucer.** It's a placeholder until the
+  designer names it. While possessed the cup hops and clinks on its saucer
+  in short fits. It's drawn 1.7× life size so it reads on the tables.
+  Relic 3 will be a placeholder too, chosen in part 3.
+- **All Day 2 copy is draft.** That covers the office note, the delivery
+  text ("First one of the day just came in. Drop box by the front gate, same
+  as yesterday.") and these thoughts:
+  - Altar: "The chalice is gone. One of those lingering ghosts, I bet."
+  - After the prank: "Very funny."
+  - Drop box: "Is that... rattling china?"
+  - Pickup: "A teacup that won't sit still. Somebody's nan is going to miss
+    this."
+  - Its ghost: "Another happy customer."
+- **Shift start.** Day 2 has no gate-code text. The first objective ("Enter
+  the code on the gate keypad") shows at the same moment the Day 1 text
+  would, 6.5 s in. The gate code is unchanged.
+- **Day 1-only beats.** The church-approach thought, the chapel-door thought,
+  the candles thought and "Now we're cooking." don't repeat on Day 2.
+- **D2-01 runs straight through:** gate, note, key, chapel, matches,
+  candles.
+- **The missing chalice (D2-02).** Only the crucifix is on the altar. Coming
+  within 4 m of the altar once the candles are lit gives the missing-chalice
+  thought, then "Find the missing chalice", with no hint of where. Taking
+  the chalice from the west garden bench makes the prankster pop up behind
+  the bench, tongue out, with a raspberry. It floats off west and fades
+  over 2.8 s, then "Very funny.". The chalice can be found and taken at any
+  time on Day 2, before the altar is even checked.
+- **The prankster** is the same green sheet ghost with a pink tongue for the
+  raspberry. Its expression art is for the S3 gate review (doc 9.1).
+- **First delivery (D2-03).** The text arrives 5 s after the table is set.
+  The crucifix comes off the altar once the candles are lit.
+- **Teacup ritual (D2-04).** Put it on the table, take the Bible from its
+  stand and read it scripture (hold, in the circle), then take the cross and
+  bless it (hold). There's no rattle, as befits a "simple successful
+  cleansing". After the ghost and its thought: Bible back, pick up the cup,
+  put it on the cleaned-relic table.
+- **The cleaned-relic table** has three places, one per Day 2 delivery: the
+  middle first, then either end.
+- **Holds on small relics.** With a relic on the ritual table, aiming at the
+  table counts as aiming at the relic, so a small or rattling relic can't
+  slip out from under the crosshair mid-hold. This applies on Day 1 too.
+- **Clock.** From Day 2 on, the clock is always on the supervisor's desk.
+- **Debug key N** (debug panel open) skips to the start of Day 2, for
+  playtesting S3.

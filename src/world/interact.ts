@@ -1,8 +1,8 @@
 import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
-import { HOLY_CIRCLE, REMINDERS } from '../data/story';
+import { HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { altarOpen, blessBlocker, tableReady, type StoryEvent } from '../story/events';
+import { altarOpen, bibleWanted, blessBlocker, tableReady, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -138,6 +138,11 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story('E  Put the clock down', { type: 'place-clock' });
 
     case 'chalice':
+      // Day 2: left on the garden bench by a prankster ghost (D2-02).
+      if (s.chalice === 'garden-bench') {
+        if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
+        return story('E  Take the chalice', { type: 'pickup-chalice' });
+      }
       if (s.chalice !== 'altar') return NONE;
       // Too early: just its name, and E gives the thought.
       if (!altarOpen(s)) return story('Chalice', { type: 'pickup-chalice' });
@@ -151,15 +156,21 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         const what = chalice && crucifix ? 'the chalice and crucifix' : chalice ? 'the chalice' : 'the crucifix';
         return story(`E  Set out ${what}`, { type: 'stage-table' });
       }
-      if (s.held_prop_id === 'music-box' && s.relic === 'held' && !s.flags.has('relic-blessed')) {
+      if (s.held_prop_id === s.relic_kind && s.relic === 'held' && !s.flags.has('relic-blessed')) {
         if (!tableReady(s)) return say('Ritual table', REMINDERS.tableNotReady);
-        return story('E  Put the music box down', { type: 'place-relic' });
+        return story(`E  Put the ${RELIC_NAMES[s.relic_kind]} down`, { type: 'place-relic' });
       }
+      // With a relic on it, the table answers for the relic: a small,
+      // rattling relic is hard to keep under the crosshair through a hold.
+      if (s.relic === 'ritual-table') return resolveItem(s.relic_kind, s, player);
       return NONE;
     }
 
+    case 'teacup':
+      return resolveScriptureRelic(s, player);
+
     case 'music-box': {
-      if (s.relic !== 'ritual-table') return NONE;
+      if (s.relic_kind !== 'music-box' || s.relic !== 'ritual-table') return NONE;
       if (s.flags.has('relic-blessed')) {
         if (s.held_prop_id) return say('Music box', REMINDERS.handsFull);
         if (s.inventory.has('bible')) return say('Music box', REMINDERS.bibleBack);
@@ -194,12 +205,45 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         if (!s.flags.has('relic-blessed')) return NONE;
         return story('E  Put the Bible back', { type: 'return-bible' });
       }
-      if (!s.flags.has('bible-prompted') || s.flags.has('scripture-read')) return NONE;
+      if (!bibleWanted(s)) return NONE;
       return story('E  Pick up the Bible', { type: 'take', item: 'bible' });
 
     case 'relic-table':
-      if (s.held_prop_id !== 'music-box' || !s.flags.has('relic-blessed')) return NONE;
-      return story('E  Put the music box on the table', { type: 'store-relic' });
+      if (s.held_prop_id !== s.relic_kind || s.relic !== 'held' || !s.flags.has('relic-blessed')) return NONE;
+      return story(`E  Put the ${RELIC_NAMES[s.relic_kind]} on the table`, { type: 'store-relic' });
   }
   return NONE;
+}
+
+/**
+ * Day 2's first relic (D2-04), on the ritual table: read it scripture with the
+ * Bible from the stand, then bless it with the cross; once cleansed, pick it
+ * up (after the Bible goes back).
+ */
+function resolveScriptureRelic(s: GameState, player: Player): Resolution {
+  if (s.relic !== 'ritual-table') return NONE;
+  const label = RELIC_NAMES[s.relic_kind].replace(/^./, (c) => c.toUpperCase());
+  const name = RELIC_NAMES[s.relic_kind];
+  if (s.flags.has('relic-blessed')) {
+    if (s.held_prop_id) return say(label, REMINDERS.handsFull);
+    if (s.inventory.has('bible')) return say(label, REMINDERS.bibleBack);
+    return story(`E  Pick up the ${name}`, { type: 'pickup-relic' });
+  }
+  if (!tableReady(s)) return say(label, REMINDERS.tableNotReady);
+  if (!s.flags.has('scripture-read')) {
+    if (!s.inventory.has('bible')) return say(label, REMINDERS.bibleFirst);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return {
+      prompt: `Hold click  Read the ${name} some scripture`,
+      action: { kind: 'message', text: 'Hold the left mouse button to read to it.' },
+      hold: { type: 'begin-scripture' },
+    };
+  }
+  if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+  if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+  return {
+    prompt: `Hold click  Bless the ${name}`,
+    action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
+    hold: { type: 'bless-relic' },
+  };
 }

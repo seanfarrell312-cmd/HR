@@ -91,6 +91,58 @@ export class Sfx {
           this.glide('sine', f * 2, f * 1.6, i * 0.12, 0.07, 0.04);
         }
         break;
+      case 'raspberry': {
+        // A wet, buzzy "pfffbbt": a low sawtooth wobbling fast, over breathy noise.
+        const ctx = this.ctx;
+        const master = this.master;
+        if (!ctx || !master) break;
+        const t0 = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, t0);
+        osc.frequency.linearRampToValueAtTime(95, t0 + 0.85);
+        const wobble = ctx.createOscillator();
+        wobble.frequency.value = 32;
+        const depth = ctx.createGain();
+        depth.gain.value = 45;
+        wobble.connect(depth).connect(osc.frequency);
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 900;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.32, t0 + 0.04);
+        gain.gain.setValueAtTime(0.32, t0 + 0.6);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+        osc.connect(lowpass).connect(gain).connect(master);
+        osc.start(t0);
+        wobble.start(t0);
+        osc.stop(t0 + 0.95);
+        wobble.stop(t0 + 0.95);
+        this.hiss(0, 0.85, 700, 0.25);
+        // A little giggle as it floats off.
+        for (let i = 0; i < 4; i++) {
+          const f = 1150 - i * 60;
+          this.glide('triangle', f, f * 0.78, 1.1 + i * 0.12, 0.09, 0.1);
+        }
+        break;
+      }
+      case 'clink':
+        // China rattling on its saucer.
+        for (let i = 0; i < 3; i++) {
+          this.tone('sine', 2600 + Math.random() * 900, i * 0.07, 0.12, 0.08);
+          this.hiss(i * 0.07, 0.02, 5000, 0.12);
+        }
+        break;
+      case 'cup-wind-down':
+        // The rattling slows, then one last clink as the cup sits down.
+        for (let i = 0; i < 7; i++) {
+          const t = i * 0.12 + i * i * 0.03;
+          this.tone('sine', 2900 - i * 120, t, 0.1, 0.09 * (1 - i / 8));
+          this.hiss(t, 0.02, 5000, 0.1 * (1 - i / 8));
+        }
+        this.tone('sine', 2200, 1.4, 0.4, 0.1);
+        break;
       case 'paper':
         this.hiss(0, 0.08, 4000, 0.25);
         this.hiss(0.12, 0.08, 3500, 0.2);
@@ -116,6 +168,16 @@ export class Sfx {
       this.tone('sine', f * wobble, t, 0.5, 0.16 * volume);
       this.tone('sine', f * 2 * wobble, t, 0.2, 0.04 * volume);
       t += 0.2 + Math.random() * 0.09;
+    }
+  }
+
+  /** The possessed teacup rattling on its saucer, at volume 0..1 (by distance). */
+  clink(volume: number): void {
+    if (volume <= 0.01) return;
+    for (let i = 0; i < 4; i++) {
+      const t = i * (0.05 + Math.random() * 0.03);
+      this.tone('sine', 2500 + Math.random() * 1100, t, 0.1, 0.14 * volume);
+      this.hiss(t, 0.02, 5200, 0.18 * volume);
     }
   }
 

@@ -1,8 +1,11 @@
 import {
   afterThought,
+  ALTAR_APPROACH,
   CHURCH_APPROACH,
   COOKING_BEAT,
   CROSS_PAUSE,
+  D2_DELIVERY_DELAY,
+  DELIVERIES,
   DELIVERY_DELAY,
   DROP_BOX_APPROACH,
   GATE_CODE,
@@ -11,7 +14,9 @@ import {
   RATTLE_AGAIN,
   RATTLE_FIRST,
   RATTLE_SECONDS,
+  PRANK_SECONDS,
   RELIC_ANNOY,
+  RELIC_LINES,
   REMINDERS,
   SMS,
   THOUGHT_BEAT,
@@ -19,7 +24,7 @@ import {
   TREE_PEEK,
   WRONG_CODE,
 } from '../data/story';
-import type { GameState, QuestItem } from '../state/store';
+import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
 import { tableReady } from './table';
 
@@ -31,6 +36,16 @@ export { siteReady, tableReady } from './table';
 
 export type StoryEvent =
   | { type: 'receive-sms'; id: string }
+  /** A few seconds into a shift with no gate-code text (Day 2 on): the first objective shows. */
+  | { type: 'arrived' }
+  /** The player's position; on Day 2 the chalice is missing from the altar. */
+  | { type: 'near-altar'; x: number; y: number; level: number }
+  /** Timed, after the missing-chalice thought: the search objective shows. */
+  | { type: 'chalice-missing-done' }
+  /** Timed: the prankster ghost has floated off; its thought plays. */
+  | { type: 'prank-done' }
+  /** Timed, after that thought: the next objective shows. */
+  | { type: 'prank-thought-done' }
   /** The phone has been put away: everything in it counts as read. */
   | { type: 'read-sms' }
   | { type: 'keypad-submit'; code: string }
@@ -115,9 +130,12 @@ export type SfxId =
   | 'box-wind-down'
   | 'sparkle'
   | 'rattle'
-  | 'giggle';
+  | 'giggle'
+  | 'raspberry'
+  | 'clink'
+  | 'cup-wind-down';
 
-export type PurifiedRelic = 'clock' | 'music-box';
+export type PurifiedRelic = 'clock' | RelicKind;
 
 export type Effect =
   | { kind: 'sfx'; id: SfxId }
@@ -131,6 +149,8 @@ export type Effect =
   | { kind: 'rattle'; seconds: number; strength: number }
   /** Show the scripture panel (read from the Bible in hand). */
   | { kind: 'open-scripture' }
+  /** The prankster ghost pops up behind the garden bench and floats off (D2-02). */
+  | { kind: 'prank' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -142,12 +162,24 @@ const flash = (text: string): Effect[] => [{ kind: 'flash', text }];
 export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
   const out: Effect[] = [];
   switch (e.type) {
-    case 'receive-sms':
+    case 'receive-sms': {
       if (!SMS[e.id] || s.inbox.includes(e.id)) return [];
       s.inbox.push(e.id);
-      // The delivery text means the relic is waiting in the drop box.
-      if (e.id === 'delivery1' && s.relic === 'none') s.relic = 'drop-box';
+      // A delivery text means its relic is waiting in the drop box. One at a
+      // time: the last one has been put away (or none has come yet).
+      const kind = DELIVERIES[e.id];
+      if (kind && (s.relic === 'none' || s.relic === 'removed' || s.relic === 'relic-table')) {
+        s.relic = 'drop-box';
+        s.relic_kind = kind;
+        for (const f of RELIC_FLAGS) s.flags.delete(f);
+      }
       out.push({ kind: 'sfx', id: 'buzz' }, { kind: 'sms', id: e.id });
+      break;
+    }
+
+    case 'arrived':
+      if (s.flags.has('arrived')) return [];
+      s.flags.add('arrived');
       break;
 
     case 'read-sms': {
@@ -168,7 +200,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'approach-church':
-      if (s.flags.has('church-approached') || !s.flags.has('gate-unlocked')) return [];
+      // Day 1's first impression only.
+      if (s.day_index !== 1 || s.flags.has('church-approached') || !s.flags.has('gate-unlocked')) return [];
       if (e.level !== 0 || Math.hypot(e.x - CHURCH_APPROACH.x, e.y - CHURCH_APPROACH.y) > CHURCH_APPROACH.r) return [];
       s.flags.add('church-approached');
       out.push({ kind: 'say', text: THOUGHTS.churchApproach });
@@ -194,13 +227,25 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       }
       // The altar pieces stay put until the objective asks for them.
       if (e.item === 'crucifix' && !altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.crucifixEarly }];
-      // The Bible comes off its stand once the music box needs scripture.
-      if (e.item === 'bible' && (!s.flags.has('bible-prompted') || s.flags.has('scripture-read'))) return [];
+      // The Bible comes off its stand once the relic needs scripture.
+      if (e.item === 'bible' && !bibleWanted(s)) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
       break;
 
     case 'pickup-chalice':
+      // Day 2: on the garden bench, where the prankster left it (D2-02).
+      if (s.chalice === 'garden-bench') {
+        if (s.held_prop_id) return flash(REMINDERS.handsFull);
+        s.chalice = 'held';
+        s.held_prop_id = 'chalice';
+        out.push({ kind: 'sfx', id: 'pickup' });
+        if (!s.fired_scares.includes('d2-prank')) {
+          s.fired_scares.push('d2-prank');
+          out.push({ kind: 'prank' }, { kind: 'sfx', id: 'raspberry' }, { kind: 'after', seconds: PRANK_SECONDS, event: { type: 'prank-done' } });
+        }
+        break;
+      }
       if (s.chalice !== 'altar') return [];
       if (!altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.chaliceEarly }];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
@@ -226,8 +271,42 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'sfx', id: 'place' });
       // Both down on Day 1: the clock chimes harder, then the thought.
       if (tableReady(s) && s.day_index === 1) out.push({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
+      // Day 2: the table is set, so the first delivery is on its way (D2-03).
+      if (tableReady(s) && s.day_index === 2 && !s.inbox.includes('d2delivery1')) {
+        out.push({ kind: 'after', seconds: D2_DELIVERY_DELAY, event: { type: 'receive-sms', id: 'd2delivery1' } });
+      }
       break;
     }
+
+    case 'near-altar':
+      // Day 2: the chalice isn't where it should be (D2-02).
+      if (s.day_index !== 2 || s.chalice !== 'garden-bench' || s.flags.has('chalice-missing')) return [];
+      if (s.candles_lit.size < 4 || !near(e, ALTAR_APPROACH)) return [];
+      s.flags.add('chalice-missing');
+      out.push(
+        { kind: 'say', text: THOUGHTS.chaliceMissing },
+        { kind: 'after', seconds: afterThought(THOUGHTS.chaliceMissing), event: { type: 'chalice-missing-done' } },
+      );
+      break;
+
+    case 'chalice-missing-done':
+      if (!s.flags.has('chalice-missing') || s.flags.has('chalice-missing-thought-done')) return [];
+      s.flags.add('chalice-missing-thought-done');
+      break;
+
+    case 'prank-done':
+      if (!s.fired_scares.includes('d2-prank') || s.flags.has('prank-done')) return [];
+      s.flags.add('prank-done');
+      out.push(
+        { kind: 'say', text: THOUGHTS.prank },
+        { kind: 'after', seconds: afterThought(THOUGHTS.prank), event: { type: 'prank-thought-done' } },
+      );
+      break;
+
+    case 'prank-thought-done':
+      if (!s.flags.has('prank-done') || s.flags.has('prank-thought-done')) return [];
+      s.flags.add('prank-thought-done');
+      break;
 
     case 'light-candle':
       if (e.index < 0 || e.index > 3 || s.candles_lit.has(e.index)) return [];
@@ -310,20 +389,23 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'drop-box' || s.flags.has('drop-box-approached')) return [];
       if (!near(e, DROP_BOX_APPROACH)) return [];
       s.flags.add('drop-box-approached');
-      out.push({ kind: 'say', text: THOUGHTS.dropBox });
+      out.push({ kind: 'say', text: RELIC_LINES[s.relic_kind].approach });
       break;
 
     case 'take-relic':
       if (s.relic !== 'drop-box') return [];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
       s.relic = 'held';
-      s.held_prop_id = 'music-box';
+      s.held_prop_id = s.relic_kind;
       s.flags.add('drop-box-approached');
-      out.push(
-        { kind: 'sfx', id: 'pickup' },
-        { kind: 'say', text: THOUGHTS.relicPickup },
-        { kind: 'after', seconds: afterThought(THOUGHTS.relicPickup), event: { type: 'relic-pickup-thought-done' } },
-      );
+      {
+        const line = RELIC_LINES[s.relic_kind].pickup;
+        out.push(
+          { kind: 'sfx', id: 'pickup' },
+          { kind: 'say', text: line },
+          { kind: 'after', seconds: afterThought(line), event: { type: 'relic-pickup-thought-done' } },
+        );
+      }
       break;
 
     case 'relic-pickup-thought-done':
@@ -332,6 +414,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'relic-near-church':
+      // The music box's tune, on Day 1.
+      if (s.relic_kind !== 'music-box') return [];
       if (s.relic !== 'held' || s.flags.has('relic-rattled') || s.flags.has('relic-annoyed')) return [];
       if (!near(e, RELIC_ANNOY)) return [];
       s.flags.add('relic-annoyed');
@@ -350,6 +434,14 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'ritual-table' || s.flags.has('relic-blessed')) return [];
       if (!tableReady(s)) return flash(REMINDERS.tableNotReady);
       if (!s.inventory.has('cross')) return flash(REMINDERS.needCross);
+      // Day 2's first relic (D2-04): scripture, then the cross, and it's done.
+      if (s.relic_kind !== 'music-box') {
+        if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
+        s.flags.add('relic-blessed');
+        s.fired_scares.push(`d2-${s.relic_kind}-ghost`);
+        out.push({ kind: 'purify', relic: s.relic_kind });
+        break;
+      }
       if (!s.flags.has('relic-rattled')) {
         // Cross: the relic fights it, rattles and goes still; the thought
         // waits until it has.
@@ -395,7 +487,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'begin-scripture':
-      if (s.relic !== 'ritual-table' || !s.flags.has('bible-prompted') || s.flags.has('scripture-read')) return [];
+      if (!bibleWanted(s)) return [];
       if (!s.inventory.has('bible')) return flash(REMINDERS.bibleFirst);
       s.flags.add('scripture-opened');
       out.push({ kind: 'sfx', id: 'paper' }, { kind: 'open-scripture' });
@@ -405,6 +497,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       // Counts once the scripture has been opened and then put away.
       if (!s.flags.has('scripture-opened') || s.flags.has('scripture-read')) return [];
       s.flags.add('scripture-read');
+      // Day 2's first relic just goes quiet; the cross comes next.
+      if (s.relic_kind !== 'music-box') break;
       // The spirit shudders again, weaker: the next blessing will hold.
       out.push(
         { kind: 'rattle', ...RATTLE_AGAIN },
@@ -427,10 +521,10 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'relic-ghost-gone':
       if (!s.flags.has('relic-blessed') || s.flags.has('relic-ghost-gone')) return [];
       s.flags.add('relic-ghost-gone');
-      out.push(
-        { kind: 'say', text: THOUGHTS.relicGhost },
-        { kind: 'after', seconds: afterThought(THOUGHTS.relicGhost), event: { type: 'relic-thought-done' } },
-      );
+      {
+        const line = RELIC_LINES[s.relic_kind].ghost;
+        out.push({ kind: 'say', text: line }, { kind: 'after', seconds: afterThought(line), event: { type: 'relic-thought-done' } });
+      }
       break;
 
     case 'relic-thought-done':
@@ -444,7 +538,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       // The Bible goes back on its stand before the music box comes away.
       if (s.inventory.has('bible')) return flash(REMINDERS.bibleBack);
       s.relic = 'held';
-      s.held_prop_id = 'music-box';
+      s.held_prop_id = s.relic_kind;
       out.push({ kind: 'sfx', id: 'pickup' });
       break;
 
@@ -452,6 +546,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'held' || !s.flags.has('relic-blessed')) return [];
       s.relic = 'relic-table';
       s.held_prop_id = null;
+      s.relics_stored.push(s.relic_kind);
+      if (s.day_index !== 1) {
+        out.push({ kind: 'sfx', id: 'place' });
+        break;
+      }
       // Day 1's second relic is done: dusk falls (doc 7.1 D1_EVENING).
       s.environment_preset = 'D1_EVENING';
       out.push(
@@ -530,7 +629,19 @@ export function blessBlocker(s: GameState): string | null {
  * own rules in S3.
  */
 export function altarOpen(s: GameState): boolean {
+  // Day 2: once the candles are lit (D2-02), whatever is left on the altar.
+  if (s.day_index === 2) return s.candles_lit.size === 4;
   return s.objective_id === 'D1-05' && s.flags.has('candles-thought-done');
+}
+
+/**
+ * The Bible comes off its stand while the relic on the ritual table needs
+ * scripture: the music box once its first blessing has failed (Day 1); Day
+ * 2's first relic as soon as it's on the table (D2-04).
+ */
+export function bibleWanted(s: GameState): boolean {
+  if (s.relic !== 'ritual-table' || s.flags.has('scripture-read')) return false;
+  return s.relic_kind !== 'music-box' || s.flags.has('bible-prompted');
 }
 
 const near = (p: { x: number; y: number; level: number }, c: { x: number; y: number; r: number }): boolean =>

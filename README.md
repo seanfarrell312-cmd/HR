@@ -52,6 +52,7 @@ With the debug panel open:
 |---|---|
 | 1–9, 0, -, = | Teleport to a zone (listed in the panel) |
 | R | Reset Day 1 to the arrival point |
+| N | Skip to the start of Day 2 |
 | P | Cycle door presets (Day 1 start ↔ all unlocked) |
 | Shift | Fast walk |
 
@@ -110,6 +111,16 @@ The church layout follows
   between holds, the evening and the shift end happen once, and the Day 2
   reset puts the tools and altar pieces back while keeping the clock on the
   desk.
+- `tests/day2.test.ts`: the S3 stage tests, part 1. Day 2 runs from the
+  gate to the first relic put away (D2-01 to D2-04) without ticking off
+  anything early, and nothing fires twice when every event is repeated. The
+  chalice starts on the garden bench, the missing-chalice thought plays at
+  the altar once the candles are lit, the prankster's raspberry fires once
+  with its thought before the next objective, and the chalice can be found
+  before the altar is checked. The first delivery arrives once the table is
+  set, the teacup needs scripture before the cross, the table answers for
+  the small teacup during holds, and it goes onto its own place on the
+  cleaned-relic table without Day 1's dusk.
 - `tests/controls.test.ts`: the mouse-glitch filter keeps real movement and
   drops one-off jumps; each day starts facing east with the church on the
   left.

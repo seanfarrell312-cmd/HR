@@ -11,9 +11,9 @@ import {
   AUTO_CLOSE_DOORS,
   GATE_TEXT_DELAY,
   OFFICE_NOTE,
+  OFFICE_NOTES,
   STOOL_NOTE,
   phoneMessages,
-  S2_END,
   SCRIPTURE,
 } from './data/story';
 import { PlayerController } from './player/controller';
@@ -91,12 +91,13 @@ const centre = new THREE.Vector2(0, 0);
 const blessMeter = new HoldMeter(BLESS_SECONDS);
 props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onTune = (volume) => sfx.tune(volume);
+props.onClink = (volume) => sfx.clink(volume);
 props.onCue = (cue, relic) => {
   if (cue === 'ghost') sfx.play('release');
   // The thought waits until the ghost has risen and gone; it goes through the
   // story because the next objective waits for it in turn.
   else if (cue === 'ghost-gone') dispatch({ type: relic === 'clock' ? 'clock-ghost-gone' : 'relic-ghost-gone' });
-  else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : 'box-wind-down');
+  else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : relic === 'teacup' ? 'cup-wind-down' : 'box-wind-down');
   else sfx.play(cue);
 };
 
@@ -172,6 +173,9 @@ function handleEffect(e: Effect): void {
     case 'open-scripture':
       openPanel('bible');
       break;
+    case 'prank':
+      props.startPrank();
+      break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
       dayFade = DAY_FADE;
@@ -228,8 +232,6 @@ function reset(): void {
 function nextDay(): void {
   if (state.day_index >= 3) return;
   enterDay(startDay(state, (state.day_index + 1) as 2 | 3));
-  // Day 2 itself is S3's work.
-  hud.flash(S2_END, 8);
 }
 
 function onFirstStart(): void {
@@ -250,7 +252,8 @@ function openPanel(kind: Panel): void {
     hud.openPanel('phone', Hud.phoneHtml(phoneMessages(state.inbox)), 'Q or E to put away');
     hud.setPhoneAlert(false);
   } else if (kind === 'note') {
-    hud.openPanel('note', Hud.noteHtml(noteShown === 'stool' ? STOOL_NOTE : OFFICE_NOTE), 'E to put down');
+    const office = OFFICE_NOTES[state.day_index] ?? OFFICE_NOTE;
+    hud.openPanel('note', Hud.noteHtml(noteShown === 'stool' ? STOOL_NOTE : office), 'E to put down');
     if (noteShown === 'office') dispatch({ type: 'read-note' });
   } else if (kind === 'bible') {
     // Read aloud to the music box; it counts once the panel is put away.
@@ -468,6 +471,14 @@ document.addEventListener('keydown', (e) => {
     cyclePreset();
     return;
   }
+  if (e.code === 'KeyN') {
+    // Debug: skip straight to the start of the next day.
+    if (state.day_index < 2) {
+      nextDay();
+      hud.flash(`Skipped to Day ${state.day_index}`);
+    }
+    return;
+  }
   const tp = TELEPORTS.find((t) => t.key === e.key);
   if (tp) {
     player.teleport(tp);
@@ -504,7 +515,7 @@ const TOOL_NAMES: Record<string, string> = {
   crucifix: 'Standing crucifix',
   bible: 'Bible',
 };
-const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box' };
+const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box', teacup: 'Teacup' };
 
 let fps = 0;
 function debugText(): string {
@@ -521,12 +532,12 @@ function debugText(): string {
     `flags     ${[...state.flags].join(', ') || '—'}`,
     `items     ${[...state.inventory].join(', ') || '—'}`,
     `candles   ${state.candles_lit.size}/4   clock ${state.clock}`,
-    `chalice   ${state.chalice}   relic ${state.relic}   sky ${state.environment_preset}`,
+    `chalice   ${state.chalice}   relic ${state.relic_kind} ${state.relic}   sky ${state.environment_preset}`,
     `doors     ${preset?.label}  (P to cycle)`,
     `open      ${[...state.open_doors].join(', ') || '—'}`,
     `target    ${target ?? '—'}`,
     '',
-    'R reset   Shift fast walk',
+    'R reset   N next day   Shift fast walk',
     ...TELEPORTS.map((t) => `${t.key.padEnd(2)}${t.label}`),
   ].join('\n');
 }
@@ -537,7 +548,7 @@ hud.setPaused(true, 'Click to start');
 // Dev-only handle for automated checks and console poking.
 if (import.meta.env.DEV) {
   Object.assign(window, {
-    __hr: { player, get state() { return state; }, setDoor, reset, findTarget, dispatch, apply, resolve: () => resolve(target, state, player) },
+    __hr: { player, get state() { return state; }, setDoor, reset, nextDay, findTarget, dispatch, apply, resolve: () => resolve(target, state, player) },
   });
 }
 
@@ -554,7 +565,9 @@ renderer.setAnimationLoop(() => {
 
   if (smsTimer > 0 && player.active && !worldPaused) {
     smsTimer -= dt;
-    if (smsTimer <= 0) dispatch({ type: 'receive-sms', id: 'gateCode' });
+    // Day 1: the supervisor's gate-code text. Later days: the code is known,
+    // so the first objective simply shows.
+    if (smsTimer <= 0) dispatch(state.day_index === 1 ? { type: 'receive-sms', id: 'gateCode' } : { type: 'arrived' });
   }
 
   // Never shut a door on the player: wait until they're clear of its swing.
@@ -578,6 +591,7 @@ renderer.setAnimationLoop(() => {
     if (!state.flags.has('church-approached')) dispatch({ type: 'approach-church', ...at });
     if (state.relic === 'drop-box' && !state.flags.has('drop-box-approached')) dispatch({ type: 'approach-drop-box', ...at });
     if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
+    if (state.chalice === 'garden-bench' && !state.flags.has('chalice-missing')) dispatch({ type: 'near-altar', ...at });
     if (state.flags.has('heading-home')) {
       if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
       dispatch({ type: 'reach-gate', ...at });
@@ -594,7 +608,7 @@ renderer.setAnimationLoop(() => {
   target = player.active && !panel ? findTarget() : null;
   // The clock can't be picked up until it has finished settling.
   // Nor the music box.
-  if ((target === 'item:clock' || target === 'item:music-box') && props.purifying) target = null;
+  if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:ritual-table'].includes(target ?? '')) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);

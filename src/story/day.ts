@@ -4,9 +4,10 @@ import { createInitialState, type GameState } from '../state/store';
 // staff clear finished relics from the cleaned-relic table, doors are shut and
 // locked again, and the sky returns to day. What the player has changed for
 // good stays: the clock remains on the supervisor's desk, one-shot scares stay
-// fired, and the phone keeps its old texts.
+// fired, and the phone keeps its old texts. On Day 2 a prankster ghost has
+// moved the chalice to the west garden bench (D2-02).
 
-/** First objective of each day. Day 2's are built in S3. */
+/** First objective of each day. */
 const FIRST_OBJECTIVE: Record<2 | 3, string> = { 2: 'D2-01', 3: 'D3-01' };
 
 export function startDay(prev: GameState, day: 2 | 3): GameState {
@@ -19,8 +20,11 @@ export function startDay(prev: GameState, day: 2 | 3): GameState {
   s.sms_read = new Set(prev.inbox);
   // The cleansed clock is set dressing now (D1-07). The chalice and crucifix
   // are back on the altar, so the table is set again each day.
-  if (prev.clock === 'office-desk' || prev.clock === 'held') s.clock = 'office-desk';
+  // From Day 2 it is always there, even after a debug skip past Day 1.
+  s.clock = 'office-desk';
   // Staff clear finished relics from the table between shifts.
   if (prev.relic === 'relic-table' || prev.relic === 'removed') s.relic = 'removed';
+  s.relic_kind = prev.relic_kind;
+  if (day === 2) s.chalice = 'garden-bench';
   return s;
 }

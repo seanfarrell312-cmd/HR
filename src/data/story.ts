@@ -1,6 +1,8 @@
-// Day 1 story data (S1: D1-01 to D1-06; S2: D1-07 to D1-10 and the Day 2
-// reset). Plain data: positions, texts and tuning. Dialogue is PROVISIONAL
-// copy until the script is locked (doc N07).
+// Story data. Day 1: S1 (D1-01 to D1-06) and S2 (D1-07 to D1-10 and the Day
+// 2 reset). Day 2: S3. Plain data: positions, texts and tuning. Dialogue is
+// PROVISIONAL copy until the script is locked (doc N07).
+
+import type { RelicKind } from '../state/store';
 
 /** PLACEHOLDER gate code until the designer picks one (docs/decisions.md). */
 export const GATE_CODE = '4173';
@@ -51,11 +53,23 @@ export const SPOTS = {
   relicRitual: { x: 13.83, y: 53.3, z: 0.9 },
   /** The Bible, lying open on top of its stand, just outside the circle. */
   bible: { x: 12.05, y: 54.65, z: 1.1 },
-  /** Cleaned-relic table outside the chapel door. */
+  /** Cleaned-relic table outside the chapel door (the first relic's place). */
   relicStored: { x: 7.4, y: 51.05, z: 0.85 },
+  /** Day 2 (D2-02): where the prankster ghost left the chalice, on the west garden bench. */
+  chaliceBench: { x: -27.4, y: 50.5, z: 0.5 },
   /** Inside the drop box at the gate, where the music box is heard from. */
   dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
+
+/**
+ * Places on the cleaned-relic table, in the order relics are put there: the
+ * middle first (where Day 1's music box sits), then either end.
+ */
+export const RELIC_TABLE_SLOTS: ItemSpot[] = [
+  SPOTS.relicStored,
+  { ...SPOTS.relicStored, y: 50.6 },
+  { ...SPOTS.relicStored, y: 51.5 },
+];
 
 /** Four candle stands at the corners of the holy circle (decisions 2026-11-08). */
 export const CANDLES: ItemSpot[] = [
@@ -84,6 +98,24 @@ export const SMS: Record<string, Sms> = {
     from: 'Supervisor',
     text: "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel.",
   },
+  // Day 2, PROVISIONAL copy (S3, decisions 2026-11-13).
+  d2delivery1: {
+    id: 'd2delivery1',
+    from: 'Supervisor',
+    text: 'First one of the day just came in. Drop box by the front gate, same as yesterday.',
+  },
+};
+
+/** Which relic each delivery text brings to the drop box. */
+export const DELIVERIES: Record<string, RelicKind> = {
+  delivery1: 'music-box',
+  d2delivery1: 'teacup',
+};
+
+/** What each relic is called in prompts and objectives. */
+export const RELIC_NAMES: Record<RelicKind, string> = {
+  'music-box': 'music box',
+  teacup: 'teacup',
 };
 
 /** The front gate shuts itself this long after it opens (decisions 2026-11-10). */
@@ -118,7 +150,7 @@ export const DAY_TITLES: Record<number, { title: string; time: string }> = {
 };
 
 /** The supervisor's letter (designer copy, 2026-11-08), one entry per paragraph. */
-export const OFFICE_NOTE = [
+export const OFFICE_NOTE_DAY1 = [
   'Welcome, Monsignor,',
   "On behalf of everyone at St. Mary's, thank you for answering our request for assistance from the Vatican.",
   "As you're probably aware, we've been dealing with an increasing number of restless spirits and strange possessions. It's gotten so bad that we've had to install a drop box by the front gate just to keep up with all the possessed items turning up around the countryside.",
@@ -131,6 +163,23 @@ export const OFFICE_NOTE = [
   "If all goes well (and I'm sure it will), leave the clock on my desk when you're finished. Mrs. Kettle doesn't want it back, and it seems a shame to throw away such a nice antique.",
   '— Supervisor',
 ].join('\n\n');
+
+/**
+ * Day 2's note (doc 6.2 D2-01): released ghosts may linger, play pranks and
+ * wait before they pass on. PROVISIONAL copy (S3, decisions 2026-11-13).
+ */
+export const OFFICE_NOTE_DAY2 = [
+  'Monsignor,',
+  "Wonderful work yesterday! Mrs. Kettle's clock hasn't made a peep, and the music box is the quietest it's been in years.",
+  "A word of warning, though. Some of the spirits you set free may decide to linger a while before they pass on. They're harmless, but they do like to play the odd prank. If something goes missing, it's probably just one of them having a bit of fun.",
+  "We're expecting a few deliveries today, so keep your phone handy. Same routine as yesterday: get the chapel ready, and I'll text you as each one arrives.",
+  '— Supervisor',
+].join('\n\n');
+
+/** The office note for each day. */
+export const OFFICE_NOTES: Record<number, string> = { 1: OFFICE_NOTE_DAY1, 2: OFFICE_NOTE_DAY2 };
+/** Day 1's note, as before. */
+export const OFFICE_NOTE = OFFICE_NOTE_DAY1;
 
 /**
  * The Easter-egg note on the stool behind the church (designer copy,
@@ -174,7 +223,38 @@ export const THOUGHTS = {
   late: 'Woah, when did it get so late?',
   /** After a pause; then the walk back to the gate. */
   headHome: 'I guess I should head back to the bus stop.',
+  // Day 2, PROVISIONAL copy (S3, decisions 2026-11-13).
+  /** At the altar, where the chalice should be (D2-02). */
+  chaliceMissing: 'The chalice is gone. One of those lingering ghosts, I bet.',
+  /** Once the prankster ghost has blown its raspberry and floated off. */
+  prank: 'Very funny.',
 };
+
+/**
+ * Per-relic lines (S3): nearing the drop box once it's in there, picking it
+ * up, and once its ghost has gone. Day 1's music box keeps its own lines,
+ * above. PROVISIONAL copy for the teacup.
+ */
+export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; ghost: string }> = {
+  'music-box': { approach: THOUGHTS.dropBox, pickup: THOUGHTS.relicPickup, ghost: THOUGHTS.relicGhost },
+  teacup: {
+    approach: 'Is that... rattling china?',
+    pickup: "A teacup that won't sit still. Somebody's nan is going to miss this.",
+    ghost: 'Another happy customer.',
+  },
+};
+
+/**
+ * Seconds the prankster ghost is on screen (D2-02): pops up behind the bench,
+ * blows a raspberry, floats off and fades. Its thought follows.
+ */
+export const PRANK_SECONDS = 2.8;
+
+/** Day 2's first delivery: this long after the table is set. */
+export const D2_DELIVERY_DELAY = 5;
+
+/** The chalice-is-missing thought: this close to the altar on Day 2. */
+export const ALTAR_APPROACH = { x: 0, y: 64, r: 4 };
 
 /** Reminders when something is tried too early (doc 5.4). PROVISIONAL copy. */
 export const REMINDERS = {
@@ -279,8 +359,8 @@ export const WRONG_CODE = 'Wrong code. I should check my messages.';
  */
 export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
 
-/** Shown as Day 2 begins, until S3 builds it. */
-export const S2_END = 'End of the S2 build. Day 2 comes in S3.';
+/** Shown once Day 2's first relic is put away, until the rest of S3 is built. */
+export const S3_PART1_END = 'End of S3 part 1. The clown doll comes next.';
 
 /**
  * First-day control guide (designer copy, 2026-11-09), shown once the day card

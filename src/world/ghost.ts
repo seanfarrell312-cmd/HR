@@ -17,6 +17,8 @@ export interface GhostModel {
   setFade(f: number): void;
   /** 0 = both eyes open, 1 = its right eye shut in a wink. */
   setWink(k: number): void;
+  /** 0 = mouth closed, 1 = tongue right out, blowing a raspberry (Day 2 prankster). */
+  setTongue(k: number): void;
 }
 
 let bodyGeometry: THREE.BufferGeometry | null = null;
@@ -102,7 +104,15 @@ export function ghostModel(withLight: boolean): GhostModel {
   const smile = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.009, 4, 12, Math.PI), dark);
   smile.rotation.z = Math.PI;
   smile.position.set(0, SHOULDER - 0.04, RADIUS + 0.005);
-  group.add(sheet, glow, smile);
+  // A pink tongue that pokes out from under the smile.
+  const tongue = new THREE.Mesh(
+    new THREE.SphereGeometry(0.04, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+    track(new THREE.MeshLambertMaterial({ color: '#ff7aa8', emissive: '#a83a62', opacity: 1 })),
+  );
+  tongue.rotation.x = Math.PI / 2 + 0.35;
+  tongue.position.set(0, SHOULDER - 0.075, RADIUS - 0.02);
+  tongue.visible = false;
+  group.add(sheet, glow, smile, tongue);
 
   const tex = mist();
   if (tex) {
@@ -131,6 +141,12 @@ export function ghostModel(withLight: boolean): GhostModel {
     setWink(k: number) {
       // Squash the eye on the ghost's left as seen by the player (its right).
       eyes[0].scale.y = 1.25 * (1 - 0.88 * k);
+    },
+    setTongue(k: number) {
+      tongue.visible = k > 0.01;
+      tongue.scale.set(1, 0.4 + 1.1 * k, 0.6 + 0.6 * k);
+      // Screwed-up eyes while blowing it.
+      for (const eye of eyes) eye.scale.y = 1.25 * (1 - 0.55 * k);
     },
   };
 }

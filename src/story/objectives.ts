@@ -1,10 +1,11 @@
-import { S2_END } from '../data/story';
+import { RELIC_NAMES, S3_PART1_END } from '../data/story';
 import type { GameState } from '../state/store';
 import { tableReady } from './table';
 
-// Day 1 objectives (doc 6.1), built in S1 and S2. Each completes on validated
-// state, never on approach, and the sequencer only moves forward. Day 2's
-// objectives arrive in S3; until then D2-01 is a placeholder.
+// Objectives for each day (doc 6.1, 6.2). Day 1 was built in S1 and S2, Day 2
+// in S3. Each completes on validated state, never on approach, and the
+// sequencer only moves forward. A day's objectives only complete on that day,
+// so finishing Day 1 never ticks off Day 2's.
 
 export interface Objective {
   id: string;
@@ -120,15 +121,96 @@ export const DAY1: Objective[] = [
     },
     done: (s) => s.flags.has('returned-to-gate'),
   },
+];
+
+/** The chalice and crucifix still to fetch for the ritual table, or '' once both are in hand or set out. */
+function altarPiecesLine(s: GameState): string {
+  const chalice = s.chalice === 'altar' || s.chalice === 'garden-bench';
+  const crucifix = !s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
+  if (chalice && crucifix) return 'Fetch the chalice and crucifix from the altar';
+  if (crucifix) return 'Fetch the crucifix from the altar';
+  return '';
+}
+
+/** Day 2 (doc 6.2): the friendly things begin behaving oddly. Built in S3. */
+export const DAY2: Objective[] = [
   {
+    // Gate, note, key and candles: the start of every shift (doc 3.2).
     id: 'D2-01',
-    task: () => S2_END,
+    task: (s) => {
+      // Nothing until the day card and the bus have gone.
+      if (!s.flags.has('arrived')) return '';
+      if (!s.flags.has('gate-unlocked')) return 'Enter the code on the gate keypad';
+      if (!s.flags.has('note-closed')) return 'Read the note on the office desk';
+      if (!s.inventory.has('chapel-key')) return 'Take the chapel key from the hooks by the office door';
+      if (!s.flags.has('chapel-opened')) return 'Unlock the chapel';
+      if (!s.inventory.has('matches')) return 'Pick up the matches from the shelf';
+      return `Light the candles around the holy circle (${s.candles_lit.size}/4)`;
+    },
+    done: (s) => s.day_index === 2 && s.flags.has('note-read') && s.candles_lit.size === 4,
+  },
+  {
+    // The chalice isn't on the altar: a prankster ghost has left it on the
+    // west garden bench, and pops up when it's taken (D2-02).
+    id: 'D2-02',
+    task: (s) => {
+      if (s.chalice === 'garden-bench') {
+        if (!s.flags.has('chalice-missing')) return 'Fetch the chalice and crucifix from the altar';
+        // The missing-chalice thought plays first.
+        if (!s.flags.has('chalice-missing-thought-done')) return '';
+        return 'Find the missing chalice';
+      }
+      // Found: the raspberry and the thought play out first.
+      return '';
+    },
+    done: (s) => s.day_index === 2 && s.chalice !== 'garden-bench' && s.flags.has('prank-thought-done'),
+  },
+  {
+    // Set the table, then the first delivery (D2-03).
+    id: 'D2-03',
+    task: (s) => {
+      if (!tableReady(s)) return altarPiecesLine(s) || 'Set the chalice and crucifix out on the ritual table';
+      if (!s.inbox.includes('d2delivery1')) return '';
+      if (!s.sms_read.has('d2delivery1')) return 'Check your phone (Q)';
+      return 'Collect the delivery from the drop box by the gate';
+    },
+    done: (s) => s.day_index === 2 && s.relic_kind === 'teacup' && (s.relic === 'held' || s.relic === 'ritual-table'),
+  },
+  {
+    // Scripture and the cross on the first relic, then put it away (D2-04).
+    id: 'D2-04',
+    task: (s) => {
+      const name = RELIC_NAMES[s.relic_kind];
+      if (s.relic === 'held' && !s.flags.has('relic-blessed')) {
+        return s.flags.has('relic-pickup-thought-done') ? `Put the ${name} on the ritual table` : '';
+      }
+      if (!s.flags.has('relic-blessed')) {
+        if (!s.flags.has('scripture-read')) {
+          return s.inventory.has('bible') ? `Read the ${name} some scripture` : 'Pick up the Bible from the stand';
+        }
+        if (!s.inventory.has('cross')) return 'Take the cross from the chapel shelf';
+        return `Stand in the holy circle and bless the ${name}`;
+      }
+      // Waits until the ghost has gone and its thought has played.
+      if (!s.flags.has('relic-thought-done')) return '';
+      if (s.relic === 'held') return `Put the ${name} on the table outside the chapel`;
+      return `Put the Bible back on the stand and pick up the ${name}`;
+    },
+    done: (s) => s.day_index === 2 && s.relics_stored.includes('teacup'),
+  },
+  {
+    // The rest of Day 2 comes in the next parts of S3.
+    id: 'D2-05',
+    task: () => S3_PART1_END,
     done: () => false,
   },
 ];
 
+/** Every objective in play order. */
+const ALL: Objective[] = [...DAY1, ...DAY2];
+
 export function currentObjective(s: GameState): Objective {
-  return DAY1.find((o) => o.id === s.objective_id) ?? DAY1[DAY1.length - 1];
+  return ALL.find((o) => o.id === s.objective_id) ?? ALL[ALL.length - 1];
 }
 
 /**
@@ -140,11 +222,11 @@ export function advanceObjectives(s: GameState): string[] {
   for (;;) {
     const o = currentObjective(s);
     if (!o.done(s)) break;
-    const i = DAY1.indexOf(o);
-    if (i < 0 || i === DAY1.length - 1) break;
+    const i = ALL.indexOf(o);
+    if (i < 0 || i === ALL.length - 1) break;
     s.completed_objectives.push(o.id);
     completed.push(o.id);
-    s.objective_id = DAY1[i + 1].id;
+    s.objective_id = ALL[i + 1].id;
   }
   return completed;
 }

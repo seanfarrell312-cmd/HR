@@ -19,8 +19,15 @@ export type EnvironmentPreset =
  */
 export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible';
 
+/**
+ * The delivered relics, one at a time through the drop box (doc 3.2). Day 1:
+ * the music box. Day 2 (S3): the teacup is a PLACEHOLDER for relic 1 until
+ * the designer names it (decisions 2026-11-13).
+ */
+export type RelicKind = 'music-box' | 'teacup';
+
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
-export type HeldProp = 'clock' | 'chalice' | 'music-box';
+export type HeldProp = 'clock' | 'chalice' | RelicKind;
 
 /** One-shot story facts for the current day. A new day starts with none. */
 export type Flag =
@@ -52,14 +59,44 @@ export type Flag =
   | 'relic-thought-done'
   | 'heading-home'
   | 'gate-prompted'
-  | 'returned-to-gate';
+  | 'returned-to-gate'
+  // Day 2 (S3).
+  /** A few seconds into the shift, after the day card: the first objective shows. */
+  | 'arrived'
+  /** At the altar on Day 2 the chalice is gone; then the thought plays out. */
+  | 'chalice-missing'
+  | 'chalice-missing-thought-done'
+  /** The prank ghost has popped up and floated off; then the thought. */
+  | 'prank-done'
+  | 'prank-thought-done';
+
+/**
+ * Flags that belong to the delivery in hand rather than the whole day. They
+ * clear when the next delivery arrives, so each relic runs the same steps.
+ */
+export const RELIC_FLAGS: readonly Flag[] = [
+  'drop-box-approached',
+  'relic-pickup-thought-done',
+  'relic-annoyed',
+  'relic-rattled',
+  'relic-settled',
+  'good-book-said',
+  'bible-prompted',
+  'scripture-opened',
+  'scripture-read',
+  'relic-weakened',
+  'relic-blessed',
+  'relic-ghost-gone',
+  'relic-thought-done',
+];
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';
-export type ChaliceLocation = 'altar' | 'held' | 'ritual-table';
+/** On Day 2 a prankster ghost has left it on the west garden bench (D2-02). */
+export type ChaliceLocation = 'altar' | 'garden-bench' | 'held' | 'ritual-table';
 /**
- * Day 1's delivered relic (the music box): not yet delivered, waiting in the
- * drop box, carried, on the ritual table, on the cleaned-relic table outside
- * the chapel, or cleared away by staff between shifts.
+ * Where the current delivery (`relic_kind`) is: not yet delivered, waiting in
+ * the drop box, carried, on the ritual table, on the cleaned-relic table
+ * outside the chapel, or cleared away by staff between shifts.
  */
 export type RelicLocation = 'none' | 'drop-box' | 'held' | 'ritual-table' | 'relic-table' | 'removed';
 
@@ -83,6 +120,10 @@ export interface GameState {
   clock: ClockLocation;
   chalice: ChaliceLocation;
   relic: RelicLocation;
+  /** Which relic `relic` is about: the latest delivery. */
+  relic_kind: RelicKind;
+  /** Cleansed relics on the table outside the chapel this shift, in the order put there. */
+  relics_stored: RelicKind[];
 }
 
 export function createInitialState(doorPreset = 'day1-start'): GameState {
@@ -103,5 +144,7 @@ export function createInitialState(doorPreset = 'day1-start'): GameState {
     clock: 'ritual-table',
     chalice: 'altar',
     relic: 'none',
+    relic_kind: 'music-box',
+    relics_stored: [],
   };
 }
