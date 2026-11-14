@@ -270,23 +270,43 @@ canvas {
   opacity: 1;
 }
 
+/*
+ * The protagonist's thoughts. Bold sans-serif on a dark band with a hard
+ * outline, so they read against any scene and catch the eye as they appear
+ * (S2 playtest: the thin italic Courier was hard to read).
+ */
 .subtitle {
   position: absolute;
   left: 50%;
   bottom: 22%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(0.96);
   max-width: 76vw;
+  padding: 8px 22px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
   text-align: center;
-  font-size: 28px;
-  font-style: italic;
-  text-shadow: 0 1px 2px #000, 0 0 5px #000;
+  font-family: Verdana, Tahoma, 'Segoe UI', Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: #fff8e6;
+  text-shadow:
+    -2px 0 0 #000,
+    2px 0 0 #000,
+    0 -2px 0 #000,
+    0 2px 0 #000,
+    0 0 8px #000;
   opacity: 0;
-  transition: opacity 0.25s;
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
   pointer-events: none;
 }
 
 .subtitle.show {
   opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 .title-card {

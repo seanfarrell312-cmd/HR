@@ -357,3 +357,16 @@ Designer rulings:
 - **No sound** for the gate closing yet. One can come with the audio pass.
 - **Walk home.** The end-of-day check covers the area just inside the gate,
   so the shift still ends at the gate without opening it.
+
+## 2026-11-13 — Thought subtitles easier to read
+
+| Topic | Ruling |
+|---|---|
+| Thought text | The protagonist's thoughts must be clear enough that the player notices and reads them as they appear. The thin italic Courier was too hard to read. |
+
+### PROVISIONAL (not yet ruled on)
+
+- **Look.** Bold Verdana (Tahoma or Segoe UI as fallbacks), 30 px, warm
+  white with a hard black outline on a translucent dark band, plus a short
+  fade-and-grow as each thought appears. Other HUD text keeps the Courier
+  look for now.
