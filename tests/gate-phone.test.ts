@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { GATE_CAUTION, GATE_CODE, GATE_OPEN_SECONDS, phoneMessages, SMS } from '../src/data/story';
+import { DOORS } from '../src/data/layout';
+import { AUTO_CLOSE_DOORS, GATE_CAUTION, GATE_CODE, GATE_OPEN_SECONDS, phoneMessages, SMS } from '../src/data/story';
 import { AutoClose } from '../src/world/autoClose';
+import { circleHitsRect, doorSweepRect } from '../src/world/collision';
 
 // Designer changes, 2026-11-10: the gate-code text, a gate that shuts itself
 // and a phone that shows only the newest text.
@@ -10,6 +12,31 @@ describe('gate-code text', () => {
     expect(SMS.gateCode.text).toBe(
       `Afternoon! I forgot to mention, the gate code is ${GATE_CODE}. Your instructions should be in my office. Just hang a left once you get into the church.`,
     );
+  });
+});
+
+describe('delivery text', () => {
+  it('uses the designer copy', () => {
+    expect(SMS.delivery1.text).toBe(
+      "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel.",
+    );
+  });
+});
+
+describe('church doors auto-close', () => {
+  it('shut themselves ten seconds after opening, like the gate', () => {
+    expect(AUTO_CLOSE_DOORS).toEqual({ gate: 10, church: 10 });
+    for (const id of Object.keys(AUTO_CLOSE_DOORS)) expect(DOORS.some((d) => d.id === id)).toBe(true);
+  });
+
+  it('wait while the player stands where the leaves swing', () => {
+    const church = DOORS.find((d) => d.id === 'church')!;
+    const sweep = doorSweepRect(church);
+    // Just inside and just outside the doorway, within a leaf's length.
+    expect(circleHitsRect(church.x, church.y + 1.2, 0.3, sweep)).toBe(true);
+    expect(circleHitsRect(church.x, church.y - 1.2, 0.3, sweep)).toBe(true);
+    // Well into the nave: clear.
+    expect(circleHitsRect(church.x, church.y + 4, 0.3, sweep)).toBe(false);
   });
 });
 

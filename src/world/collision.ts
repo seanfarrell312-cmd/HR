@@ -87,6 +87,18 @@ export function doorRect(door: Door): Rect {
     : { x1: door.x - t, y1: door.y - h, x2: door.x + t, y2: door.y + h };
 }
 
+/**
+ * The area a door's leaves sweep through as it opens or shuts, on both sides
+ * of the wall. A door that shuts itself waits while anyone stands in it.
+ */
+export function doorSweepRect(door: Door): Rect {
+  const r = doorRect(door);
+  const leaf = door.double ? door.width / 2 : door.width;
+  return door.axis === 'x'
+    ? { x1: r.x1, y1: r.y1 - leaf, x2: r.x2, y2: r.y2 + leaf }
+    : { x1: r.x1 - leaf, y1: r.y1, x2: r.x2 + leaf, y2: r.y2 };
+}
+
 /** Everything that blocks movement, except doors (which come and go). */
 export function staticColliders(): Collider[] {
   const walls = wallSegments().map((s, i) => ({ id: `wall-${i}`, rect: s.rect, level: s.level }));

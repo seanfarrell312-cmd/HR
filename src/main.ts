@@ -8,7 +8,7 @@ import {
   BLESS_SECONDS,
   CONTROLS_GUIDE,
   DAY_TITLES,
-  GATE_OPEN_SECONDS,
+  AUTO_CLOSE_DOORS,
   GATE_TEXT_DELAY,
   OFFICE_NOTE,
   phoneMessages,
@@ -25,7 +25,7 @@ import { Hud, type Panel } from './ui/hud';
 import { showTitleScreen } from './ui/title';
 import { buildWorld, poseDoor } from './world/build';
 import { AutoClose } from './world/autoClose';
-import { circleHitsRect, closedDoorColliders, doorRect, staticColliders, type Collider } from './world/collision';
+import { circleHitsRect, closedDoorColliders, doorSweepRect, staticColliders, type Collider } from './world/collision';
 import { lockState, resolve, type Action } from './world/interact';
 import { StoryProps } from './world/storyProps';
 import { zoneAt } from './world/zones';
@@ -118,16 +118,19 @@ function refreshColliders(): void {
   colliders = [...fixed, ...closedDoorColliders(state.open_doors)];
 }
 
-/** The front gate shuts itself a few seconds after it opens. */
-const gateCloser = new AutoClose(GATE_OPEN_SECONDS);
-const gateDoor = DOORS.find((d) => d.id === 'gate')!;
+/** The front gate and church doors shut themselves a few seconds after they open. */
+const autoClosers = Object.entries(AUTO_CLOSE_DOORS).map(([id, seconds]) => {
+  const door = DOORS.find((d) => d.id === id)!;
+  return { door, closer: new AutoClose(seconds), sweep: doorSweepRect(door) };
+});
 
 function setDoor(id: string, open: boolean): void {
   if (open) state.open_doors.add(id);
   else state.open_doors.delete(id);
-  if (id === 'gate') {
-    if (open) gateCloser.opened();
-    else gateCloser.cancel();
+  const auto = autoClosers.find((a) => a.door.id === id);
+  if (auto) {
+    if (open) auto.closer.opened();
+    else auto.closer.cancel();
   }
   const v = world.doors.get(id);
   if (v) v.target = open ? 1 : 0;
@@ -199,7 +202,7 @@ function enterDay(next: GameState): void {
   state = next;
   pending = [];
   dayFade = -1;
-  gateCloser.cancel();
+  for (const a of autoClosers) a.closer.cancel();
   for (const v of world.doors.values()) {
     v.amount = v.target = 0;
     poseDoor(v);
@@ -550,9 +553,13 @@ renderer.setAnimationLoop(() => {
     if (smsTimer <= 0) dispatch({ type: 'receive-sms', id: 'gateCode' });
   }
 
-  // Never shut the gate on the player: wait until they're clear of it.
-  const inGateway = player.level === 0 && circleHitsRect(player.x, player.y, PLAYER_RADIUS + 0.05, doorRect(gateDoor));
-  if (!worldPaused && gateCloser.update(dt, inGateway)) setDoor('gate', false);
+  // Never shut a door on the player: wait until they're clear of its swing.
+  if (!worldPaused) {
+    for (const { door, closer, sweep } of autoClosers) {
+      const inDoorway = player.level === door.level && circleHitsRect(player.x, player.y, PLAYER_RADIUS + 0.05, sweep);
+      if (closer.update(dt, inDoorway)) setDoor(door.id, false);
+    }
+  }
 
   if (!worldPaused && pending.length) {
     for (const p of pending) p.seconds -= dt;

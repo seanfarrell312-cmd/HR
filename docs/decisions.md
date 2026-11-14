@@ -370,3 +370,23 @@ Designer rulings:
   white with a hard black outline on a translucent dark band, plus a short
   fade-and-grow as each thought appears. Other HUD text keeps the Courier
   look for now.
+
+## 2026-11-13 — Delivery text, church doors shut themselves
+
+| Topic | Ruling |
+|---|---|
+| Delivery text | "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel." |
+| Church doors | Shut themselves 10 seconds after opening, so the player can't see outside while in the church. |
+
+### PROVISIONAL (not yet ruled on)
+
+- **Copy fixes.** In the supplied text, "It should in the dropbox" became
+  "It should be in the drop box", and "your done" became "you're done".
+  "Chapel" is lower-case, as elsewhere.
+- **Church doors** follow the gate's rules: 10 s after any opening, the
+  countdown pauses with the inventory, and there's no closing sound yet.
+- **Swing area.** Both auto-closing doors (gate and church) now wait while
+  the player stands anywhere their leaves would sweep through, on either
+  side of the wall, not just in the doorway itself. That way a leaf never
+  passes through the player.
+- **No sticker** on the church doors, and no warning.

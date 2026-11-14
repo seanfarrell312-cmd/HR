@@ -78,16 +78,26 @@ export const SMS: Record<string, Sms> = {
     // Designer copy, 2026-11-10.
     text: `Afternoon! I forgot to mention, the gate code is ${GATE_CODE}. Your instructions should be in my office. Just hang a left once you get into the church.`,
   },
-  // PROVISIONAL copy (decisions 2026-11-09).
+  // Designer copy, 2026-11-13.
   delivery1: {
     id: 'delivery1',
     from: 'Supervisor',
-    text: "Heads up, someone just dropped off a new relic in the drop box by the front gate. The hatch is on the inside. Once it's dealt with, leave it on the table outside the chapel.",
+    text: "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel.",
   },
 };
 
 /** The front gate shuts itself this long after it opens (decisions 2026-11-10). */
 export const GATE_OPEN_SECONDS = 10;
+/**
+ * The church doors shut themselves this long after they open, so the player
+ * can't see out while inside (decisions 2026-11-13).
+ */
+export const CHURCH_DOOR_SECONDS = 10;
+/** Doors that shut themselves, and after how many seconds. */
+export const AUTO_CLOSE_DOORS: Readonly<Record<string, number>> = {
+  gate: GATE_OPEN_SECONDS,
+  church: CHURCH_DOOR_SECONDS,
+};
 /** The sticker above the keypad screen (designer copy, 2026-11-10). */
 export const GATE_CAUTION = `Caution: gate is automatic and closes after ${GATE_OPEN_SECONDS} seconds`;
 
