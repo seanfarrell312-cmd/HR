@@ -6,6 +6,7 @@ import {
   PROPS,
   TRANSITIONS,
   WALL_THICKNESS,
+  roofRect,
   toWorld,
   type Door,
   type Prop,
@@ -172,7 +173,7 @@ export function buildWorld(): WorldView {
     const floor = boxMesh(a.rect, a.level, -0.1, 0.11, a.floor ?? '#777');
     root.add(floor);
     const roof = boxMesh(
-      { x1: a.rect.x1 - 0.15, y1: a.rect.y1 - 0.15, x2: a.rect.x2 + 0.15, y2: a.rect.y2 + 0.15 },
+      roofRect(a.rect),
       a.level,
       a.roof,
       0.25,

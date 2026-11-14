@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { DOOR_PRESETS } from '../src/data/doorPresets';
-import { AREAS, DOORS, PLAYER_RADIUS, PROPS, TELEPORTS, TRANSITIONS, WALLS } from '../src/data/layout';
+import { AREAS, DOORS, PLAYER_RADIUS, PROPS, roofRect, TELEPORTS, TRANSITIONS, WALL_THICKNESS, WALLS } from '../src/data/layout';
 import { CANDLES, SPOTS, TREE_PEEK } from '../src/data/story';
 import { buildWorld, poseDoor } from '../src/world/build';
 import { blocked, doorOnWall, staticColliders } from '../src/world/collision';
@@ -116,6 +116,42 @@ describe('layout data', () => {
     for (const [key, zone] of Object.entries(expected)) {
       const t = TELEPORTS.find((x) => x.key === key)!;
       expect(zoneAt(t.x, t.y, t.level)?.id, t.label).toBe(zone);
+    }
+  });
+});
+
+describe('room roofs', () => {
+  // A roof edge lying exactly on a taller wall's face z-fights with it: the
+  // side-room ceilings showed as flickering brown bars inside the nave.
+  it('never end flush with the face of a taller wall', () => {
+    const t = WALL_THICKNESS / 2;
+    for (const a of AREAS) {
+      if (a.roof === undefined) continue;
+      const r = roofRect(a.rect);
+      for (const w of WALLS) {
+        if (w.level !== a.level || w.height <= a.roof) continue;
+        const ew = w.a[1] === w.b[1];
+        const lo = Math.min(ew ? w.a[0] : w.a[1], ew ? w.b[0] : w.b[1]);
+        const hi = Math.max(ew ? w.a[0] : w.a[1], ew ? w.b[0] : w.b[1]);
+        const line = ew ? w.a[1] : w.a[0];
+        // Only walls alongside the roof matter.
+        const [r1, r2] = ew ? [r.x1, r.x2] : [r.y1, r.y2];
+        if (r2 <= lo || r1 >= hi) continue;
+        for (const edge of ew ? [r.y1, r.y2] : [r.x1, r.x2]) {
+          for (const face of [line - t, line + t]) {
+            expect(Math.abs(edge - face), `${a.id} roof vs wall at ${line}`).toBeGreaterThan(0.01);
+          }
+        }
+      }
+    }
+  });
+
+  it('still cover their own walls', () => {
+    for (const a of AREAS) {
+      if (a.roof === undefined) continue;
+      const r = roofRect(a.rect);
+      expect(r.x1).toBeLessThan(a.rect.x1);
+      expect(r.y2).toBeGreaterThan(a.rect.y2);
     }
   });
 });

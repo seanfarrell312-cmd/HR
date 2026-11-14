@@ -105,6 +105,20 @@ export const WALL_THICKNESS = 0.3;
 export const PLAYER_RADIUS = 0.3;
 export const EYE_HEIGHT = 1.6;
 
+/**
+ * How far a room's roof slab reaches past the room's outline: over the top of
+ * its own walls, but just short of their outer face. Reaching the face exactly
+ * left the slab's edge coplanar with any taller wall it shares (the nave), so
+ * the two flickered through each other above the side-room doors.
+ */
+export const ROOF_OVERHANG = WALL_THICKNESS / 2 - 0.02;
+
+/** The plan rect a room's roof slab covers. */
+export function roofRect(r: Rect): Rect {
+  const o = ROOF_OVERHANG;
+  return { x1: r.x1 - o, y1: r.y1 - o, x2: r.x2 + o, y2: r.y2 + o };
+}
+
 /** Convert a plan point to a Three.js position (x, height, -y). */
 export function toWorld(x: number, y: number, level: Level, height = 0): [number, number, number] {
   return [x, LEVEL_BASE[level] + height, -y];
