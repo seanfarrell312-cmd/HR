@@ -132,6 +132,17 @@ export const OFFICE_NOTE = [
   '— Supervisor',
 ].join('\n\n');
 
+/**
+ * The Easter-egg note on the stool behind the church (designer copy,
+ * 2026-11-13). Not part of the story: readable any time, changes nothing.
+ */
+export const STOOL_NOTE = [
+  'Hey friend,',
+  "My name is Seanologues and this is my game. I know it's fun to explore, but you should really get back to the game. Sometimes empty spaces are just that. There aren't any secrets or lore back here, just this note.",
+  "If you really want something extra, how's this:",
+  "Even though I've never met you and probably never will, even though I don't know what you look like or how old you are, and even though it may be kind of lame to say this, I bet you're a pretty cool person. I'm eternally grateful that you gave this game a chance and hope you play through to the end.",
+].join('\n\n');
+
 /** Subtitled thoughts (doc 3.2). Keyed so they can be traced to dialogue IDs later. */
 export const THOUGHTS = {
   gateOpen: 'Nice, it worked.',

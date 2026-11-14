@@ -11,6 +11,7 @@ import {
   AUTO_CLOSE_DOORS,
   GATE_TEXT_DELAY,
   OFFICE_NOTE,
+  STOOL_NOTE,
   phoneMessages,
   S2_END,
   SCRIPTURE,
@@ -106,6 +107,8 @@ let debugVisible = import.meta.env.DEV;
 let started = false;
 let target: string | null = null;
 let panel: Panel | null = null;
+/** Which note the note panel is showing. Only the office letter is part of the story. */
+let noteShown: 'office' | 'stool' = 'office';
 let keypadEntry = '';
 let smsTimer = -1;
 /** Story events waiting on a timer ('after' effects). */
@@ -247,8 +250,8 @@ function openPanel(kind: Panel): void {
     hud.openPanel('phone', Hud.phoneHtml(phoneMessages(state.inbox)), 'Q or E to put away');
     hud.setPhoneAlert(false);
   } else if (kind === 'note') {
-    hud.openPanel('note', Hud.noteHtml(OFFICE_NOTE), 'E to put down');
-    dispatch({ type: 'read-note' });
+    hud.openPanel('note', Hud.noteHtml(noteShown === 'stool' ? STOOL_NOTE : OFFICE_NOTE), 'E to put down');
+    if (noteShown === 'office') dispatch({ type: 'read-note' });
   } else if (kind === 'bible') {
     // Read aloud to the music box; it counts once the panel is put away.
     hud.openPanel('bible', Hud.bibleHtml(SCRIPTURE.reference, SCRIPTURE.lines), 'E to close');
@@ -273,7 +276,7 @@ function closePanel(): void {
   // The next step of the blessing follows once the scripture has been read and closed.
   if (panel === 'bible') dispatch({ type: 'read-scripture' });
   // The key objective follows once the note has been read and put down.
-  if (panel === 'note') dispatch({ type: 'close-note' });
+  if (panel === 'note' && noteShown === 'office') dispatch({ type: 'close-note' });
   panel = null;
   player.frozen = false;
   hud.closePanel();
@@ -320,6 +323,7 @@ function apply(action: Action): void {
       openPanel('keypad');
       break;
     case 'read-note':
+      noteShown = action.note ?? 'office';
       openPanel('note');
       break;
   }

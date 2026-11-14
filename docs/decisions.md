@@ -390,3 +390,24 @@ Designer rulings:
   side of the wall, not just in the doorway itself. That way a leaf never
   passes through the player.
 - **No sticker** on the church doors, and no warning.
+
+## 2026-11-13 — Easter-egg note behind the church (appended to S2)
+
+| Topic | Ruling |
+|---|---|
+| Stool | Outside, against the church's north wall, between the church and the perimeter wall. Brown like the church doors, with a square top on four legs, half the Bible stand's height (0.55 m). |
+| Note | Lies on the stool and reads like the office note. It's available any time on Day 1 and Day 2, and the text is the designer's "Hey friend, My name is Seanologues…" message. |
+
+### PROVISIONAL (not yet ruled on)
+
+- **Which wall.** The stool is against the nave's north wall (y = 67.4),
+  at x = −4, west of the stair annex. The annex juts a little further
+  north on the east side, but it's the stair room, not the church proper.
+- **Copy fixes.** "its" became "it's", "ive" became "I've", and the double
+  space was dropped. The text is split into paragraphs: the greeting, the
+  first part, "If you really want something extra, how's this:", then the
+  last part. No signature was added.
+- **No story effect.** Reading it changes nothing: no flag, objective,
+  thought or sound. It works with full hands and on every day, not just
+  Days 1–2, because nothing removes it.
+- **Size.** The seat is 45 cm square and 5 cm thick, on 5 cm legs.

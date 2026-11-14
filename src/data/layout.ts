@@ -68,7 +68,8 @@ export interface Prop {
   height: number;
   level: Level;
   color: string;
-  shape?: 'box' | 'cylinder' | 'ring' | 'flat';
+  /** 'stool': a square seat on four legs, as tall as `height`. */
+  shape?: 'box' | 'cylinder' | 'ring' | 'flat' | 'stool';
   /** Props block movement unless marked solid: false. */
   solid?: boolean;
   /** Height the prop starts at above the level floor. */
@@ -226,6 +227,21 @@ export const TRANSITIONS: Transition[] = [
 
 const WOOD = '#7b5a3a';
 const DARK_WOOD = '#4f3824';
+/** The church doors' brown. */
+export const CHURCH_DOOR_COLOR = '#5a3a20';
+
+/** The Bible stand in the chapel; the Easter-egg stool is half its height. */
+const BIBLE_STAND_H = 1.1;
+/** Easter-egg stool (decisions 2026-11-13): seat edge and height. */
+const STOOL_SIZE = 0.45;
+export const STOOL_H = BIBLE_STAND_H / 2;
+/**
+ * Behind the church, against the outside of the nave's north wall (outer face
+ * at y = 67.55), west of the stair annex, between the church and the
+ * perimeter wall.
+ */
+const STOOL_X = -4;
+const STOOL_Y1 = 67.6;
 
 function pews(): Prop[] {
   const out: Prop[] = [];
@@ -314,7 +330,33 @@ export const PROPS: Prop[] = [
   { id: 'ritual-table', label: 'Ritual table', rect: rect(13.45, 52.3, 14.2, 54.3), height: 0.9, level: 0, color: DARK_WOOD, interact: 'ritual-table' },
   { id: 'holy-circle', label: 'Holy circle', rect: rect(10.5, 52.2, 12.3, 54.0), height: 0.03, level: 0, color: '#3aa0e0', shape: 'ring', solid: false },
   // Just outside the circle's north-east corner. It moves into the circle on later days.
-  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: 1.1, level: 0, color: DARK_WOOD, interact: 'bible' },
+  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: BIBLE_STAND_H, level: 0, color: DARK_WOOD, interact: 'bible' },
+
+  // Behind the church: an Easter-egg note on a stool, readable any day.
+  {
+    id: 'egg-stool',
+    label: 'Stool',
+    rect: rect(STOOL_X - STOOL_SIZE / 2, STOOL_Y1, STOOL_X + STOOL_SIZE / 2, STOOL_Y1 + STOOL_SIZE),
+    height: STOOL_H,
+    level: 0,
+    color: CHURCH_DOOR_COLOR,
+    shape: 'stool',
+    interact: 'stool-note',
+  },
+  {
+    id: 'egg-note',
+    label: 'Note',
+    rect: rect(STOOL_X - 0.1, STOOL_Y1 + STOOL_SIZE / 2 - 0.14, STOOL_X + 0.1, STOOL_Y1 + STOOL_SIZE / 2 + 0.14),
+    height: 0.005,
+    level: 0,
+    color: '#f4f1e6',
+    shape: 'flat',
+    // The flat shape sits 0.03 above its top; this lands it just clear of
+    // the seat so the two don't z-fight.
+    base: STOOL_H - 0.02,
+    solid: false,
+    interact: 'stool-note',
+  },
 
   // Shed.
   { id: 'shed-bench', label: 'Workbench', rect: rect(22.4, 76.6, 26, 77.6), height: 0.9, level: 0, color: WOOD },

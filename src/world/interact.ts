@@ -11,7 +11,8 @@ export type Action =
   | { kind: 'message'; text: string }
   | { kind: 'story'; event: StoryEvent }
   | { kind: 'open-keypad' }
-  | { kind: 'read-note' }
+  /** Open a note to read: the supervisor's letter (the default) or the Easter egg. */
+  | { kind: 'read-note'; note?: 'office' | 'stool' }
   | { kind: 'none' };
 
 export interface Resolution {
@@ -100,6 +101,9 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story('E  Take the delivery', { type: 'take-relic' });
     case 'office-note':
       return { prompt: 'E  Read note', action: { kind: 'read-note' } };
+    case 'stool-note':
+      // The Easter egg: readable any time, any day, hands full or not.
+      return { prompt: 'E  Read note', action: { kind: 'read-note', note: 'stool' } };
     case 'chapel-key':
       if (s.inventory.has('chapel-key')) return NONE;
       return story('E  Take chapel key', { type: 'take', item: 'chapel-key' });

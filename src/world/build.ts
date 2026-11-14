@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   AREAS,
+  CHURCH_DOOR_COLOR,
   DOORS,
   PROPS,
   TRANSITIONS,
@@ -78,6 +79,20 @@ function propMesh(p: Prop): THREE.Object3D {
       mesh.position.set(...toWorld(cx, cy, p.level, base + 0.03));
       return mesh;
     }
+    case 'stool': {
+      // A square seat on four square legs set in from the corners.
+      const group = new THREE.Group();
+      const seat = 0.05;
+      const leg = 0.05;
+      const inset = 0.03;
+      group.add(boxMesh(p.rect, p.level, base + p.height - seat, seat, p.color));
+      for (const lx of [p.rect.x1 + inset, p.rect.x2 - inset - leg]) {
+        for (const ly of [p.rect.y1 + inset, p.rect.y2 - inset - leg]) {
+          group.add(boxMesh({ x1: lx, y1: ly, x2: lx + leg, y2: ly + leg }, p.level, base, p.height - seat, p.color));
+        }
+      }
+      return group;
+    }
     case 'flat': {
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(p.color));
       mesh.rotation.x = -Math.PI / 2;
@@ -95,7 +110,7 @@ const LEAF_THICKNESS = WALL_THICKNESS * 0.6;
 function doorLeaf(door: Door, sign: 1 | -1, width: number): THREE.Group {
   const panel = new THREE.Mesh(
     new THREE.BoxGeometry(width, door.height, LEAF_THICKNESS),
-    mat(door.id === 'gate' ? '#2b2b2b' : door.id === 'church' ? '#5a3a20' : '#6e4a2c'),
+    mat(door.id === 'gate' ? '#2b2b2b' : door.id === 'church' ? CHURCH_DOOR_COLOR : '#6e4a2c'),
   );
   // The hinge sits at one end of the opening; the panel extends along the
   // wall towards the other end (local +x from the low hinge, -x from the high).
