@@ -585,7 +585,8 @@ export class StoryProps {
 
   /** The chalice and standing crucifix: side by side on the altar, carried, or on the ritual table. */
   private syncChalice(s: GameState): void {
-    this.chalice.visible = s.chalice !== 'held';
+    // On Day 2 it only turns up on the bench once the objective asks for it.
+    this.chalice.visible = s.chalice !== 'held' && (s.chalice !== 'garden-bench' || s.flags.has('chalice-missing-thought-done'));
     this.heldChalice.visible = s.chalice === 'held';
     at(
       this.chalice,
@@ -693,16 +694,20 @@ export class StoryProps {
     }
   }
 
-  /** The prankster rises from behind the bench, tongue out, wobbles, then drifts off west and fades. */
+  /**
+   * The prankster rises from behind the bench (between it and the east
+   * hedge), tongue out, wobbles, then drifts up and away north over the
+   * hedge and fades.
+   */
   private updatePrank(dt: number, cam: THREE.Vector3): void {
     if (this.prankT < 0) return;
     this.prankT += dt;
     const t = this.prankT;
     const g = this.prankster;
-    const [bx, , bz] = toWorld(SPOTS.chaliceBench.x, SPOTS.chaliceBench.y + 0.9, 0);
+    const [bx, , bz] = toWorld(SPOTS.chaliceBench.x + 0.9, SPOTS.chaliceBench.y, 0);
     const pop = Math.min(1, t / 0.3);
     const away = Math.max(0, t - 1.4);
-    g.group.position.set(bx - away * 1.6, -0.3 + pop * 0.75 + away * 0.9 + Math.sin(t * 9) * 0.03, bz - away * 0.6);
+    g.group.position.set(bx + away * 0.3, -0.3 + pop * 0.75 + away * 0.9 + Math.sin(t * 9) * 0.03, bz - away * 1.6);
     g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), Math.sin(t * 14) * 0.08 * (1 - Math.min(1, away)));
     g.setTongue(t > 0.25 && t < 1.3 ? 1 : 0);
     g.setFade(t < PRANK_SECONDS - 0.8 ? 1 : Math.max(0, (PRANK_SECONDS - t) / 0.8));

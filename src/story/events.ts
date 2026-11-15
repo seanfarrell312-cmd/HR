@@ -9,6 +9,7 @@ import {
   DELIVERY_DELAY,
   DROP_BOX_APPROACH,
   GATE_CODE,
+  GATE_RECALL_DELAY,
   GATE_RETURN,
   HEAD_HOME_DELAY,
   RATTLE_AGAIN,
@@ -38,6 +39,7 @@ export type StoryEvent =
   | { type: 'receive-sms'; id: string }
   /** A few seconds into a shift with no gate-code text (Day 2 on): the first objective shows. */
   | { type: 'arrived' }
+  | { type: 'recall-gate-code' }
   /** The player's position; on Day 2 the chalice is missing from the altar. */
   | { type: 'near-altar'; x: number; y: number; level: number }
   /** Timed, after the missing-chalice thought: the search objective shows. */
@@ -180,6 +182,14 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'arrived':
       if (s.flags.has('arrived')) return [];
       s.flags.add('arrived');
+      // Once the first objective has folded away, the code comes to mind.
+      out.push({ kind: 'after', seconds: GATE_RECALL_DELAY, event: { type: 'recall-gate-code' } });
+      break;
+
+    case 'recall-gate-code':
+      if (!s.flags.has('arrived') || s.flags.has('gate-code-recalled') || s.flags.has('gate-unlocked')) return [];
+      s.flags.add('gate-code-recalled');
+      out.push({ kind: 'say', text: THOUGHTS.gateCodeRecall });
       break;
 
     case 'read-sms': {
@@ -235,7 +245,9 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'pickup-chalice':
       // Day 2: on the garden bench, where the prankster left it (D2-02).
+      // Not there to find until the objective asks for it.
       if (s.chalice === 'garden-bench') {
+        if (!s.flags.has('chalice-missing-thought-done')) return [];
         if (s.held_prop_id) return flash(REMINDERS.handsFull);
         s.chalice = 'held';
         s.held_prop_id = 'chalice';
@@ -600,6 +612,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
             { kind: 'after', seconds: afterThought(THOUGHTS.chapelOpen), event: { type: 'chapel-thought-done' } },
           );
         }
+      }
+      // Day 2: the cleansed clock, on the desk since yesterday.
+      if (e.id === 'office' && s.day_index === 2 && !s.flags.has('office-opened')) {
+        s.flags.add('office-opened');
+        out.push({ kind: 'say', text: THOUGHTS.officeClock });
       }
       break;
   }

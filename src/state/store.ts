@@ -68,7 +68,11 @@ export type Flag =
   | 'chalice-missing-thought-done'
   /** The prank ghost has popped up and floated off; then the thought. */
   | 'prank-done'
-  | 'prank-thought-done';
+  | 'prank-thought-done'
+  /** The gate-code thought has played (Day 2 on). */
+  | 'gate-code-recalled'
+  /** The office door has been opened on Day 2, with its clock thought. */
+  | 'office-opened';
 
 /**
  * Flags that belong to the delivery in hand rather than the whole day. They

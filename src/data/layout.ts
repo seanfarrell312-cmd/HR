@@ -68,8 +68,13 @@ export interface Prop {
   height: number;
   level: Level;
   color: string;
-  /** 'stool': a square seat on four legs, as tall as `height`. */
-  shape?: 'box' | 'cylinder' | 'ring' | 'flat' | 'stool';
+  /**
+   * 'stool': a square seat on four legs, as tall as `height`.
+   * 'disc': a flat circle on the ground, filling the rect's shorter side.
+   * 'fence': a low see-through railing of pickets along the rect's long side.
+   * 'fountain': a hexagonal stone basin of water with a spout in the middle.
+   */
+  shape?: 'box' | 'cylinder' | 'ring' | 'flat' | 'stool' | 'disc' | 'fence' | 'fountain';
   /** Props block movement unless marked solid: false. */
   solid?: boolean;
   /** Height the prop starts at above the level floor. */
@@ -133,6 +138,19 @@ const NAVE_H = 7;
 const ROOM_H = 3.5;
 const PERIMETER = rect(-42, 0, 42, 86);
 const PERIMETER_H = 2.6;
+/**
+ * West garden (designer's concept layout, 2026-11-14): hedges on the north,
+ * west and east sides, a low ornate fence with a gateway on the south, the
+ * fountain in the middle on a gravel path and a bench down each side. The
+ * east hedge hides the garden from the main path.
+ */
+const GARDEN = rect(-38, 49, -21, 59.5);
+const HEDGE_T = 1.2;
+const HEDGE_H = 2.2;
+/** Centre of the gateway in the south fence, and of the fountain. */
+const GARDEN_X = -29.25;
+const GATEWAY_W = 2;
+const FOUNTAIN_Y = 54.3;
 
 // --- Areas (floors, roofs and zones) ---------------------------------------
 
@@ -141,7 +159,7 @@ export const AREAS: Area[] = [
   { id: 'grounds', label: 'Grounds', rect: PERIMETER, level: 0 },
   { id: 'gate', label: 'Front gate', rect: rect(-6, 0, 6, 6), level: 0 },
   { id: 'path', label: 'Central path', rect: rect(-2, 6, 2, 50), level: 0 },
-  { id: 'west-garden', label: 'West garden', rect: rect(-38, 42, -18, 68), level: 0 },
+  { id: 'west-garden', label: 'West garden', rect: GARDEN, level: 0 },
   { id: 'east-graves', label: 'East graveyard', rect: rect(17, 26, 39, 66), level: 0 },
   { id: 'west-graves', label: 'West graves', rect: rect(-38, 14, -17, 40), level: 0 },
   { id: 'nave', label: 'Nave', rect: NAVE, level: 0, roof: NAVE_H, floor: '#8a7f72' },
@@ -292,6 +310,42 @@ function headstones(): Prop[] {
   ];
 }
 
+/** The west garden (concept layout 2026-11-14) and the lone grave east of it. */
+function garden(): Prop[] {
+  const g = GARDEN;
+  const gx1 = GARDEN_X - GATEWAY_W / 2;
+  const gx2 = GARDEN_X + GATEWAY_W / 2;
+  const post = 0.2;
+  const hedge = (id: string, r: Rect): Prop => ({ id, label: 'Hedge', rect: r, height: HEDGE_H, level: 0, color: '#2f4f2a' });
+  const fence = (id: string, x1: number, x2: number): Prop => ({
+    id, label: 'Garden fence', rect: rect(x1, g.y1 - 0.05, x2, g.y1 + 0.05), height: 0.9, level: 0, color: '#1c2620', shape: 'fence',
+  });
+  const gatePost = (id: string, x1: number): Prop => ({
+    id, label: 'Gate post', rect: rect(x1, g.y1 - 0.1, x1 + post, g.y1 + 0.1), height: 1.2, level: 0, color: '#1c2620',
+  });
+  const gravel = '#b3afa6';
+  return [
+    hedge('hedge-n', rect(g.x1, g.y2 - HEDGE_T, g.x2, g.y2)),
+    hedge('hedge-w', rect(g.x1, g.y1, g.x1 + HEDGE_T, g.y2 - HEDGE_T)),
+    hedge('hedge-e', rect(g.x2 - HEDGE_T, g.y1, g.x2, g.y2 - HEDGE_T)),
+    fence('garden-fence-w', g.x1 + HEDGE_T, gx1 - post),
+    fence('garden-fence-e', gx2 + post, g.x2 - HEDGE_T),
+    gatePost('garden-gatepost-w', gx1 - post),
+    gatePost('garden-gatepost-e', gx2),
+    // Gravel from the gateway to a circle round the fountain.
+    { id: 'garden-path', label: 'Gravel path', rect: rect(GARDEN_X - 0.85, g.y1, GARDEN_X + 0.85, FOUNTAIN_Y - 2.1), height: 0.02, level: 0, color: gravel, shape: 'flat', solid: false },
+    { id: 'garden-gravel', label: 'Gravel', rect: rect(GARDEN_X - 2.4, FOUNTAIN_Y - 2.4, GARDEN_X + 2.4, FOUNTAIN_Y + 2.4), height: 0.04, level: 0, color: gravel, shape: 'disc', solid: false },
+    { id: 'fountain', label: 'Holy water fountain', rect: rect(GARDEN_X - 1.5, FOUNTAIN_Y - 1.5, GARDEN_X + 1.5, FOUNTAIN_Y + 1.5), height: 0.8, level: 0, color: '#a7b4bb', shape: 'fountain' },
+    // A long bench down each side, facing the fountain. The prankster leaves
+    // the chalice at the north end of the east one (D2-02).
+    { id: 'garden-bench-w', label: 'Garden bench', rect: rect(-34.8, 50.6, -34.2, 56.6), height: 0.5, level: 0, color: WOOD },
+    { id: 'garden-bench-e', label: 'Garden bench', rect: rect(-24.3, 50.6, -23.7, 56.6), height: 0.5, level: 0, color: WOOD },
+    // The lone grave, outside the east hedge; the headstone at its north end.
+    { id: 'old-priest-grave', label: "Old priest's grave", rect: rect(-19.6, 52.85, -18.4, 53.15), height: 1.2, level: 0, color: '#8d8a83' },
+    { id: 'old-priest-plot', label: "Old priest's plot", rect: rect(-19.5, 50.4, -18.5, 52.8), height: 0.05, level: 0, color: '#5a4632', shape: 'flat', solid: false },
+  ];
+}
+
 function trees(): Prop[] {
   const spots: [number, number][] = [
     [-34, 46], [-35, 63], [-20, 45], [-38, 28], [-12, 20], [12, 18], [34, 22], [38, 70], [-38, 80], [-10, 80], [10, 80],
@@ -314,13 +368,7 @@ export const PROPS: Prop[] = [
   { id: 'drop-box', label: 'Relic drop box', rect: rect(3.2, -0.6, 4.2, 0.6), height: 1.3, level: 0, color: '#3b4a5a', interact: 'drop-box' },
   { id: 'gate-keypad', label: 'Gate keypad', rect: rect(-2.7, -0.35, -2.3, -0.15), height: 1.4, level: 0, color: '#2d2d2d', interact: 'keypad' },
 
-  // West garden.
-  { id: 'fountain', label: 'Holy water fountain', rect: rect(-28.2, 53.8, -25.8, 56.2), height: 0.9, level: 0, color: '#a7b4bb', shape: 'cylinder' },
-  { id: 'garden-bench', label: 'Garden bench', rect: rect(-28.5, 50.2, -25.5, 50.8), height: 0.5, level: 0, color: WOOD },
-  { id: 'bed-1', label: 'Flower bed', rect: rect(-35, 52, -31, 58), height: 0.3, level: 0, color: '#5c7a3c' },
-  { id: 'bed-2', label: 'Flower bed', rect: rect(-23, 52, -20, 58), height: 0.3, level: 0, color: '#5c7a3c' },
-  { id: 'old-priest-grave', label: "Old priest's grave", rect: rect(-21.6, 62.6, -20.4, 62.9), height: 1.2, level: 0, color: '#8d8a83' },
-  { id: 'old-priest-plot', label: "Old priest's plot", rect: rect(-21.5, 60.4, -20.5, 62.5), height: 0.05, level: 0, color: '#5a4632', shape: 'flat', solid: false },
+  ...garden(),
 
   ...headstones(),
   ...trees(),
@@ -404,7 +452,7 @@ export const TELEPORTS: Teleport[] = [
   { key: '7', label: 'Storage closet', x: -9.3, y: 61.7, level: 0, yaw: -Math.PI / 2 },
   { key: '8', label: 'Basement', x: 6.5, y: 64.5, level: -1, yaw: Math.PI },
   { key: '9', label: 'Shed doorway', x: 26, y: 70.5, level: 0, yaw: Math.PI },
-  { key: '0', label: 'West garden', x: -24, y: 52, level: 0, yaw: -Math.PI / 2 },
+  { key: '0', label: 'West garden', x: GARDEN_X, y: 50, level: 0, yaw: 0 },
   { key: '-', label: 'East graveyard', x: 22, y: 28, level: 0, yaw: 0 },
   { key: '=', label: 'West graves', x: -20, y: 16, level: 0, yaw: -Math.PI / 4 },
 ];

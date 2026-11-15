@@ -55,8 +55,11 @@ export const SPOTS = {
   bible: { x: 12.05, y: 54.65, z: 1.1 },
   /** Cleaned-relic table outside the chapel door (the first relic's place). */
   relicStored: { x: 7.4, y: 51.05, z: 0.85 },
-  /** Day 2 (D2-02): where the prankster ghost left the chalice, on the west garden bench. */
-  chaliceBench: { x: -27.4, y: 50.5, z: 0.5 },
+  /**
+   * Day 2 (D2-02): where the prankster ghost left the chalice, at the north
+   * end of the east garden bench, out of sight of the main path.
+   */
+  chaliceBench: { x: -24.0, y: 56.0, z: 0.5 },
   /** Inside the drop box at the gate, where the music box is heard from. */
   dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
@@ -228,7 +231,19 @@ export const THOUGHTS = {
   chaliceMissing: 'The chalice is gone. One of those lingering ghosts, I bet.',
   /** Once the prankster ghost has blown its raspberry and floated off. */
   prank: 'Very funny.',
+  // Day 2, designer copy (2026-11-14).
+  /** Day 2 shift start, once the first objective has folded away. */
+  gateCodeRecall: `Good thing I remembered the gate code: ${GATE_CODE}.`,
+  /** Opening the office door for the first time on Day 2; the clock is on the desk. */
+  officeClock: 'Huh, the clock does look nice in here.',
 };
+
+/**
+ * Day 2 on: seconds after the first objective shows before the gate-code
+ * thought. The objective is up for 5 s (OBJECTIVE_SECONDS in the HUD), so the
+ * thought follows once it has folded away.
+ */
+export const GATE_RECALL_DELAY = 5.5;
 
 /**
  * Per-relic lines (S3): nearing the drop box once it's in there, picking it

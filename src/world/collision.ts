@@ -102,7 +102,7 @@ export function doorSweepRect(door: Door): Rect {
 /** Everything that blocks movement, except doors (which come and go). */
 export function staticColliders(): Collider[] {
   const walls = wallSegments().map((s, i) => ({ id: `wall-${i}`, rect: s.rect, level: s.level }));
-  const props = PROPS.filter((p) => p.solid !== false && p.shape !== 'flat' && p.shape !== 'ring').map((p) => ({
+  const props = PROPS.filter((p) => p.solid !== false && p.shape !== 'flat' && p.shape !== 'ring' && p.shape !== 'disc').map((p) => ({
     id: p.id,
     rect: p.rect,
     level: p.level,

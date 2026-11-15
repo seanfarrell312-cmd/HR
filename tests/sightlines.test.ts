@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DOORS, EYE_HEIGHT, PROPS, type Rect } from '../src/data/layout';
+import { SPOTS } from '../src/data/story';
 import { wallSegments } from '../src/world/collision';
 
 // Scripted scares rely on what the player can see from set spots (doc 4.3).
@@ -53,6 +54,28 @@ describe('sightlines', () => {
   it('keeps the tall headstone far enough to read as distant', () => {
     const [x, y] = centre(tall.rect);
     expect(Math.hypot(x - doorway[0], y - doorway[1])).toBeGreaterThan(30);
+  });
+
+  it('hides the chalice on the garden bench from the main path and the church doors (D2-02)', () => {
+    const chalice: [number, number] = [SPOTS.chaliceBench.x, SPOTS.chaliceBench.y];
+    const blockers = viewBlockers('');
+    for (let y = 0; y <= 50; y += 0.5) {
+      for (const x of [-1.5, 0, 1.5]) {
+        const hits = blockers.filter((b) => segmentHitsRect([x, y], chalice, b.rect));
+        expect(hits.length, `from (${x}, ${y})`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('puts the chalice on the east garden bench, inside the hedges', () => {
+    const bench = PROPS.find((p) => p.id === 'garden-bench-e')!;
+    const { x, y } = SPOTS.chaliceBench;
+    expect(x).toBeGreaterThan(bench.rect.x1);
+    expect(x).toBeLessThan(bench.rect.x2);
+    // The north end of the bench.
+    expect(y).toBeGreaterThan((bench.rect.y1 + bench.rect.y2) / 2);
+    expect(y).toBeLessThan(bench.rect.y2);
+    expect(SPOTS.chaliceBench.z).toBeCloseTo(bench.height);
   });
 
   it('hides the west garden fountain from the shed doorway behind the church', () => {

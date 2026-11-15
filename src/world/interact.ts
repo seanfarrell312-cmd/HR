@@ -140,6 +140,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'chalice':
       // Day 2: left on the garden bench by a prankster ghost (D2-02).
       if (s.chalice === 'garden-bench') {
+        // Hidden until the objective asks for it.
+        if (!s.flags.has('chalice-missing-thought-done')) return NONE;
         if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
         return story('E  Take the chalice', { type: 'pickup-chalice' });
       }

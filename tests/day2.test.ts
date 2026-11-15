@@ -4,6 +4,7 @@ import {
   ALTAR_APPROACH,
   D2_DELIVERY_DELAY,
   GATE_CODE,
+  GATE_RECALL_DELAY,
   HOLY_CIRCLE,
   OFFICE_NOTES,
   PRANK_SECONDS,
@@ -18,6 +19,7 @@ import { createInitialState, type GameState } from '../src/state/store';
 import { startDay } from '../src/story/day';
 import { applyEvent, type Effect, type StoryEvent } from '../src/story/events';
 import { currentObjective } from '../src/story/objectives';
+import { OBJECTIVE_SECONDS } from '../src/ui/hud';
 import { resolve } from '../src/world/interact';
 import { PLAYTHROUGH, play } from './playthrough';
 
@@ -29,8 +31,10 @@ import { PLAYTHROUGH, play } from './playthrough';
 export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   // D2-01: gate, note, key and candles.
   { type: 'arrived' },
+  { type: 'recall-gate-code' },
   { type: 'keypad-submit', code: GATE_CODE },
   { type: 'door-opened', id: 'church' },
+  { type: 'door-opened', id: 'office' },
   { type: 'read-note' },
   { type: 'close-note' },
   { type: 'take', item: 'chapel-key' },
@@ -91,7 +95,8 @@ const task = (s: GameState) => currentObjective(s).task(s);
 const says = (fx: Effect[]) => fx.filter((f) => f.kind === 'say').map((f) => (f as { text: string }).text);
 const flashes = (fx: Effect[]) => fx.filter((f) => f.kind === 'flash').map((f) => (f as { text: string }).text);
 const inCircle = { x: HOLY_CIRCLE.x, y: HOLY_CIRCLE.y, level: 0 as const };
-const byBench = { x: -27, y: 49, level: 0 as const };
+/** Beside the north end of the east garden bench, inside the garden. */
+const byBench = { x: -24.8, y: 56, level: 0 as const };
 
 describe('Day 2 part 1 playthrough', () => {
   it('runs from the gate to the first relic put away', () => {
@@ -140,7 +145,7 @@ describe('shift start (D2-01)', () => {
   it('walks through note, key, chapel and candles', () => {
     expect(task(at(step('read-note')))).toBe('Read the note on the office desk');
     expect(task(at(step('take', 1)))).toBe('Take the chapel key from the hooks by the office door');
-    expect(task(at(step('door-opened', 2)))).toBe('Unlock the chapel');
+    expect(task(at(step('door-opened', 3)))).toBe('Unlock the chapel');
     expect(task(at(step('take', 2)))).toBe('Pick up the matches from the shelf');
     expect(task(at(step('light-candle', 3)))).toBe('Light the candles around the holy circle (2/4)');
   });
@@ -149,6 +154,34 @@ describe('shift start (D2-01)', () => {
     expect(OFFICE_NOTES[2]).toMatch(/linger/);
     expect(OFFICE_NOTES[2]).toMatch(/prank/);
     expect(OFFICE_NOTES[2]).not.toBe(OFFICE_NOTES[1]);
+  });
+
+  it('remembers the gate code once the first objective has folded away', () => {
+    const s = day2Start();
+    const fx = applyEvent(s, { type: 'arrived' });
+    expect(fx).toContainEqual({ kind: 'after', seconds: GATE_RECALL_DELAY, event: { type: 'recall-gate-code' } });
+    expect(GATE_RECALL_DELAY).toBeGreaterThanOrEqual(OBJECTIVE_SECONDS);
+    expect(says(applyEvent(s, { type: 'recall-gate-code' }))).toEqual(['Good thing I remembered the gate code: 4173.']);
+    expect(GATE_CODE).toBe('4173');
+  });
+
+  it('keeps the gate code to itself if the gate is already open', () => {
+    const s = day2Start();
+    applyEvent(s, { type: 'arrived' });
+    applyEvent(s, { type: 'keypad-submit', code: GATE_CODE });
+    expect(applyEvent(s, { type: 'recall-gate-code' })).toEqual([]);
+  });
+
+  it('admires the clock the first time the office door opens', () => {
+    const s = at(step('door-opened', 2));
+    expect(says(applyEvent(s, { type: 'door-opened', id: 'office' }))).toEqual([THOUGHTS.officeClock]);
+    expect(THOUGHTS.officeClock).toBe('Huh, the clock does look nice in here.');
+    expect(applyEvent(s, { type: 'door-opened', id: 'office' })).toEqual([]);
+  });
+
+  it('says nothing about the clock when the office opens on Day 1', () => {
+    const s = createInitialState();
+    expect(applyEvent(s, { type: 'door-opened', id: 'office' })).toEqual([]);
   });
 
   it("skips Day 1's first-visit thoughts", () => {
@@ -205,17 +238,17 @@ describe('the missing chalice (D2-02)', () => {
     expect(task(s)).toBe('Set the chalice and crucifix out on the ritual table');
   });
 
-  it('is fine to find the chalice before the altar was even checked', () => {
-    const s = at(step('light-candle'));
-    applyEvent(s, { type: 'pickup-chalice' });
-    applyEvent(s, { type: 'prank-done' });
-    applyEvent(s, { type: 'prank-thought-done' });
-    for (const i of [0, 1, 2, 3]) applyEvent(s, { type: 'light-candle', index: i });
-    // D2-01 and D2-02 both done; the crucifix is still on the altar.
-    expect(s.objective_id).toBe('D2-03');
-    expect(task(s)).toBe('Fetch the crucifix from the altar');
-    // No missing-chalice thought now it has been found.
-    expect(applyEvent(s, { type: 'near-altar', x: 0, y: 63, level: 0 })).toEqual([]);
+  it('cannot be found on the bench until the objective asks for it', () => {
+    // Before the altar is checked, and while the missing-chalice thought plays.
+    for (const s of [at(step('light-candle')), at(step('chalice-missing-done'))]) {
+      expect(resolve('item:chalice', s, byBench).prompt).toBe('');
+      expect(applyEvent(s, { type: 'pickup-chalice' })).toEqual([]);
+      expect(s.chalice).toBe('garden-bench');
+      expect(s.fired_scares).not.toContain('d2-prank');
+    }
+    const s = at(step('pickup-chalice'));
+    expect(task(s)).toBe('Find the missing chalice');
+    expect(resolve('item:chalice', s, byBench).prompt).toBe('E  Take the chalice');
   });
 
   it('keeps hands free for one thing at a time', () => {

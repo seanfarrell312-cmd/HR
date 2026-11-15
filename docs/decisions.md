@@ -457,8 +457,8 @@ objective reads "End of S3 part 1. The clown doll comes next."
   thought, then "Find the missing chalice", with no hint of where. Taking
   the chalice from the west garden bench makes the prankster pop up behind
   the bench, tongue out, with a raspberry. It floats off west and fades
-  over 2.8 s, then "Very funny.". The chalice can be found and taken at any
-  time on Day 2, before the altar is even checked.
+  over 2.8 s, then "Very funny.". (Superseded 2026-11-14: the chalice now
+  stays hidden until "Find the missing chalice" shows.)
 - **The prankster** is the same green sheet ghost with a pink tongue for the
   raspberry. Its expression art is for the S3 gate review (doc 9.1).
 - **First delivery (D2-03).** The text arrives 5 s after the table is set.
@@ -476,3 +476,43 @@ objective reads "End of S3 part 1. The clown doll comes next."
 - **Clock.** From Day 2 on, the clock is always on the supervisor's desk.
 - **Debug key N** (debug panel open) skips to the start of Day 2, for
   playtesting S3.
+
+## 2026-11-14 — S3 part 1 playtest: garden layout, two thoughts, hidden chalice
+
+Designer rulings after playtesting part 1. The prankster jump scare works
+well and stays as it is.
+
+- **Gate-code thought (Day 2).** Once the first objective ("Enter the code on
+  the gate keypad") folds away, the thought "Good thing I remembered the
+  gate code: 4173." plays. (Designer copy; spelling tidied.)
+- **Office clock thought (Day 2).** The first time the office door opens on
+  Day 2: "Huh, the clock does look nice in here."
+- **West garden** follows the designer's concept layout: hedges on the
+  north, west and east sides, a small ornate fence along the south with a
+  gateway in the middle, a gravel path from the gateway to a gravel circle
+  around a hexagonal fountain, a long bench down each side, and the old
+  priest's lone grave outside the east hedge. The chalice is at the north end
+  of the east bench, where the east hedge hides it from the main path.
+- **The chalice stays hidden** (not drawn, and it can't be taken) until
+  "Find the missing chalice" shows.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Sizes.** The garden is 17 m × 10.5 m outside the hedges (x −38 to −21,
+  y 49 to 59.5). Hedges are 1.2 m thick and 2.2 m tall, so they block the
+  view at eye height. The fence is 0.9 m, with 1.2 m posts either side of a
+  2 m gateway. The fountain basin is 3 m across and 0.8 m high, with a
+  spout; the gravel circle around it is 4.8 m. The benches are 6 m long.
+- **The gateway is an open gap**, with no gate to open, so the bucket trips
+  in parts 2 and 3 have no extra door.
+- **The flower beds are gone**; the concept didn't have them.
+- **The lone grave** sits about 2 m east of the east hedge, with its
+  headstone at the north end of the plot and the office's blank west wall
+  about 3 m beyond.
+- **The prankster** now pops up between the east bench and the hedge and
+  drifts north, up and over the north hedge, instead of west.
+- **Gate-code timing.** The thought plays 5.5 s after the objective shows,
+  just after its 5 s on screen. It's skipped if the gate is already open.
+- **The office clock thought is Day 2 only.**
+- **Debug teleport 0** now lands just inside the garden gateway, facing the
+  fountain.

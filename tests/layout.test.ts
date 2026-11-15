@@ -155,3 +155,45 @@ describe('room roofs', () => {
     }
   });
 });
+
+describe('west garden (concept layout, decisions 2026-11-14)', () => {
+  const prop = (id: string) => {
+    const p = PROPS.find((x) => x.id === id);
+    if (!p) throw new Error(`no prop ${id}`);
+    return p;
+  };
+  const garden = area('west-garden').rect;
+
+  it('is hedged on the north, west and east, taller than eye height', () => {
+    expect(prop('hedge-n').rect.y2).toBeCloseTo(garden.y2);
+    expect(prop('hedge-w').rect.x1).toBeCloseTo(garden.x1);
+    expect(prop('hedge-e').rect.x2).toBeCloseTo(garden.x2);
+    for (const id of ['hedge-n', 'hedge-w', 'hedge-e']) expect(prop(id).height).toBeGreaterThan(1.6);
+  });
+
+  it('has a low fence on the south with a walk-through gateway lined up with the fountain', () => {
+    const w = prop('garden-fence-w');
+    const e = prop('garden-fence-e');
+    for (const f of [w, e]) {
+      expect(f.rect.y1).toBeLessThan(garden.y1 + 0.1);
+      expect(f.height).toBeLessThan(1.6);
+    }
+    const cs = staticColliders();
+    const gx = (prop('garden-gatepost-w').rect.x2 + prop('garden-gatepost-e').rect.x1) / 2;
+    expect(blocked(gx, garden.y1, 0, PLAYER_RADIUS, cs)).toBe(false);
+    const f = prop('fountain').rect;
+    expect((f.x1 + f.x2) / 2).toBeCloseTo(gx);
+  });
+
+  it('puts a bench down each side of the fountain', () => {
+    const f = prop('fountain').rect;
+    expect(prop('garden-bench-w').rect.x2).toBeLessThan(f.x1);
+    expect(prop('garden-bench-e').rect.x1).toBeGreaterThan(f.x2);
+  });
+
+  it("keeps the old priest's lone grave outside the east hedge, clear of the office", () => {
+    const grave = prop('old-priest-grave').rect;
+    expect(grave.x1).toBeGreaterThan(prop('hedge-e').rect.x2);
+    expect(grave.x2).toBeLessThan(area('office').rect.x1);
+  });
+});

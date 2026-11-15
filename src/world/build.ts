@@ -94,6 +94,47 @@ function propMesh(p: Prop): THREE.Object3D {
       }
       return group;
     }
+    case 'disc': {
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(Math.min(w, d) / 2, 16), mat(p.color));
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(...toWorld(cx, cy, p.level, base + p.height + 0.03));
+      return mesh;
+    }
+    case 'fence': {
+      // Top and bottom rails with square pickets between, so it can be seen through.
+      const group = new THREE.Group();
+      const along = w >= d;
+      const len = along ? w : d;
+      const rail = 0.05;
+      const picket = 0.035;
+      const rails = (z: number) => boxMesh(p.rect, p.level, base + z, rail, p.color);
+      group.add(rails(0.12), rails(p.height - 0.16));
+      const n = Math.max(2, Math.round(len / 0.16));
+      for (let i = 0; i <= n; i++) {
+        const t = (along ? p.rect.x1 : p.rect.y1) + ((len - picket) * i) / n;
+        const r = along
+          ? { x1: t, y1: cy - picket / 2, x2: t + picket, y2: cy + picket / 2 }
+          : { x1: cx - picket / 2, y1: t, x2: cx + picket / 2, y2: t + picket };
+        // Every other picket stands a little proud, for a bit of ornament.
+        group.add(boxMesh(r, p.level, base, p.height - (i % 2 ? 0.08 : 0), p.color));
+      }
+      return group;
+    }
+    case 'fountain': {
+      // Hexagonal stone basin, water just below the rim, a spout in the middle.
+      const group = new THREE.Group();
+      const radius = Math.min(w, d) / 2;
+      const basin = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, p.height, 6), mat(p.color));
+      basin.position.set(...toWorld(cx, cy, p.level, base + p.height / 2));
+      const water = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.86, 6), mat('#2f8fd0'));
+      water.rotation.x = -Math.PI / 2;
+      water.rotation.z = Math.PI / 2;
+      water.position.set(...toWorld(cx, cy, p.level, base + p.height + 0.01));
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.7, 6), mat(p.color));
+      spout.position.set(...toWorld(cx, cy, p.level, base + p.height + 0.35));
+      group.add(basin, water, spout);
+      return group;
+    }
     case 'flat': {
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(p.color));
       mesh.rotation.x = -Math.PI / 2;
