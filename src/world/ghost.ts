@@ -19,6 +19,12 @@ export interface GhostModel {
   setWink(k: number): void;
   /** 0 = mouth closed, 1 = tongue right out, blowing a raspberry (Day 2 prankster). */
   setTongue(k: number): void;
+  /**
+   * The teacup's ghost (designer reference, 2026-11-15): a big black
+   * handlebar mustache in place of the smile, and a gold monocle on a chain
+   * over its left eye (the player's right).
+   */
+  setDapper(on: boolean): void;
 }
 
 let bodyGeometry: THREE.BufferGeometry | null = null;
@@ -114,6 +120,55 @@ export function ghostModel(withLight: boolean): GhostModel {
   tongue.visible = false;
   group.add(sheet, glow, smile, tongue);
 
+  // Handlebar mustache and monocle, shown only on the teacup's ghost.
+  const dapper = new THREE.Group();
+  dapper.visible = false;
+  /** Where the face is at height y, x along: on the dome above SHOULDER, on the sheet below. */
+  const faceZ = (x: number, y: number): number => {
+    const r = y >= SHOULDER
+      ? Math.sqrt(Math.max(0, RADIUS * RADIUS - (y - SHOULDER) ** 2))
+      : HEM_RADIUS + (RADIUS - HEM_RADIUS) * Math.sqrt(Math.max(0, y / SHOULDER));
+    return Math.sqrt(Math.max(0, r * r - x * x));
+  };
+  const stache = dark;
+  const lipY = SHOULDER - 0.035;
+  for (const side of [-1, 1]) {
+    // A plump lobe either side of the middle, drooping a touch outwards...
+    const lobe = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), stache);
+    const lx = side * 0.062;
+    lobe.scale.set(0.068, 0.03, 0.022);
+    lobe.position.set(lx, lipY - 0.006, faceZ(lx, lipY) + 0.004);
+    lobe.rotation.set(0, Math.asin(lx / RADIUS), side * -0.22);
+    // ...tapering into an upturned curl at the tip.
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), stache);
+    const tx = side * 0.118;
+    tip.scale.set(0.03, 0.014, 0.014);
+    tip.position.set(tx, lipY - 0.016, faceZ(tx, lipY) + 0.006);
+    tip.rotation.set(0, Math.asin(tx / RADIUS), side * 0.35);
+    const curl = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0075, 6, 12, Math.PI * 1.4), stache);
+    const cx = side * 0.15;
+    curl.position.set(cx, lipY + 0.002, faceZ(cx, lipY) + 0.006);
+    curl.rotation.set(0, Math.asin(cx / RADIUS), side > 0 ? -Math.PI * 0.55 : Math.PI * 0.15);
+    curl.scale.set(side, 1, 1);
+    dapper.add(lobe, tip, curl);
+  }
+  const gold = track(new THREE.MeshLambertMaterial({ color: '#c9a24a', emissive: '#4a3712', opacity: 1 }));
+  const mx = 0.095;
+  const monocle = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.007, 6, 20), gold);
+  monocle.position.set(mx, eyeY, faceZ(mx, eyeY) + 0.012);
+  monocle.rotation.y = Math.asin(mx / faceR);
+  dapper.add(monocle);
+  // A chain of little links hanging from the rim's outer edge.
+  const link = new THREE.SphereGeometry(0.008, 6, 4);
+  const chainX = mx + 0.066;
+  for (let i = 1; i <= 9; i++) {
+    const y = eyeY - 0.02 - i * 0.022;
+    const bead = new THREE.Mesh(link, gold);
+    bead.position.set(chainX, y, faceZ(chainX, y) + 0.008);
+    dapper.add(bead);
+  }
+  group.add(dapper);
+
   const tex = mist();
   if (tex) {
     const wisp = new THREE.Mesh(
@@ -141,6 +196,10 @@ export function ghostModel(withLight: boolean): GhostModel {
     setWink(k: number) {
       // Squash the eye on the ghost's left as seen by the player (its right).
       eyes[0].scale.y = 1.25 * (1 - 0.88 * k);
+    },
+    setDapper(on: boolean) {
+      dapper.visible = on;
+      smile.visible = !on;
     },
     setTongue(k: number) {
       tongue.visible = k > 0.01;

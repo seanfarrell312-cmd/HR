@@ -511,6 +511,8 @@ export class StoryProps {
     this.relicGhostOf = relic;
     this.relicGhostT = 0;
     this.relicGhost.setWink(0);
+    // The teacup's ghost is a dapper old gent: mustache and monocle.
+    this.relicGhost.setDapper(relic === 'teacup');
     this.relicGhost.group.visible = true;
   }
 
@@ -585,8 +587,8 @@ export class StoryProps {
 
   /** The chalice and standing crucifix: side by side on the altar, carried, or on the ritual table. */
   private syncChalice(s: GameState): void {
-    // On Day 2 it only turns up on the bench once the objective asks for it.
-    this.chalice.visible = s.chalice !== 'held' && (s.chalice !== 'garden-bench' || s.flags.has('chalice-missing-thought-done'));
+    // On Day 2 it only turns up on the bench once the church has been searched.
+    this.chalice.visible = s.chalice !== 'held' && (s.chalice !== 'garden-bench' || s.flags.has('church-searched-thought-done'));
     this.heldChalice.visible = s.chalice === 'held';
     at(
       this.chalice,

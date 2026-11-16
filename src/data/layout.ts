@@ -185,14 +185,18 @@ function box(r: Rect, height: number, level: Level = 0, color?: string): Wall[] 
 
 const STONE = '#b8b0a4';
 const HEDGE = '#3d5e35';
+/** The road hedges end this far short of the perimeter wall's centre line, inside the wall. */
+const HEDGE_STOP = 0.1;
 
 export const WALLS: Wall[] = [
   // Perimeter wall with the front gate in the south side.
   ...box(PERIMETER, PERIMETER_H, 0, '#8f8679'),
-  // Hedge around the strip outside the gate.
+  // Hedge around the strip outside the gate. The side runs stop inside the
+  // perimeter wall: ending on its centre line put the hedge's end face flush
+  // with the wall's north face, and it flickered through from the grounds.
   { a: [-20, -10], b: [20, -10], height: 1.2, level: 0, color: HEDGE },
-  { a: [-20, -10], b: [-20, 0], height: 1.2, level: 0, color: HEDGE },
-  { a: [20, -10], b: [20, 0], height: 1.2, level: 0, color: HEDGE },
+  { a: [-20, -10], b: [-20, -HEDGE_STOP], height: 1.2, level: 0, color: HEDGE },
+  { a: [20, -10], b: [20, -HEDGE_STOP], height: 1.2, level: 0, color: HEDGE },
 
   // Church nave.
   ...box(NAVE, NAVE_H, 0, STONE),

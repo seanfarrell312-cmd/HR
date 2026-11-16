@@ -101,11 +101,11 @@ export const SMS: Record<string, Sms> = {
     from: 'Supervisor',
     text: "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel.",
   },
-  // Day 2, PROVISIONAL copy (S3, decisions 2026-11-13).
+  // Day 2 (designer copy, 2026-11-15): the supervisor forwards the alert.
   d2delivery1: {
     id: 'd2delivery1',
     from: 'Supervisor',
-    text: 'First one of the day just came in. Drop box by the front gate, same as yesterday.',
+    text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
   },
 };
 
@@ -169,14 +169,14 @@ export const OFFICE_NOTE_DAY1 = [
 
 /**
  * Day 2's note (doc 6.2 D2-01): released ghosts may linger, play pranks and
- * wait before they pass on. PROVISIONAL copy (S3, decisions 2026-11-13).
+ * wait before they pass on. Designer copy, 2026-11-15.
  */
 export const OFFICE_NOTE_DAY2 = [
-  'Monsignor,',
-  "Wonderful work yesterday! Mrs. Kettle's clock hasn't made a peep, and the music box is the quietest it's been in years.",
-  "A word of warning, though. Some of the spirits you set free may decide to linger a while before they pass on. They're harmless, but they do like to play the odd prank. If something goes missing, it's probably just one of them having a bit of fun.",
-  "We're expecting a few deliveries today, so keep your phone handy. Same routine as yesterday: get the chapel ready, and I'll text you as each one arrives.",
-  '— Supervisor',
+  "Great job yesterday! Mrs. Kettle's clock has been ticking normally all day, and the owner of the music box came by earlier to retrieve it.",
+  "Word has gotten out about your exorcism skills so I expect a few more drop-offs today. I'll forward you the alerts once they arrive.",
+  "By the way, if you see or hear anything weird today, just ignore it. It's not anything too bad mind you, but it seems that a number of the exorcised spirits are lingering a bit. They may try an odd prank or to startle you, but they appear to be harmless so don't let them distract you. I suspect they're just bored and are waiting for their turn to move onto the other side.",
+  'The key to the chapel is behind you on the ring again.',
+  'Good Luck!',
 ].join('\n\n');
 
 /** The office note for each day. */
@@ -226,12 +226,24 @@ export const THOUGHTS = {
   late: 'Woah, when did it get so late?',
   /** After a pause; then the walk back to the gate. */
   headHome: 'I guess I should head back to the bus stop.',
-  // Day 2, PROVISIONAL copy (S3, decisions 2026-11-13).
+  // Day 2, designer copy (2026-11-14 and 2026-11-15).
+  /** Walking up to the church on Day 2, in place of Day 1's first impression. */
+  churchApproachDay2: 'Definitely getting my steps in.',
   /** At the altar, where the chalice should be (D2-02). */
-  chaliceMissing: 'The chalice is gone. One of those lingering ghosts, I bet.',
-  /** Once the prankster ghost has blown its raspberry and floated off. */
-  prank: 'Very funny.',
-  // Day 2, designer copy (2026-11-14).
+  chaliceMissing: "Here's the crucifix, but no chalice.",
+  /** Searching the church: behind the office desk. */
+  searchDesk: "I don't think the chalice would fit in these drawers.",
+  /** Searching the church: trying the locked storage closet and basement doors. */
+  searchLocked: "Locked tight. I hope it's not in there.",
+  /** Once all three places have been checked. */
+  searchOutside: "I guess it's outside somewhere?",
+  /** As the prankster pops up, while it's still on screen. */
+  prankScare: 'JESUS!',
+  /** Then, one after another, before the next objective. */
+  prankHarmless: 'Harmless, huh? I almost had a heart attack.',
+  prankFocus: 'Gotta stay focused, back to the chapel.',
+  /** The chalice is on the ritual table with the crucifix; then the delivery text. */
+  tableSetDay2: 'There. All set.',
   /** Day 2 shift start, once the first objective has folded away. */
   gateCodeRecall: `Good thing I remembered the gate code: ${GATE_CODE}.`,
   /** Opening the office door for the first time on Day 2; the clock is on the desk. */
@@ -255,7 +267,8 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
   teacup: {
     approach: 'Is that... rattling china?',
     pickup: "A teacup that won't sit still. Somebody's nan is going to miss this.",
-    ghost: 'Another happy customer.',
+    // Designer copy, 2026-11-15.
+    ghost: 'I guess he must have really liked tea.',
   },
 };
 
@@ -265,11 +278,17 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
  */
 export const PRANK_SECONDS = 2.8;
 
-/** Day 2's first delivery: this long after the table is set. */
-export const D2_DELIVERY_DELAY = 5;
-
 /** The chalice-is-missing thought: this close to the altar on Day 2. */
 export const ALTAR_APPROACH = { x: 0, y: 64, r: 4 };
+
+/**
+ * Searching the church for the chalice (D2-02): behind the office desk (the
+ * strip between the desk and the office's west wall), and the two locked
+ * doors.
+ */
+export const BEHIND_DESK = { x1: -16.4, y1: 50.6, x2: -14.6, y2: 56.2 };
+export const SEARCH_DOORS = ['storage', 'basement'] as const;
+export const SEARCH_SPOTS = 3;
 
 /** Reminders when something is tried too early (doc 5.4). PROVISIONAL copy. */
 export const REMINDERS = {
@@ -373,6 +392,11 @@ export const WRONG_CODE = 'Wrong code. I should check my messages.';
  * fires for a player who wanders the grounds first.
  */
 export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
+/** What comes to mind on the walk up to the church, by day. */
+export const CHURCH_APPROACH_LINES: Record<number, string> = {
+  1: THOUGHTS.churchApproach,
+  2: THOUGHTS.churchApproachDay2,
+};
 
 /** Shown once Day 2's first relic is put away, until the rest of S3 is built. */
 export const S3_PART1_END = 'End of S3 part 1. The clown doll comes next.';

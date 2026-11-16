@@ -116,8 +116,9 @@ The church layout follows
   anything early, and nothing fires twice when every event is repeated. The
   chalice starts on the garden bench, the missing-chalice thought plays at
   the altar once the candles are lit, the prankster's raspberry fires once
-  with its thought before the next objective, and the chalice can't be seen
-  or taken until "Find the missing chalice" shows. The gate-code thought
+  with its thoughts before the next objective, and the chalice can't be seen
+  or taken until the church has been searched (behind the office desk and
+  the two locked doors, in any order). The gate-code thought
   follows the first objective, and the office door's clock thought plays
   once. The first delivery arrives once the table is
   set, the teacup needs scripture before the cross, the table answers for

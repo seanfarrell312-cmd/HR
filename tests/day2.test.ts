@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   afterThought,
   ALTAR_APPROACH,
-  D2_DELIVERY_DELAY,
   GATE_CODE,
   GATE_RECALL_DELAY,
+  BEHIND_DESK,
+  CHURCH_APPROACH,
   HOLY_CIRCLE,
   OFFICE_NOTES,
   PRANK_SECONDS,
   RELIC_LINES,
   RELIC_TABLE_SLOTS,
   REMINDERS,
+  SEARCH_SPOTS,
   S3_PART1_END,
   SMS,
   THOUGHTS,
@@ -44,14 +46,22 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'light-candle', index: 1 },
   { type: 'light-candle', index: 2 },
   { type: 'light-candle', index: 3 },
-  // D2-02: no chalice on the altar; it's on the garden bench.
-  { type: 'take', item: 'crucifix' },
+  // D2-02: no chalice on the altar. Stage the crucifix, search the church,
+  // then find it on the garden bench.
   { type: 'near-altar', x: 0, y: 63, level: 0 },
   { type: 'chalice-missing-done' },
+  { type: 'take', item: 'crucifix' },
+  { type: 'stage-table' },
+  { type: 'search-desk', x: -15.5, y: 52.9, level: 0 },
+  { type: 'try-locked-door', id: 'storage' },
+  { type: 'try-locked-door', id: 'basement' },
+  { type: 'search-done' },
+  { type: 'search-thought-done' },
   { type: 'pickup-chalice' },
   { type: 'prank-done' },
   { type: 'prank-thought-done' },
-  // D2-03: set the table, then the first delivery.
+  { type: 'prank-focus-done' },
+  // D2-03: the chalice on the table, then the first delivery.
   { type: 'stage-table' },
   { type: 'receive-sms', id: 'd2delivery1' },
   { type: 'read-sms' },
@@ -186,7 +196,8 @@ describe('shift start (D2-01)', () => {
 
   it("skips Day 1's first-visit thoughts", () => {
     const s = at(step('door-opened'));
-    expect(applyEvent(s, { type: 'approach-church', x: 0, y: 40, level: 0 })).toEqual([]);
+    // Day 2 has its own line for the walk up instead.
+    expect(says(applyEvent(s, { type: 'approach-church', x: 0, y: 40, level: 0 }))).not.toContain(THOUGHTS.churchApproach);
     const opened = applyEvent(s, { type: 'door-opened', id: 'church' });
     expect(says(opened)).toEqual([]);
   });
@@ -197,17 +208,22 @@ describe('the missing chalice (D2-02)', () => {
     expect(day2Start().chalice).toBe('garden-bench');
   });
 
-  it('notices at the altar once the candles are lit, then asks to find it', () => {
+  it('notices at the altar once the candles are lit, then asks for the crucifix on the table', () => {
     const s = at(step('near-altar'));
     expect(task(s)).toBe('Fetch the chalice and crucifix from the altar');
     // Too far away: nothing.
     expect(applyEvent(s, { type: 'near-altar', x: 0, y: ALTAR_APPROACH.y - ALTAR_APPROACH.r - 1, level: 0 })).toEqual([]);
     const fx = applyEvent(s, { type: 'near-altar', x: 0, y: 63, level: 0 });
-    expect(says(fx)).toEqual([THOUGHTS.chaliceMissing]);
+    expect(says(fx)).toEqual(["Here's the crucifix, but no chalice."]);
     expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.chaliceMissing), event: { type: 'chalice-missing-done' } });
     expect(task(s)).toBe('');
     applyEvent(s, { type: 'chalice-missing-done' });
-    expect(task(s)).toBe('Find the missing chalice');
+    expect(task(s)).toBe('Put the crucifix on the ritual table');
+    applyEvent(s, { type: 'take', item: 'crucifix' });
+    expect(resolve('item:ritual-table', s, inCircle).prompt).toBe('E  Set out the crucifix');
+    applyEvent(s, { type: 'stage-table' });
+    expect(task(s)).toBe('Search the church for the chalice (0/3)');
+    expect(SEARCH_SPOTS).toBe(3);
   });
 
   it('does not notice before the candles are lit', () => {
@@ -222,33 +238,71 @@ describe('the missing chalice (D2-02)', () => {
     expect(resolve('item:crucifix', after, inCircle).prompt).toBe('E  Take crucifix');
   });
 
-  it('blows a raspberry once when the chalice is taken from the bench, then the thought', () => {
-    const s = at(step('pickup-chalice'));
-    expect(resolve('item:chalice', s, byBench).prompt).toBe('E  Take the chalice');
-    const fx = applyEvent(s, { type: 'pickup-chalice' });
-    expect(fx).toContainEqual({ kind: 'prank' });
-    expect(fx).toContainEqual({ kind: 'sfx', id: 'raspberry' });
-    expect(fx).toContainEqual({ kind: 'after', seconds: PRANK_SECONDS, event: { type: 'prank-done' } });
-    expect(s.chalice).toBe('held');
+  it('searches behind the office desk and both locked doors, in any order', () => {
+    const s = at(step('search-desk'));
+    // In the office but in front of the desk: not yet.
+    expect(applyEvent(s, { type: 'search-desk', x: -12, y: 52.9, level: 0 })).toEqual([]);
+    const desk = applyEvent(s, { type: 'search-desk', x: (BEHIND_DESK.x1 + BEHIND_DESK.x2) / 2, y: 52.9, level: 0 });
+    expect(says(desk)).toEqual(["I don't think the chalice would fit in these drawers."]);
+    expect(task(s)).toBe('Search the church for the chalice (1/3)');
+
+    // The basement first this time; the door stays locked.
+    expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
+    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Locked tight. I hope it's not in there."]);
+    expect(task(s)).toBe('Search the church for the chalice (2/3)');
+    expect(s.open_doors.has('basement')).toBe(false);
+    // Once checked, it's just locked.
+    expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'message', text: "It's locked." });
+
+    const last = applyEvent(s, { type: 'try-locked-door', id: 'storage' });
+    expect(says(last)).toEqual([THOUGHTS.searchLocked]);
+    expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchLocked), event: { type: 'search-done' } });
+    expect(task(s)).toBe('Search the church for the chalice (3/3)');
+    expect(says(applyEvent(s, { type: 'search-done' }))).toEqual(["I guess it's outside somewhere?"]);
     expect(task(s)).toBe('');
-    expect(says(applyEvent(s, { type: 'prank-done' }))).toEqual([THOUGHTS.prank]);
-    expect(task(s)).toBe('');
-    applyEvent(s, { type: 'prank-thought-done' });
-    expect(s.objective_id).toBe('D2-03');
-    expect(task(s)).toBe('Set the chalice and crucifix out on the ritual table');
+    applyEvent(s, { type: 'search-thought-done' });
+    expect(task(s)).toBe('Search the grounds for the chalice');
   });
 
-  it('cannot be found on the bench until the objective asks for it', () => {
-    // Before the altar is checked, and while the missing-chalice thought plays.
-    for (const s of [at(step('light-candle')), at(step('chalice-missing-done'))]) {
+  it('only counts the search once the crucifix is on the table', () => {
+    const s = at(step('stage-table'));
+    expect(applyEvent(s, { type: 'search-desk', x: -15.5, y: 52.9, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'try-locked-door', id: 'storage' })).toEqual([]);
+    expect(resolve('door:storage', s, inCircle).action).toEqual({ kind: 'message', text: "It's locked." });
+  });
+
+  it('cannot be found on the bench until the church has been searched', () => {
+    for (const s of [at(step('light-candle')), at(step('stage-table')), at(step('search-thought-done'))]) {
       expect(resolve('item:chalice', s, byBench).prompt).toBe('');
       expect(applyEvent(s, { type: 'pickup-chalice' })).toEqual([]);
       expect(s.chalice).toBe('garden-bench');
       expect(s.fired_scares).not.toContain('d2-prank');
     }
     const s = at(step('pickup-chalice'));
-    expect(task(s)).toBe('Find the missing chalice');
     expect(resolve('item:chalice', s, byBench).prompt).toBe('E  Take the chalice');
+  });
+
+  it('yelps with the scare, then two more thoughts, then back to the chapel', () => {
+    const s = at(step('pickup-chalice'));
+    const fx = applyEvent(s, { type: 'pickup-chalice' });
+    expect(fx).toContainEqual({ kind: 'prank' });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'raspberry' });
+    // In parallel with the scare, not after it.
+    expect(says(fx)).toEqual(['JESUS!']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: Math.max(PRANK_SECONDS, afterThought('JESUS!')), event: { type: 'prank-done' } });
+    expect(s.chalice).toBe('held');
+    expect(task(s)).toBe('');
+    const harmless = applyEvent(s, { type: 'prank-done' });
+    expect(says(harmless)).toEqual(['Harmless, huh? I almost had a heart attack.']);
+    expect(harmless).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.prankHarmless), event: { type: 'prank-thought-done' } });
+    expect(task(s)).toBe('');
+    const focus = applyEvent(s, { type: 'prank-thought-done' });
+    expect(says(focus)).toEqual(['Gotta stay focused, back to the chapel.']);
+    expect(focus).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.prankFocus), event: { type: 'prank-focus-done' } });
+    expect(task(s)).toBe('');
+    applyEvent(s, { type: 'prank-focus-done' });
+    expect(s.objective_id).toBe('D2-03');
+    expect(task(s)).toBe('Place the chalice on the ritual table');
   });
 
   it('keeps hands free for one thing at a time', () => {
@@ -260,11 +314,28 @@ describe('the missing chalice (D2-02)', () => {
   });
 });
 
+describe('Day 2 thoughts on the way in', () => {
+  it('gets its steps in walking up to the church, once', () => {
+    const s = at(step('door-opened'));
+    const near = { x: CHURCH_APPROACH.x, y: CHURCH_APPROACH.y - CHURCH_APPROACH.r + 1, level: 0 };
+    expect(says(applyEvent(s, { type: 'approach-church', ...near }))).toEqual(['Definitely getting my steps in.']);
+    expect(applyEvent(s, { type: 'approach-church', ...near })).toEqual([]);
+  });
+
+  it('has the designer\'s note on the desk', () => {
+    expect(OFFICE_NOTES[2].startsWith('Great job yesterday!')).toBe(true);
+    expect(OFFICE_NOTES[2]).toMatch(/key to the chapel is behind you on the ring again/);
+    expect(OFFICE_NOTES[2].endsWith('Good Luck!')).toBe(true);
+  });
+});
+
 describe('the first delivery (D2-03)', () => {
-  it('sends the text once the table is set', () => {
-    const s = at(step('stage-table'));
+  it('is all set once the chalice is on the table, then the alert comes', () => {
+    const s = at(step('stage-table', 2));
+    expect(resolve('item:ritual-table', s, inCircle).prompt).toBe('E  Set out the chalice');
     const fx = applyEvent(s, { type: 'stage-table' });
-    expect(fx).toContainEqual({ kind: 'after', seconds: D2_DELIVERY_DELAY, event: { type: 'receive-sms', id: 'd2delivery1' } });
+    expect(says(fx)).toEqual(['There. All set.']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.tableSetDay2), event: { type: 'receive-sms', id: 'd2delivery1' } });
     expect(task(s)).toBe('');
     applyEvent(s, { type: 'receive-sms', id: 'd2delivery1' });
     expect(s.relic).toBe('drop-box');
@@ -272,7 +343,7 @@ describe('the first delivery (D2-03)', () => {
     expect(task(s)).toBe('Check your phone (Q)');
     applyEvent(s, { type: 'read-sms' });
     expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
-    expect(SMS.d2delivery1.text).toMatch(/drop box/i);
+    expect(SMS.d2delivery1.text).toBe('FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.');
   });
 
   it('has its own lines for the teacup', () => {
@@ -332,7 +403,7 @@ describe('cleansing the teacup (D2-04)', () => {
   it('thinks about the ghost, then asks for the Bible back and the teacup away', () => {
     const s = at(step('relic-ghost-gone'));
     expect(task(s)).toBe('');
-    expect(says(applyEvent(s, { type: 'relic-ghost-gone' }))).toEqual([RELIC_LINES.teacup.ghost]);
+    expect(says(applyEvent(s, { type: 'relic-ghost-gone' }))).toEqual(['I guess he must have really liked tea.']);
     applyEvent(s, { type: 'relic-thought-done' });
     expect(task(s)).toBe('Put the Bible back on the stand and pick up the teacup');
     expect(resolve('item:teacup', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.bibleBack });

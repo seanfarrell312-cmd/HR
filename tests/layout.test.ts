@@ -4,7 +4,7 @@ import { DOOR_PRESETS } from '../src/data/doorPresets';
 import { AREAS, DOORS, PLAYER_RADIUS, PROPS, roofRect, TELEPORTS, TRANSITIONS, WALL_THICKNESS, WALLS } from '../src/data/layout';
 import { CANDLES, SPOTS, TREE_PEEK } from '../src/data/story';
 import { buildWorld, poseDoor } from '../src/world/build';
-import { blocked, doorOnWall, staticColliders } from '../src/world/collision';
+import { blocked, doorOnWall, staticColliders, wallSegments } from '../src/world/collision';
 import { zoneAt } from '../src/world/zones';
 
 const area = (id: string) => {
@@ -195,5 +195,29 @@ describe('west garden (concept layout, decisions 2026-11-14)', () => {
     const grave = prop('old-priest-grave').rect;
     expect(grave.x1).toBeGreaterThan(prop('hedge-e').rect.x2);
     expect(grave.x2).toBeLessThan(area('office').rect.x1);
+  });
+});
+
+describe('wall faces', () => {
+  // Two walls of different colours with a face in the same plane z-fight:
+  // the road hedge flickered through the perimeter wall's north face where
+  // its end met the wall (S3 playtest, 2026-11-15).
+  it('never put faces of different-coloured walls in the same plane', () => {
+    const segs = wallSegments().filter((s) => s.color);
+    const overlap = (a1: number, a2: number, b1: number, b2: number) => Math.min(a2, b2) - Math.max(a1, b1) > 1e-6;
+    const same = (p: number, q: number) => Math.abs(p - q) < 1e-6;
+    const clashes: string[] = [];
+    for (const a of segs) {
+      for (const b of segs) {
+        if (a === b || a.level !== b.level || a.color === b.color) continue;
+        const r = a.rect;
+        const q = b.rect;
+        const spanY = overlap(r.y1, r.y2, q.y1, q.y2);
+        const spanX = overlap(r.x1, r.x2, q.x1, q.x2);
+        if (spanY && ((same(r.x1, q.x1) && r.x1 < q.x2) || (same(r.x2, q.x2) && r.x2 > q.x1))) clashes.push(`${a.color}/${b.color} at x ${r.x1}..${r.x2}`);
+        if (spanX && ((same(r.y1, q.y1) && r.y1 < q.y2) || (same(r.y2, q.y2) && r.y2 > q.y1))) clashes.push(`${a.color}/${b.color} at y ${r.y1}..${r.y2}`);
+      }
+    }
+    expect(clashes).toEqual([]);
   });
 });

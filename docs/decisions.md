@@ -516,3 +516,54 @@ well and stays as it is.
 - **The office clock thought is Day 2 only.**
 - **Debug teleport 0** now lands just inside the garden gateway, facing the
   fountain.
+
+## 2026-11-15 — S3 part 1 playtest 2: searching the church for the chalice
+
+Designer rulings (all copy is the designer's; spelling and apostrophes
+tidied):
+
+- **Walk up to the church (Day 2):** "Definitely getting my steps in.",
+  using the same trigger as Day 1's first-impression line.
+- **Day 2 office note** replaced with the designer's text, from "Great job
+  yesterday!" to "Good Luck!". The three lines about lingering spirits are
+  run together as one paragraph.
+- **At the altar:** "Here's the crucifix, but no chalice." Then "Put the
+  crucifix on the ritual table".
+- **Search the church (D2-02).** Once the crucifix is on the table:
+  "Search the church for the chalice (0/3)". The three checks can be done
+  in any order:
+  - Step behind the office desk: "I don't think the chalice would fit in
+    these drawers."
+  - Try the storage closet door: "Locked tight. I hope it's not in there."
+  - Try the basement door: the same line.
+
+  Both doors stay locked. After the third, "I guess it's outside
+  somewhere?", and only then is the chalice on the garden bench.
+- **The scare.** "JESUS!" plays with the scare, not after it. Then "Harmless,
+  huh? I almost had a heart attack.", then "Gotta stay focused, back to the
+  chapel.", then "Place the chalice on the ritual table". "Very funny." is
+  gone.
+- **Table set:** "There. All set.", then the delivery text, which now reads
+  "FWD: A package has been delivered to your drop box. Thank you for using
+  Christ-LERTS."
+- **The teacup's ghost** wears a big black handlebar mustache (in place of
+  the smile) and a gold monocle on a chain over its left eye, per the
+  designer's reference. Its thought: "I guess he must have really liked
+  tea."
+- **Road hedge fix.** The hedges beside the road ended on the perimeter
+  wall's centre line, so their end faces sat flush with the wall's north
+  face and flickered through it from inside the grounds. They now stop
+  inside the wall. A test checks that no two different-coloured walls share
+  a face plane.
+
+### PROVISIONAL (not yet ruled on)
+
+- **"Behind the desk"** means anywhere in the strip between the office desk
+  and the office's west wall.
+- **The locked doors count only during the search**, and only the first try
+  of each. Before the search, or once a door has been checked, it just says
+  "It's locked."
+- **After the "outside" thought** the objective reads "Search the grounds for
+  the chalice".
+- **No sign-off.** The Day 2 note has no "— Supervisor" line, as the
+  designer's text had none.

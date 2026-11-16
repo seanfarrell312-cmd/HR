@@ -1,10 +1,11 @@
 import {
   afterThought,
   ALTAR_APPROACH,
+  BEHIND_DESK,
   CHURCH_APPROACH,
+  CHURCH_APPROACH_LINES,
   COOKING_BEAT,
   CROSS_PAUSE,
-  D2_DELIVERY_DELAY,
   DELIVERIES,
   DELIVERY_DELAY,
   DROP_BOX_APPROACH,
@@ -19,6 +20,7 @@ import {
   RELIC_ANNOY,
   RELIC_LINES,
   REMINDERS,
+  SEARCH_SPOTS,
   SMS,
   THOUGHT_BEAT,
   THOUGHTS,
@@ -27,8 +29,10 @@ import {
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
+import { searchCount, searching, searchesDoor } from './search';
 import { tableReady } from './table';
 
+export { searchCount, searching, searchesDoor } from './search';
 export { siteReady, tableReady } from './table';
 
 // The single place story state changes. Every event is validated against the
@@ -44,6 +48,12 @@ export type StoryEvent =
   | { type: 'near-altar'; x: number; y: number; level: number }
   /** Timed, after the missing-chalice thought: the search objective shows. */
   | { type: 'chalice-missing-done' }
+  /** Searching the church for the chalice (D2-02). */
+  | { type: 'search-desk'; x: number; y: number; level: number }
+  | { type: 'try-locked-door'; id: string }
+  | { type: 'search-done' }
+  | { type: 'search-thought-done' }
+  | { type: 'prank-focus-done' }
   /** Timed: the prankster ghost has floated off; its thought plays. */
   | { type: 'prank-done' }
   /** Timed, after that thought: the next objective shows. */
@@ -209,13 +219,15 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'sfx', id: 'unlock' }, { kind: 'open-door', id: 'gate' }, { kind: 'say', text: THOUGHTS.gateOpen });
       break;
 
-    case 'approach-church':
-      // Day 1's first impression only.
-      if (s.day_index !== 1 || s.flags.has('church-approached') || !s.flags.has('gate-unlocked')) return [];
+    case 'approach-church': {
+      // Each day has its own line for the walk up, if any.
+      const line = CHURCH_APPROACH_LINES[s.day_index];
+      if (!line || s.flags.has('church-approached') || !s.flags.has('gate-unlocked')) return [];
       if (e.level !== 0 || Math.hypot(e.x - CHURCH_APPROACH.x, e.y - CHURCH_APPROACH.y) > CHURCH_APPROACH.r) return [];
       s.flags.add('church-approached');
-      out.push({ kind: 'say', text: THOUGHTS.churchApproach });
+      out.push({ kind: 'say', text: line });
       break;
+    }
 
     case 'read-note':
       if (s.flags.has('note-read')) return [];
@@ -245,16 +257,22 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'pickup-chalice':
       // Day 2: on the garden bench, where the prankster left it (D2-02).
-      // Not there to find until the objective asks for it.
+      // Not there to find until the church has been searched.
       if (s.chalice === 'garden-bench') {
-        if (!s.flags.has('chalice-missing-thought-done')) return [];
+        if (!s.flags.has('church-searched-thought-done')) return [];
         if (s.held_prop_id) return flash(REMINDERS.handsFull);
         s.chalice = 'held';
         s.held_prop_id = 'chalice';
         out.push({ kind: 'sfx', id: 'pickup' });
         if (!s.fired_scares.includes('d2-prank')) {
           s.fired_scares.push('d2-prank');
-          out.push({ kind: 'prank' }, { kind: 'sfx', id: 'raspberry' }, { kind: 'after', seconds: PRANK_SECONDS, event: { type: 'prank-done' } });
+          // The yelp comes with the scare, not after it.
+          out.push(
+            { kind: 'prank' },
+            { kind: 'sfx', id: 'raspberry' },
+            { kind: 'say', text: THOUGHTS.prankScare },
+            { kind: 'after', seconds: Math.max(PRANK_SECONDS, afterThought(THOUGHTS.prankScare)), event: { type: 'prank-done' } },
+          );
         }
         break;
       }
@@ -283,9 +301,13 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'sfx', id: 'place' });
       // Both down on Day 1: the clock chimes harder, then the thought.
       if (tableReady(s) && s.day_index === 1) out.push({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
-      // Day 2: the table is set, so the first delivery is on its way (D2-03).
-      if (tableReady(s) && s.day_index === 2 && !s.inbox.includes('d2delivery1')) {
-        out.push({ kind: 'after', seconds: D2_DELIVERY_DELAY, event: { type: 'receive-sms', id: 'd2delivery1' } });
+      // Day 2: the table is set, then the first delivery's alert (D2-03).
+      if (tableReady(s) && s.day_index === 2 && !s.flags.has('table-set')) {
+        s.flags.add('table-set');
+        out.push(
+          { kind: 'say', text: THOUGHTS.tableSetDay2 },
+          { kind: 'after', seconds: afterThought(THOUGHTS.tableSetDay2), event: { type: 'receive-sms', id: 'd2delivery1' } },
+        );
       }
       break;
     }
@@ -306,18 +328,56 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.flags.add('chalice-missing-thought-done');
       break;
 
+    case 'search-desk':
+      if (!searching(s) || s.flags.has('searched-desk')) return [];
+      if (e.level !== 0 || e.x < BEHIND_DESK.x1 || e.x > BEHIND_DESK.x2 || e.y < BEHIND_DESK.y1 || e.y > BEHIND_DESK.y2) return [];
+      s.flags.add('searched-desk');
+      searched(s, out, THOUGHTS.searchDesk);
+      break;
+
+    case 'try-locked-door': {
+      if (!searchesDoor(s, e.id)) return [];
+      s.flags.add(e.id === 'storage' ? 'searched-storage' : 'searched-basement');
+      searched(s, out, THOUGHTS.searchLocked);
+      break;
+    }
+
+    case 'search-done':
+      if (searchCount(s) < SEARCH_SPOTS || s.flags.has('church-searched')) return [];
+      s.flags.add('church-searched');
+      out.push(
+        { kind: 'say', text: THOUGHTS.searchOutside },
+        { kind: 'after', seconds: afterThought(THOUGHTS.searchOutside), event: { type: 'search-thought-done' } },
+      );
+      break;
+
+    case 'search-thought-done':
+      if (!s.flags.has('church-searched') || s.flags.has('church-searched-thought-done')) return [];
+      s.flags.add('church-searched-thought-done');
+      break;
+
+    // After the scare: two more thoughts, one after another.
     case 'prank-done':
       if (!s.fired_scares.includes('d2-prank') || s.flags.has('prank-done')) return [];
       s.flags.add('prank-done');
       out.push(
-        { kind: 'say', text: THOUGHTS.prank },
-        { kind: 'after', seconds: afterThought(THOUGHTS.prank), event: { type: 'prank-thought-done' } },
+        { kind: 'say', text: THOUGHTS.prankHarmless },
+        { kind: 'after', seconds: afterThought(THOUGHTS.prankHarmless), event: { type: 'prank-thought-done' } },
       );
       break;
 
     case 'prank-thought-done':
       if (!s.flags.has('prank-done') || s.flags.has('prank-thought-done')) return [];
       s.flags.add('prank-thought-done');
+      out.push(
+        { kind: 'say', text: THOUGHTS.prankFocus },
+        { kind: 'after', seconds: afterThought(THOUGHTS.prankFocus), event: { type: 'prank-focus-done' } },
+      );
+      break;
+
+    case 'prank-focus-done':
+      if (!s.flags.has('prank-thought-done') || s.flags.has('prank-focus-done')) return [];
+      s.flags.add('prank-focus-done');
       break;
 
     case 'light-candle':
@@ -645,6 +705,12 @@ export function blessBlocker(s: GameState): string | null {
  * them (D1-05), not before (S2 playtest, 2026-11-09). Later days set their
  * own rules in S3.
  */
+/** One more place checked: its thought, and once all are done, the next. */
+function searched(s: GameState, out: Effect[], line: string): void {
+  out.push({ kind: 'say', text: line });
+  if (searchCount(s) === SEARCH_SPOTS) out.push({ kind: 'after', seconds: afterThought(line), event: { type: 'search-done' } });
+}
+
 export function altarOpen(s: GameState): boolean {
   // Day 2: once the candles are lit (D2-02), whatever is left on the altar.
   if (s.day_index === 2) return s.candles_lit.size === 4;

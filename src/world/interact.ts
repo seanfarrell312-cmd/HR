@@ -2,7 +2,7 @@ import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
 import { HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { altarOpen, bibleWanted, blessBlocker, tableReady, type StoryEvent } from '../story/events';
+import { altarOpen, bibleWanted, blessBlocker, searchesDoor, tableReady, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -54,6 +54,10 @@ export function resolve(targetId: string | null, state: GameState, player: Playe
     if (!door) return NONE;
     const lock = lockState(state, id);
     if (lock !== 'unlocked') {
+      // Day 2: trying it is part of the search for the chalice (D2-02).
+      if (searchesDoor(state, id)) {
+        return { prompt: `${door.label} — ${lock}`, action: { kind: 'story', event: { type: 'try-locked-door', id } } };
+      }
       const text = id === 'gate' ? "It's locked. There's a keypad beside it." : LOCK_MESSAGES[lock];
       return { prompt: `${door.label} — ${lock}`, action: { kind: 'message', text } };
     }
@@ -140,8 +144,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'chalice':
       // Day 2: left on the garden bench by a prankster ghost (D2-02).
       if (s.chalice === 'garden-bench') {
-        // Hidden until the objective asks for it.
-        if (!s.flags.has('chalice-missing-thought-done')) return NONE;
+        // Hidden until the church has been searched.
+        if (!s.flags.has('church-searched-thought-done')) return NONE;
         if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
         return story('E  Take the chalice', { type: 'pickup-chalice' });
       }

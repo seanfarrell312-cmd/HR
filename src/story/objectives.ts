@@ -1,5 +1,6 @@
-import { RELIC_NAMES, S3_PART1_END } from '../data/story';
+import { RELIC_NAMES, S3_PART1_END, SEARCH_SPOTS } from '../data/story';
 import type { GameState } from '../state/store';
+import { searchCount } from './search';
 import { tableReady } from './table';
 
 // Objectives for each day (doc 6.1, 6.2). Day 1 was built in S1 and S2, Day 2
@@ -155,21 +156,28 @@ export const DAY2: Objective[] = [
     id: 'D2-02',
     task: (s) => {
       if (s.chalice === 'garden-bench') {
-        if (!s.flags.has('chalice-missing')) return 'Fetch the chalice and crucifix from the altar';
-        // The missing-chalice thought plays first.
+        if (!s.flags.has('chalice-missing')) return altarPiecesLine(s) || 'Fetch the chalice from the altar';
+        // Each thought plays out before the next step shows.
         if (!s.flags.has('chalice-missing-thought-done')) return '';
-        return 'Find the missing chalice';
+        if (!s.flags.has('crucifix-staged')) return 'Put the crucifix on the ritual table';
+        if (!s.flags.has('church-searched')) return `Search the church for the chalice (${searchCount(s)}/${SEARCH_SPOTS})`;
+        if (!s.flags.has('church-searched-thought-done')) return '';
+        return 'Search the grounds for the chalice';
       }
-      // Found: the raspberry and the thought play out first.
+      // Found: the scare and its three thoughts play out first.
       return '';
     },
-    done: (s) => s.day_index === 2 && s.chalice !== 'garden-bench' && s.flags.has('prank-thought-done'),
+    done: (s) => s.day_index === 2 && s.chalice !== 'garden-bench' && s.flags.has('prank-focus-done'),
   },
   {
     // Set the table, then the first delivery (D2-03).
     id: 'D2-03',
     task: (s) => {
-      if (!tableReady(s)) return altarPiecesLine(s) || 'Set the chalice and crucifix out on the ritual table';
+      if (!tableReady(s)) {
+        if (!s.flags.has('crucifix-staged')) return 'Put the crucifix on the ritual table';
+        return 'Place the chalice on the ritual table';
+      }
+      // "There. All set.", then the alert.
       if (!s.inbox.includes('d2delivery1')) return '';
       if (!s.sms_read.has('d2delivery1')) return 'Check your phone (Q)';
       return 'Collect the delivery from the drop box by the gate';

@@ -66,9 +66,19 @@ export type Flag =
   /** At the altar on Day 2 the chalice is gone; then the thought plays out. */
   | 'chalice-missing'
   | 'chalice-missing-thought-done'
-  /** The prank ghost has popped up and floated off; then the thought. */
+  /** Searching the church for it: behind the office desk, the two locked doors. */
+  | 'searched-desk'
+  | 'searched-storage'
+  | 'searched-basement'
+  /** All three checked: the "outside somewhere" thought, then it's on the bench. */
+  | 'church-searched'
+  | 'church-searched-thought-done'
+  /** The prankster's three thoughts, one after another, then the next objective. */
   | 'prank-done'
   | 'prank-thought-done'
+  | 'prank-focus-done'
+  /** The chalice is on the table with the crucifix: "There. All set." */
+  | 'table-set'
   /** The gate-code thought has played (Day 2 on). */
   | 'gate-code-recalled'
   /** The office door has been opened on Day 2, with its clock thought. */
