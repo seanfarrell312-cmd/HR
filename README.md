@@ -118,7 +118,9 @@ The church layout follows
   the altar once the candles are lit, the prankster's raspberry fires once
   with its thoughts before the next objective, and the chalice can't be seen
   or taken until the church has been searched (behind the office desk and
-  the two locked doors, in any order). The gate-code thought
+  the two locked doors, in any order), with up to three nudges 30 s apart
+  when nothing new is checked. Dawdling outside after the gate opens brings
+  thoughts at 60, 120 and 180 s until the player goes into the church. The gate-code thought
   follows the first objective, and the office door's clock thought plays
   once. The first delivery arrives once the table is
   set, the teacup needs scripture before the cross, the table answers for

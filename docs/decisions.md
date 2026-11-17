@@ -567,3 +567,47 @@ tidied):
   the chalice".
 - **No sign-off.** The Day 2 note has no "— Supervisor" line, as the
   designer's text had none.
+
+## 2026-11-16 — S3 part 1 playtest 3: nudges, crucifix and teacup lines
+
+Designer rulings (designer copy; spelling and apostrophes tidied):
+
+- **Dawdling outside (Day 2).** Timed from the gate opening, when "Read the
+  note on the office desk" shows. If the player still hasn't been inside the
+  church:
+  - at 60 s: "These grounds are really pristine."
+  - at 120 s: "Maybe I'll just hang out here all day."
+  - at 180 s: "I should head inside."
+
+  Stepping into the nave stops them.
+- **Day 2 note:** "move onto the other side" is now "move on to the other
+  side".
+- **At the altar:** "Here's the crucifix, but no chalice..."
+- **Picking up the crucifix (Day 2):** "I guess I'll drop this off first,
+  then look for the cup." Then "Put the crucifix on the ritual table".
+- **Basement door during the search:** "Locked. I'm kinda glad I don't have
+  to go down there." The closet keeps "Locked tight. I hope it's not in
+  there."
+- **Search nudge.** After 30 s with no new place checked: "I should check
+  all the rooms. Maybe the other doors are opened?" It repeats after each
+  further 30 s with no progress, three times at most.
+- **Closing the Christ-LERTS text:** "Christ-LERTS? Nice.", then the
+  drop-box objective.
+- **Teacup lines:**
+  - At the drop box: "Sounds like... rattling china?"
+  - On pickup: "A bouncing teacup? It's a wonder it hasn't shattered."
+  - Nearing the church doors with it: "I should hurry, this thing's about to
+    bounce outta my hands." This uses the same trigger as the music box's
+    "Man, this thing's annoying" line, 17 m from the doors.
+- **Mustache:** the curled tips sit further forward of the face, so they no
+  longer sink into the body.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Between the altar thought and picking up the crucifix**, the objective
+  reads "Fetch the crucifix from the altar".
+- **Search nudge timing.** The 30 s starts when the crucifix goes down and
+  restarts with each place checked. The three nudges are counted over the
+  whole search, and they stop once all three places are checked.
+- **"Inside the church"** for the dawdling thoughts means anywhere in the
+  nave past the doors.

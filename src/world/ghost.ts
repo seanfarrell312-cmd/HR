@@ -143,11 +143,12 @@ export function ghostModel(withLight: boolean): GhostModel {
     const tip = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), stache);
     const tx = side * 0.118;
     tip.scale.set(0.03, 0.014, 0.014);
-    tip.position.set(tx, lipY - 0.016, faceZ(tx, lipY) + 0.006);
+    // Out at the tips the face curves away, so they sit further proud of it.
+    tip.position.set(tx, lipY - 0.016, faceZ(tx, lipY) + 0.018);
     tip.rotation.set(0, Math.asin(tx / RADIUS), side * 0.35);
     const curl = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0075, 6, 12, Math.PI * 1.4), stache);
     const cx = side * 0.15;
-    curl.position.set(cx, lipY + 0.002, faceZ(cx, lipY) + 0.006);
+    curl.position.set(cx, lipY + 0.002, faceZ(cx, lipY) + 0.03);
     curl.rotation.set(0, Math.asin(cx / RADIUS), side > 0 ? -Math.PI * 0.55 : Math.PI * 0.15);
     curl.scale.set(side, 1, 1);
     dapper.add(lobe, tip, curl);

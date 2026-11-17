@@ -66,6 +66,19 @@ export type Flag =
   /** At the altar on Day 2 the chalice is gone; then the thought plays out. */
   | 'chalice-missing'
   | 'chalice-missing-thought-done'
+  /** Day 2: inside the church at last; the loitering lines stop. */
+  | 'entered-church'
+  | 'loiter-1'
+  | 'loiter-2'
+  | 'loiter-3'
+  /** Day 2: the crucifix is in hand and its thought has played. */
+  | 'crucifix-thought-done'
+  /** Searching the church: nudges played after a while with no progress. */
+  | 'search-nudge-1'
+  | 'search-nudge-2'
+  | 'search-nudge-3'
+  /** Day 2: the delivery alert has been read and its thought has played. */
+  | 'alert-thought-done'
   /** Searching the church for it: behind the office desk, the two locked doors. */
   | 'searched-desk'
   | 'searched-storage'

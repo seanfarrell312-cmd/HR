@@ -26,6 +26,10 @@ import {
   THOUGHTS,
   TREE_PEEK,
   WRONG_CODE,
+  CHURCH_INSIDE,
+  LOITER_LINES,
+  SEARCH_NUDGE_SECONDS,
+  SEARCH_NUDGES,
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
@@ -52,6 +56,13 @@ export type StoryEvent =
   | { type: 'search-desk'; x: number; y: number; level: number }
   | { type: 'try-locked-door'; id: string }
   | { type: 'search-done' }
+  /** No search progress since `at` places were checked: the `n`th nudge. */
+  | { type: 'search-nudge'; at: number; n: number }
+  | { type: 'crucifix-thought-done' }
+  | { type: 'alert-thought-done' }
+  /** Day 2, dawdling outside after the gate: the `n`th line (1 to 3). */
+  | { type: 'loiter'; n: number }
+  | { type: 'enter-church'; x: number; y: number; level: number }
   | { type: 'search-thought-done' }
   | { type: 'prank-focus-done' }
   /** Timed: the prankster ghost has floated off; its thought plays. */
@@ -206,8 +217,35 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       const unread = s.inbox.filter((id) => !s.sms_read.has(id));
       if (unread.length === 0) return [];
       for (const id of unread) s.sms_read.add(id);
+      // Day 2: the forwarded alert gets a thought before the objective.
+      if (unread.includes('d2delivery1')) {
+        out.push(
+          { kind: 'say', text: THOUGHTS.alertRead },
+          { kind: 'after', seconds: afterThought(THOUGHTS.alertRead), event: { type: 'alert-thought-done' } },
+        );
+      }
       break;
     }
+
+    case 'alert-thought-done':
+      if (!s.sms_read.has('d2delivery1') || s.flags.has('alert-thought-done')) return [];
+      s.flags.add('alert-thought-done');
+      break;
+
+    case 'loiter': {
+      const line = LOITER_LINES[e.n - 1];
+      const flag = (['loiter-1', 'loiter-2', 'loiter-3'] as const)[e.n - 1];
+      if (!line || !flag || s.day_index !== 2 || s.flags.has('entered-church') || s.flags.has(flag)) return [];
+      s.flags.add(flag);
+      out.push({ kind: 'say', text: line.text });
+      break;
+    }
+
+    case 'enter-church':
+      if (s.flags.has('entered-church') || e.level !== 0) return [];
+      if (e.x < CHURCH_INSIDE.x1 || e.x > CHURCH_INSIDE.x2 || e.y < CHURCH_INSIDE.y1 || e.y > CHURCH_INSIDE.y2) return [];
+      s.flags.add('entered-church');
+      break;
 
     case 'keypad-submit':
       if (s.flags.has('gate-unlocked')) return [];
@@ -217,6 +255,10 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       }
       s.flags.add('gate-unlocked');
       out.push({ kind: 'sfx', id: 'unlock' }, { kind: 'open-door', id: 'gate' }, { kind: 'say', text: THOUGHTS.gateOpen });
+      // Day 2: dawdle outside and the thoughts start nagging.
+      if (s.day_index === 2) {
+        LOITER_LINES.forEach((l, i) => out.push({ kind: 'after', seconds: l.seconds, event: { type: 'loiter', n: i + 1 } }));
+      }
       break;
 
     case 'approach-church': {
@@ -253,6 +295,19 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (e.item === 'bible' && !bibleWanted(s)) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
+      // Day 2: no chalice to go with it yet (D2-02).
+      if (e.item === 'crucifix' && s.day_index === 2 && s.chalice === 'garden-bench') {
+        out.push(
+          { kind: 'say', text: THOUGHTS.crucifixFirst },
+          { kind: 'after', seconds: afterThought(THOUGHTS.crucifixFirst), event: { type: 'crucifix-thought-done' } },
+        );
+      }
+      break;
+
+    case 'crucifix-thought-done':
+      if (s.day_index !== 2 || s.flags.has('crucifix-thought-done')) return [];
+      if (!s.inventory.has('crucifix') && !s.flags.has('crucifix-staged')) return [];
+      s.flags.add('crucifix-thought-done');
       break;
 
     case 'pickup-chalice':
@@ -299,6 +354,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
         s.flags.add('crucifix-staged');
       }
       out.push({ kind: 'sfx', id: 'place' });
+      // Day 2: the crucifix is down, so the search for the chalice begins.
+      if (crucifix && searching(s)) nudgeLater(s, out);
       // Both down on Day 1: the clock chimes harder, then the thought.
       if (tableReady(s) && s.day_index === 1) out.push({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
       // Day 2: the table is set, then the first delivery's alert (D2-03).
@@ -338,7 +395,17 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'try-locked-door': {
       if (!searchesDoor(s, e.id)) return [];
       s.flags.add(e.id === 'storage' ? 'searched-storage' : 'searched-basement');
-      searched(s, out, THOUGHTS.searchLocked);
+      searched(s, out, e.id === 'basement' ? THOUGHTS.searchBasement : THOUGHTS.searchLocked);
+      break;
+    }
+
+    case 'search-nudge': {
+      // Only if nothing has been checked since it was scheduled.
+      const flag = (['search-nudge-1', 'search-nudge-2', 'search-nudge-3'] as const)[e.n - 1];
+      if (!flag || !searching(s) || searchCount(s) !== e.at || s.flags.has(flag)) return [];
+      s.flags.add(flag);
+      out.push({ kind: 'say', text: THOUGHTS.searchNudge });
+      nudgeLater(s, out);
       break;
     }
 
@@ -486,12 +553,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'relic-near-church':
-      // The music box's tune, on Day 1.
-      if (s.relic_kind !== 'music-box') return [];
+      // Carrying the still-possessed relic up towards the church doors.
       if (s.relic !== 'held' || s.flags.has('relic-rattled') || s.flags.has('relic-annoyed')) return [];
       if (!near(e, RELIC_ANNOY)) return [];
       s.flags.add('relic-annoyed');
-      out.push({ kind: 'say', text: THOUGHTS.relicAnnoying });
+      out.push({ kind: 'say', text: RELIC_LINES[s.relic_kind].carry });
       break;
 
     case 'place-relic':
@@ -709,6 +775,14 @@ export function blessBlocker(s: GameState): string | null {
 function searched(s: GameState, out: Effect[], line: string): void {
   out.push({ kind: 'say', text: line });
   if (searchCount(s) === SEARCH_SPOTS) out.push({ kind: 'after', seconds: afterThought(line), event: { type: 'search-done' } });
+  else nudgeLater(s, out);
+}
+
+/** The next search nudge, if nothing more is checked in the meantime (up to SEARCH_NUDGES). */
+function nudgeLater(s: GameState, out: Effect[]): void {
+  const n = (['search-nudge-1', 'search-nudge-2', 'search-nudge-3'] as const).filter((f) => s.flags.has(f)).length + 1;
+  if (n > SEARCH_NUDGES) return;
+  out.push({ kind: 'after', seconds: SEARCH_NUDGE_SECONDS, event: { type: 'search-nudge', at: searchCount(s), n } });
 }
 
 export function altarOpen(s: GameState): boolean {

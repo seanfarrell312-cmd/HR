@@ -593,6 +593,7 @@ renderer.setAnimationLoop(() => {
     if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('chalice-missing')) dispatch({ type: 'near-altar', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('searched-desk')) dispatch({ type: 'search-desk', ...at });
+    if (state.day_index === 2 && !state.flags.has('entered-church')) dispatch({ type: 'enter-church', ...at });
     if (state.flags.has('heading-home')) {
       if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
       dispatch({ type: 'reach-gate', ...at });

@@ -11,7 +11,10 @@ import {
   PRANK_SECONDS,
   RELIC_LINES,
   RELIC_TABLE_SLOTS,
+  LOITER_LINES,
   REMINDERS,
+  SEARCH_NUDGE_SECONDS,
+  SEARCH_NUDGES,
   SEARCH_SPOTS,
   S3_PART1_END,
   SMS,
@@ -36,6 +39,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'recall-gate-code' },
   { type: 'keypad-submit', code: GATE_CODE },
   { type: 'door-opened', id: 'church' },
+  { type: 'enter-church', x: 0, y: 52, level: 0 },
   { type: 'door-opened', id: 'office' },
   { type: 'read-note' },
   { type: 'close-note' },
@@ -51,6 +55,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'near-altar', x: 0, y: 63, level: 0 },
   { type: 'chalice-missing-done' },
   { type: 'take', item: 'crucifix' },
+  { type: 'crucifix-thought-done' },
   { type: 'stage-table' },
   { type: 'search-desk', x: -15.5, y: 52.9, level: 0 },
   { type: 'try-locked-door', id: 'storage' },
@@ -65,6 +70,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'stage-table' },
   { type: 'receive-sms', id: 'd2delivery1' },
   { type: 'read-sms' },
+  { type: 'alert-thought-done' },
   { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
   { type: 'take-relic' },
   { type: 'relic-pickup-thought-done' },
@@ -214,12 +220,17 @@ describe('the missing chalice (D2-02)', () => {
     // Too far away: nothing.
     expect(applyEvent(s, { type: 'near-altar', x: 0, y: ALTAR_APPROACH.y - ALTAR_APPROACH.r - 1, level: 0 })).toEqual([]);
     const fx = applyEvent(s, { type: 'near-altar', x: 0, y: 63, level: 0 });
-    expect(says(fx)).toEqual(["Here's the crucifix, but no chalice."]);
+    expect(says(fx)).toEqual(["Here's the crucifix, but no chalice..."]);
     expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.chaliceMissing), event: { type: 'chalice-missing-done' } });
     expect(task(s)).toBe('');
     applyEvent(s, { type: 'chalice-missing-done' });
+    expect(task(s)).toBe('Fetch the crucifix from the altar');
+    const took = applyEvent(s, { type: 'take', item: 'crucifix' });
+    expect(says(took)).toEqual(["I guess I'll drop this off first, then look for the cup."]);
+    expect(took).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.crucifixFirst), event: { type: 'crucifix-thought-done' } });
+    expect(task(s)).toBe('');
+    applyEvent(s, { type: 'crucifix-thought-done' });
     expect(task(s)).toBe('Put the crucifix on the ritual table');
-    applyEvent(s, { type: 'take', item: 'crucifix' });
     expect(resolve('item:ritual-table', s, inCircle).prompt).toBe('E  Set out the crucifix');
     applyEvent(s, { type: 'stage-table' });
     expect(task(s)).toBe('Search the church for the chalice (0/3)');
@@ -248,7 +259,7 @@ describe('the missing chalice (D2-02)', () => {
 
     // The basement first this time; the door stays locked.
     expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
-    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Locked tight. I hope it's not in there."]);
+    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Locked. I'm kinda glad I don't have to go down there."]);
     expect(task(s)).toBe('Search the church for the chalice (2/3)');
     expect(s.open_doors.has('basement')).toBe(false);
     // Once checked, it's just locked.
@@ -314,6 +325,81 @@ describe('the missing chalice (D2-02)', () => {
   });
 });
 
+describe('dawdling outside (Day 2)', () => {
+  const unlocked = () => {
+    const s = day2Start();
+    applyEvent(s, { type: 'arrived' });
+    return { s, fx: applyEvent(s, { type: 'keypad-submit', code: GATE_CODE }) };
+  };
+
+  it('nags at 60, 120 and 180 seconds after the gate opens', () => {
+    const { s, fx } = unlocked();
+    expect(LOITER_LINES.map((l) => l.seconds)).toEqual([60, 120, 180]);
+    for (const n of [1, 2, 3]) {
+      expect(fx).toContainEqual({ kind: 'after', seconds: LOITER_LINES[n - 1].seconds, event: { type: 'loiter', n } });
+    }
+    expect(says(applyEvent(s, { type: 'loiter', n: 1 }))).toEqual(['These grounds are really pristine.']);
+    expect(says(applyEvent(s, { type: 'loiter', n: 2 }))).toEqual(["Maybe I'll just hang out here all day."]);
+    expect(says(applyEvent(s, { type: 'loiter', n: 3 }))).toEqual(['I should head inside.']);
+    expect(applyEvent(s, { type: 'loiter', n: 3 })).toEqual([]);
+  });
+
+  it('stops once the player is inside the church', () => {
+    const { s } = unlocked();
+    applyEvent(s, { type: 'loiter', n: 1 });
+    // Outside the doors doesn't count.
+    applyEvent(s, { type: 'enter-church', x: 0, y: 49, level: 0 });
+    expect(s.flags.has('entered-church')).toBe(false);
+    applyEvent(s, { type: 'enter-church', x: 0, y: 52, level: 0 });
+    expect(applyEvent(s, { type: 'loiter', n: 2 })).toEqual([]);
+    expect(applyEvent(s, { type: 'loiter', n: 3 })).toEqual([]);
+  });
+
+  it('does not nag on Day 1', () => {
+    const s = createInitialState();
+    const fx = applyEvent(s, { type: 'keypad-submit', code: GATE_CODE });
+    expect(fx.filter((f) => f.kind === 'after')).toEqual([]);
+    expect(applyEvent(s, { type: 'loiter', n: 1 })).toEqual([]);
+  });
+});
+
+describe('search nudges (D2-02)', () => {
+  const nudge = THOUGHTS.searchNudge;
+  const nudgesIn = (fx: Effect[]) => fx.filter((f) => f.kind === 'after' && f.event.type === 'search-nudge');
+
+  it('nudges after 30 s with nothing checked, up to three times', () => {
+    const s = at(step('stage-table'));
+    const fx = applyEvent(s, { type: 'stage-table' });
+    expect(nudgesIn(fx)).toEqual([{ kind: 'after', seconds: SEARCH_NUDGE_SECONDS, event: { type: 'search-nudge', at: 0, n: 1 } }]);
+    expect(SEARCH_NUDGE_SECONDS).toBe(30);
+    expect(SEARCH_NUDGES).toBe(3);
+    const one = applyEvent(s, { type: 'search-nudge', at: 0, n: 1 });
+    expect(says(one)).toEqual(['I should check all the rooms. Maybe the other doors are opened?']);
+    expect(nudgesIn(one)).toEqual([{ kind: 'after', seconds: 30, event: { type: 'search-nudge', at: 0, n: 2 } }]);
+    expect(says(applyEvent(s, { type: 'search-nudge', at: 0, n: 2 }))).toEqual([nudge]);
+    const three = applyEvent(s, { type: 'search-nudge', at: 0, n: 3 });
+    expect(says(three)).toEqual([nudge]);
+    // Three and done.
+    expect(nudgesIn(three)).toEqual([]);
+    expect(applyEvent(s, { type: 'search-nudge', at: 0, n: 3 })).toEqual([]);
+  });
+
+  it('restarts the 30 s on each check and drops a stale nudge', () => {
+    const s = at(step('stage-table'));
+    applyEvent(s, { type: 'stage-table' });
+    const desk = applyEvent(s, { type: 'search-desk', x: -15.5, y: 52.9, level: 0 });
+    expect(nudgesIn(desk)).toEqual([{ kind: 'after', seconds: 30, event: { type: 'search-nudge', at: 1, n: 1 } }]);
+    // The one scheduled before the desk check no longer applies.
+    expect(applyEvent(s, { type: 'search-nudge', at: 0, n: 1 })).toEqual([]);
+    expect(says(applyEvent(s, { type: 'search-nudge', at: 1, n: 1 }))).toEqual([nudge]);
+    // The last check ends the search: no more nudges.
+    applyEvent(s, { type: 'try-locked-door', id: 'storage' });
+    const last = applyEvent(s, { type: 'try-locked-door', id: 'basement' });
+    expect(nudgesIn(last)).toEqual([]);
+    expect(applyEvent(s, { type: 'search-nudge', at: 2, n: 2 })).toEqual([]);
+  });
+});
+
 describe('Day 2 thoughts on the way in', () => {
   it('gets its steps in walking up to the church, once', () => {
     const s = at(step('door-opened'));
@@ -341,19 +427,28 @@ describe('the first delivery (D2-03)', () => {
     expect(s.relic).toBe('drop-box');
     expect(s.relic_kind).toBe('teacup');
     expect(task(s)).toBe('Check your phone (Q)');
-    applyEvent(s, { type: 'read-sms' });
+    const read = applyEvent(s, { type: 'read-sms' });
+    expect(says(read)).toEqual(['Christ-LERTS? Nice.']);
+    expect(read).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.alertRead), event: { type: 'alert-thought-done' } });
+    expect(task(s)).toBe('');
+    applyEvent(s, { type: 'alert-thought-done' });
     expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
     expect(SMS.d2delivery1.text).toBe('FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.');
   });
 
   it('has its own lines for the teacup', () => {
     const s = at(step('approach-drop-box'));
-    expect(says(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 }))).toEqual([RELIC_LINES.teacup.approach]);
+    expect(says(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 }))).toEqual(['Sounds like... rattling china?']);
     const fx = applyEvent(s, { type: 'take-relic' });
-    expect(says(fx)).toEqual([RELIC_LINES.teacup.pickup]);
+    expect(says(fx)).toEqual(["A bouncing teacup? It's a wonder it hasn't shattered."]);
     expect(s.held_prop_id).toBe('teacup');
-    // No music-box grumbling on the way up.
-    expect(applyEvent(s, { type: 'relic-near-church', x: 0, y: 36, level: 0 })).toEqual([]);
+    // Not yet near the doors; then its own line on the way up, once.
+    expect(applyEvent(s, { type: 'relic-near-church', x: 0, y: 20, level: 0 })).toEqual([]);
+    expect(says(applyEvent(s, { type: 'relic-near-church', x: 0, y: 36, level: 0 }))).toEqual([
+      "I should hurry, this thing's about to bounce outta my hands.",
+    ]);
+    expect(applyEvent(s, { type: 'relic-near-church', x: 0, y: 40, level: 0 })).toEqual([]);
+    expect(RELIC_LINES.teacup.carry).not.toBe(RELIC_LINES['music-box'].carry);
   });
 
   it('clears yesterday\'s relic steps so the new delivery starts fresh', () => {

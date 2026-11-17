@@ -159,7 +159,12 @@ export const DAY2: Objective[] = [
         if (!s.flags.has('chalice-missing')) return altarPiecesLine(s) || 'Fetch the chalice from the altar';
         // Each thought plays out before the next step shows.
         if (!s.flags.has('chalice-missing-thought-done')) return '';
-        if (!s.flags.has('crucifix-staged')) return 'Put the crucifix on the ritual table';
+        if (!s.flags.has('crucifix-staged')) {
+          if (!s.inventory.has('crucifix')) return 'Fetch the crucifix from the altar';
+          // "I'll drop this off first" plays before it's asked for.
+          if (!s.flags.has('crucifix-thought-done')) return '';
+          return 'Put the crucifix on the ritual table';
+        }
         if (!s.flags.has('church-searched')) return `Search the church for the chalice (${searchCount(s)}/${SEARCH_SPOTS})`;
         if (!s.flags.has('church-searched-thought-done')) return '';
         return 'Search the grounds for the chalice';
@@ -180,6 +185,8 @@ export const DAY2: Objective[] = [
       // "There. All set.", then the alert.
       if (!s.inbox.includes('d2delivery1')) return '';
       if (!s.sms_read.has('d2delivery1')) return 'Check your phone (Q)';
+      // "Christ-LERTS? Nice." first.
+      if (!s.flags.has('alert-thought-done')) return '';
       return 'Collect the delivery from the drop box by the gate';
     },
     done: (s) => s.day_index === 2 && s.relic_kind === 'teacup' && (s.relic === 'held' || s.relic === 'ritual-table'),

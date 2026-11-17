@@ -174,7 +174,7 @@ export const OFFICE_NOTE_DAY1 = [
 export const OFFICE_NOTE_DAY2 = [
   "Great job yesterday! Mrs. Kettle's clock has been ticking normally all day, and the owner of the music box came by earlier to retrieve it.",
   "Word has gotten out about your exorcism skills so I expect a few more drop-offs today. I'll forward you the alerts once they arrive.",
-  "By the way, if you see or hear anything weird today, just ignore it. It's not anything too bad mind you, but it seems that a number of the exorcised spirits are lingering a bit. They may try an odd prank or to startle you, but they appear to be harmless so don't let them distract you. I suspect they're just bored and are waiting for their turn to move onto the other side.",
+  "By the way, if you see or hear anything weird today, just ignore it. It's not anything too bad mind you, but it seems that a number of the exorcised spirits are lingering a bit. They may try an odd prank or to startle you, but they appear to be harmless so don't let them distract you. I suspect they're just bored and are waiting for their turn to move on to the other side.",
   'The key to the chapel is behind you on the ring again.',
   'Good Luck!',
 ].join('\n\n');
@@ -230,11 +230,19 @@ export const THOUGHTS = {
   /** Walking up to the church on Day 2, in place of Day 1's first impression. */
   churchApproachDay2: 'Definitely getting my steps in.',
   /** At the altar, where the chalice should be (D2-02). */
-  chaliceMissing: "Here's the crucifix, but no chalice.",
+  chaliceMissing: "Here's the crucifix, but no chalice...",
+  /** Picking the crucifix up off the altar (Day 2); then it's for the ritual table. */
+  crucifixFirst: "I guess I'll drop this off first, then look for the cup.",
   /** Searching the church: behind the office desk. */
   searchDesk: "I don't think the chalice would fit in these drawers.",
   /** Searching the church: trying the locked storage closet and basement doors. */
   searchLocked: "Locked tight. I hope it's not in there.",
+  /** Searching the church: trying the locked basement door. */
+  searchBasement: "Locked. I'm kinda glad I don't have to go down there.",
+  /** No search progress for a while: up to three nudges (SEARCH_NUDGES). */
+  searchNudge: 'I should check all the rooms. Maybe the other doors are opened?',
+  /** Closing the first Day 2 delivery text; then the drop-box objective. */
+  alertRead: 'Christ-LERTS? Nice.',
   /** Once all three places have been checked. */
   searchOutside: "I guess it's outside somewhere?",
   /** As the prankster pops up, while it's still on screen. */
@@ -258,16 +266,32 @@ export const THOUGHTS = {
 export const GATE_RECALL_DELAY = 5.5;
 
 /**
- * Per-relic lines (S3): nearing the drop box once it's in there, picking it
- * up, and once its ghost has gone. Day 1's music box keeps its own lines,
- * above. PROVISIONAL copy for the teacup.
+ * Day 2 (designer copy, 2026-11-16): lines while dawdling outside after the
+ * gate opens, at these many seconds, until the player goes into the church.
  */
-export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; ghost: string }> = {
-  'music-box': { approach: THOUGHTS.dropBox, pickup: THOUGHTS.relicPickup, ghost: THOUGHTS.relicGhost },
+export const LOITER_LINES: readonly { seconds: number; text: string }[] = [
+  { seconds: 60, text: 'These grounds are really pristine.' },
+  { seconds: 120, text: "Maybe I'll just hang out here all day." },
+  { seconds: 180, text: 'I should head inside.' },
+];
+/** Inside the church: the nave, just past the doors. */
+export const CHURCH_INSIDE = { x1: -8, y1: 50.2, x2: 8, y2: 67.4 };
+
+/** Searching the church: seconds without progress before a nudge, and how many nudges at most. */
+export const SEARCH_NUDGE_SECONDS = 30;
+export const SEARCH_NUDGES = 3;
+
+/**
+ * Per-relic lines (S3): nearing the drop box once it's in there, picking it
+ * up, carrying it up towards the church doors, and once its ghost has gone.
+ */
+export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; carry: string; ghost: string }> = {
+  'music-box': { approach: THOUGHTS.dropBox, pickup: THOUGHTS.relicPickup, carry: THOUGHTS.relicAnnoying, ghost: THOUGHTS.relicGhost },
+  // Designer copy, 2026-11-15 and 2026-11-16.
   teacup: {
-    approach: 'Is that... rattling china?',
-    pickup: "A teacup that won't sit still. Somebody's nan is going to miss this.",
-    // Designer copy, 2026-11-15.
+    approach: 'Sounds like... rattling china?',
+    pickup: "A bouncing teacup? It's a wonder it hasn't shattered.",
+    carry: "I should hurry, this thing's about to bounce outta my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
 };
