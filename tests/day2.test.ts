@@ -108,6 +108,8 @@ const at = (upTo: number): GameState => {
   return s;
 };
 const task = (s: GameState) => currentObjective(s).task(s);
+/** The checklist under the objective, as "x Text" (done) or "- Text". */
+const checklist = (s: GameState) => (currentObjective(s).checklist?.(s) ?? []).map((i) => `${i.done ? 'x' : '-'} ${i.text}`);
 const says = (fx: Effect[]) => fx.filter((f) => f.kind === 'say').map((f) => (f as { text: string }).text);
 const flashes = (fx: Effect[]) => fx.filter((f) => f.kind === 'flash').map((f) => (f as { text: string }).text);
 const inCircle = { x: HOLY_CIRCLE.x, y: HOLY_CIRCLE.y, level: 0 as const };
@@ -191,7 +193,7 @@ describe('shift start (D2-01)', () => {
   it('admires the clock the first time the office door opens', () => {
     const s = at(step('door-opened', 2));
     expect(says(applyEvent(s, { type: 'door-opened', id: 'office' }))).toEqual([THOUGHTS.officeClock]);
-    expect(THOUGHTS.officeClock).toBe('Huh, the clock does look nice in here.');
+    expect(THOUGHTS.officeClock).toBe('That clock really does look nice in here.');
     expect(applyEvent(s, { type: 'door-opened', id: 'office' })).toEqual([]);
   });
 
@@ -233,7 +235,8 @@ describe('the missing chalice (D2-02)', () => {
     expect(task(s)).toBe('Put the crucifix on the ritual table');
     expect(resolve('item:ritual-table', s, inCircle).prompt).toBe('E  Set out the crucifix');
     applyEvent(s, { type: 'stage-table' });
-    expect(task(s)).toBe('Search the church for the chalice (0/3)');
+    expect(task(s)).toBe('Search the church for the chalice');
+    expect(checklist(s)).toEqual(['- Check the office', '- Check the storage closet', '- Check the basement']);
     expect(SEARCH_SPOTS).toBe(3);
   });
 
@@ -255,12 +258,12 @@ describe('the missing chalice (D2-02)', () => {
     expect(applyEvent(s, { type: 'search-desk', x: -12, y: 52.9, level: 0 })).toEqual([]);
     const desk = applyEvent(s, { type: 'search-desk', x: (BEHIND_DESK.x1 + BEHIND_DESK.x2) / 2, y: 52.9, level: 0 });
     expect(says(desk)).toEqual(["I don't think the chalice would fit in these drawers."]);
-    expect(task(s)).toBe('Search the church for the chalice (1/3)');
+    expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', '- Check the basement']);
 
     // The basement first this time; the door stays locked.
     expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
     expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Locked. I'm kinda glad I don't have to go down there."]);
-    expect(task(s)).toBe('Search the church for the chalice (2/3)');
+    expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', 'x Check the basement']);
     expect(s.open_doors.has('basement')).toBe(false);
     // Once checked, it's just locked.
     expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'message', text: "It's locked." });
@@ -268,11 +271,44 @@ describe('the missing chalice (D2-02)', () => {
     const last = applyEvent(s, { type: 'try-locked-door', id: 'storage' });
     expect(says(last)).toEqual([THOUGHTS.searchLocked]);
     expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchLocked), event: { type: 'search-done' } });
-    expect(task(s)).toBe('Search the church for the chalice (3/3)');
+    // All crossed off, and still up through the "outside" thought.
+    expect(checklist(s)).toEqual(['x Check the office', 'x Check the storage closet', 'x Check the basement']);
     expect(says(applyEvent(s, { type: 'search-done' }))).toEqual(["I guess it's outside somewhere?"]);
     expect(task(s)).toBe('');
+    expect(checklist(s)).toHaveLength(3);
     applyEvent(s, { type: 'search-thought-done' });
     expect(task(s)).toBe('Search the grounds for the chalice');
+    expect(checklist(s)).toEqual([]);
+  });
+
+  it('keeps the church doors shut from inside until the grounds objective shows', () => {
+    const shut = (g: GameState) => {
+      g.open_doors.delete('church');
+      return g;
+    };
+    const inside = { x: 0, y: 51, level: 0 as const };
+    const outside = { x: 0, y: 48, level: 0 as const };
+    // Before the crucifix goes down: the doors open as usual.
+    // The doors shut themselves behind the player (AUTO_CLOSE_DOORS).
+    const before = shut(at(step('stage-table')));
+    expect(resolve('door:church', before, inside).prompt).toBe('E  Open church doors');
+    expect(checklist(before)).toEqual([]);
+
+    const s = shut(at(step('search-desk')));
+    const res = resolve('door:church', s, inside);
+    expect(res.prompt).toBe('Church doors');
+    expect(res.action).toEqual({ kind: 'story', event: { type: 'try-church-doors' } });
+    expect(says(applyEvent(s, { type: 'try-church-doors' }))).toEqual(['I need to find the chalice. Maybe the other doors are unlocked?']);
+    expect(s.open_doors.has('church')).toBe(false);
+    // Someone outside (a debug teleport) can still get in.
+    expect(resolve('door:church', s, outside).prompt).toBe('E  Open church doors');
+
+    // Still shut while the "outside" thought plays, then open.
+    const searched = shut(at(step('search-thought-done')));
+    expect(resolve('door:church', searched, inside).action).toEqual({ kind: 'story', event: { type: 'try-church-doors' } });
+    applyEvent(searched, { type: 'search-thought-done' });
+    expect(resolve('door:church', searched, inside).prompt).toBe('E  Open church doors');
+    expect(applyEvent(searched, { type: 'try-church-doors' })).toEqual([]);
   });
 
   it('only counts the search once the crucifix is on the table', () => {

@@ -1,6 +1,6 @@
-import { RELIC_NAMES, S3_PART1_END, SEARCH_SPOTS } from '../data/story';
+import { RELIC_NAMES, S3_PART1_END, SEARCH_CHECKLIST } from '../data/story';
 import type { GameState } from '../state/store';
-import { searchCount } from './search';
+import { churchSealed } from './search';
 import { tableReady } from './table';
 
 // Objectives for each day (doc 6.1, 6.2). Day 1 was built in S1 and S2, Day 2
@@ -8,11 +8,18 @@ import { tableReady } from './table';
 // sequencer only moves forward. A day's objectives only complete on that day,
 // so finishing Day 1 never ticks off Day 2's.
 
+export interface ChecklistItem {
+  text: string;
+  done: boolean;
+}
+
 export interface Objective {
   id: string;
   /** Task line for the HUD; can depend on progress within the objective. */
   task: (s: GameState) => string;
   done: (s: GameState) => boolean;
+  /** Persistent list shown under the objective, with items crossed off as they're done. */
+  checklist?: (s: GameState) => ChecklistItem[];
 }
 
 export const DAY1: Objective[] = [
@@ -165,12 +172,20 @@ export const DAY2: Objective[] = [
           if (!s.flags.has('crucifix-thought-done')) return '';
           return 'Put the crucifix on the ritual table';
         }
-        if (!s.flags.has('church-searched')) return `Search the church for the chalice (${searchCount(s)}/${SEARCH_SPOTS})`;
+        // The checklist under the objective says where to look.
+        if (!s.flags.has('church-searched')) return 'Search the church for the chalice';
         if (!s.flags.has('church-searched-thought-done')) return '';
         return 'Search the grounds for the chalice';
       }
       // Found: the scare and its three thoughts play out first.
       return '';
+    },
+    // Where to look, crossed off as each is checked; it stays up through the
+    // "outside somewhere" thought.
+    checklist: (s) => {
+      if (!churchSealed(s)) return [];
+      const done = [s.flags.has('searched-desk'), s.flags.has('searched-storage'), s.flags.has('searched-basement')];
+      return SEARCH_CHECKLIST.map((text, i) => ({ text, done: done[i] }));
     },
     done: (s) => s.day_index === 2 && s.chalice !== 'garden-bench' && s.flags.has('prank-focus-done'),
   },

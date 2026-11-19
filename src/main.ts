@@ -616,6 +616,7 @@ renderer.setAnimationLoop(() => {
   hud.setHold(blessMeter.progress);
   hud.setPrompt(res.prompt);
   hud.setObjective(started && dayFade < 0 ? currentObjective(state).task(state) : '');
+  hud.setChecklist(started && dayFade < 0 ? (currentObjective(state).checklist?.(state) ?? []) : []);
   hud.setCornerHints(started);
   hud.update(dt);
   hud.setDebug(debugVisible, debugText());

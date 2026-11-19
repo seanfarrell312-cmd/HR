@@ -158,6 +158,44 @@ canvas {
   transition: opacity 0.35s, transform 0.35s;
 }
 
+/* The objective's checklist (the church search): stays up while the box
+   folds away, each item crossed off as it's done. */
+.checklist {
+  display: none;
+  margin: 0;
+  padding: 10px 18px 12px;
+  list-style: none;
+  background: rgba(8, 10, 12, 0.66);
+  border-left: 5px solid #ffd75e;
+  text-shadow: 0 1px 2px #000;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.45;
+  color: #f2efe8;
+}
+
+.checklist.show {
+  display: block;
+}
+
+.checklist li::before {
+  content: '\2610';
+  display: inline-block;
+  width: 1.4em;
+  color: #ffd75e;
+}
+
+.checklist li.done {
+  color: #9a978f;
+  text-decoration: line-through;
+}
+
+.checklist li.done::before {
+  content: '\2611';
+  color: #9a978f;
+  text-decoration: none;
+}
+
 /* Whichever of the box and its hint is hidden drops out of the flow, so the
    SMS alert sits directly under the one on screen. */
 .objective:not(.show),

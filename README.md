@@ -126,6 +126,9 @@ The church layout follows
   set, the teacup needs scripture before the cross, the table answers for
   the small teacup during holds, and it goes onto its own place on the
   cleaned-relic table without Day 1's dusk.
+- `tests/script-review.test.ts`: `docs/script-review.md` (every scripted
+  thought, text and note, for review) lists every thought and matches the
+  game's copy. Run `npm run export-script` after changing any copy.
 - `tests/controls.test.ts`: the mouse-glitch filter keeps real movement and
   drops one-off jumps; each day starts facing east with the church on the
   left.

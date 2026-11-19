@@ -44,6 +44,9 @@ playable. Push only when the designer asks.
 - `src/audio/` — placeholder synthesised sound effects.
 - `src/ui/` — HUD, crosshair prompt, pause overlay, debug panel.
 - `tests/` — Vitest. Logic that can be tested without a browser should be.
+- `scripts/script-review.ts` — gathers every scripted thought, text and note
+  into `docs/script-review.md` for the designer to review. A test fails when
+  that file is out of date or a thought is missing from its list.
 
 Plan coordinates: metres, `x` = east, `y` = north, origin at the centre of the
 front gate. Three.js position is `(x, height, -y)`; use `toWorld()` in
@@ -54,5 +57,7 @@ front gate. Three.js position is `(x, height, -y)`; use `toWorld()` in
 - `npm run dev` — local dev server
 - `npm test` — unit tests
 - `npm run build` — type-check and production build
+- `npm run export-script` — regenerate `docs/script-review.md` after changing
+  any copy
 
 Run `npm test` and `npm run build` before committing.

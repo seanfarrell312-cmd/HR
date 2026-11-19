@@ -14,6 +14,8 @@ export class Hud {
   private prompt: HTMLElement;
   private message: HTMLElement;
   private subtitle: HTMLElement;
+  private checklist: HTMLElement;
+  private checklistKey = '';
   private objective: HTMLElement;
   private objectiveText: HTMLElement;
   private objectiveHint: HTMLElement;
@@ -47,6 +49,7 @@ export class Hud {
            <div class="objective"><div class="objective-label">Objective</div><div class="objective-text"></div></div>
            <div class="objective-hint">(O) View Objectives</div>
          </div>
+         <ul class="checklist"></ul>
          <div class="sms-alert">New SMS - Press Q</div>
        </div>
        <div class="corner-hints"><div class="interact-hint">(E) Interact</div><div class="inventory-hint">(I) View Inventory</div></div>
@@ -78,6 +81,7 @@ export class Hud {
     this.prompt = q('.prompt');
     this.message = q('.message');
     this.subtitle = q('.subtitle');
+    this.checklist = q('.checklist');
     this.guide = q('.guide');
     this.objective = q('.objective');
     this.objectiveText = q('.objective-text');
@@ -113,6 +117,18 @@ export class Hud {
       this.objective.classList.remove('show');
       this.objectiveHint.classList.remove('show');
     }
+  }
+
+  /**
+   * The objective's checklist, which stays on screen (unlike the objective
+   * box) with each item crossed off as it's done. Empty hides it.
+   */
+  setChecklist(items: readonly { text: string; done: boolean }[]): void {
+    const key = items.map((i) => `${i.done ? 1 : 0}${i.text}`).join('|');
+    if (key === this.checklistKey) return;
+    this.checklistKey = key;
+    this.checklist.innerHTML = items.map((i) => `<li class="${i.done ? 'done' : ''}">${esc(i.text)}</li>`).join('');
+    this.checklist.classList.toggle('show', items.length > 0);
   }
 
   /** Bring the objective back for OBJECTIVE_SECONDS (the O key). */

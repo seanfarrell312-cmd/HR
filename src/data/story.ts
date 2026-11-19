@@ -255,7 +255,9 @@ export const THOUGHTS = {
   /** Day 2 shift start, once the first objective has folded away. */
   gateCodeRecall: `Good thing I remembered the gate code: ${GATE_CODE}.`,
   /** Opening the office door for the first time on Day 2; the clock is on the desk. */
-  officeClock: 'Huh, the clock does look nice in here.',
+  officeClock: 'That clock really does look nice in here.',
+  /** Trying the church doors from inside while searching it for the chalice. */
+  searchStayInside: 'I need to find the chalice. Maybe the other doors are unlocked?',
 };
 
 /**
@@ -313,6 +315,8 @@ export const ALTAR_APPROACH = { x: 0, y: 64, r: 4 };
 export const BEHIND_DESK = { x1: -16.4, y1: 50.6, x2: -14.6, y2: 56.2 };
 export const SEARCH_DOORS = ['storage', 'basement'] as const;
 export const SEARCH_SPOTS = 3;
+/** The search checklist shown while the church is searched, in order. */
+export const SEARCH_CHECKLIST = ['Check the office', 'Check the storage closet', 'Check the basement'] as const;
 
 /** Reminders when something is tried too early (doc 5.4). PROVISIONAL copy. */
 export const REMINDERS = {

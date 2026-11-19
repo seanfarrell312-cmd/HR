@@ -33,10 +33,10 @@ import {
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
-import { searchCount, searching, searchesDoor } from './search';
+import { churchSealed, searchCount, searching, searchesDoor } from './search';
 import { tableReady } from './table';
 
-export { searchCount, searching, searchesDoor } from './search';
+export { churchSealed, searchCount, searching, searchesDoor } from './search';
 export { siteReady, tableReady } from './table';
 
 // The single place story state changes. Every event is validated against the
@@ -56,6 +56,8 @@ export type StoryEvent =
   | { type: 'search-desk'; x: number; y: number; level: number }
   | { type: 'try-locked-door'; id: string }
   | { type: 'search-done' }
+  /** Trying the church doors from inside during the search: they stay shut. */
+  | { type: 'try-church-doors' }
   /** No search progress since `at` places were checked: the `n`th nudge. */
   | { type: 'search-nudge'; at: number; n: number }
   | { type: 'crucifix-thought-done' }
@@ -398,6 +400,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       searched(s, out, e.id === 'basement' ? THOUGHTS.searchBasement : THOUGHTS.searchLocked);
       break;
     }
+
+    case 'try-church-doors':
+      // A reminder each time, like the "too early" lines; nothing changes.
+      if (!churchSealed(s)) return [];
+      return [{ kind: 'say', text: THOUGHTS.searchStayInside }];
 
     case 'search-nudge': {
       // Only if nothing has been checked since it was scheduled.

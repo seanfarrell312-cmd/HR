@@ -2,7 +2,7 @@ import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
 import { HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { altarOpen, bibleWanted, blessBlocker, searchesDoor, tableReady, type StoryEvent } from '../story/events';
+import { altarOpen, bibleWanted, blessBlocker, churchSealed, searchesDoor, tableReady, type StoryEvent } from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -52,6 +52,10 @@ export function resolve(targetId: string | null, state: GameState, player: Playe
   if (kind === 'door') {
     const door = DOORS.find((d) => d.id === id);
     if (!door) return NONE;
+    // Day 2: no leaving the church until it has been searched (D2-02).
+    if (id === 'church' && !state.open_doors.has(id) && churchSealed(state) && player.level === 0 && player.y > door.y) {
+      return { prompt: door.label, action: { kind: 'story', event: { type: 'try-church-doors' } } };
+    }
     const lock = lockState(state, id);
     if (lock !== 'unlocked') {
       // Day 2: trying it is part of the search for the chalice (D2-02).

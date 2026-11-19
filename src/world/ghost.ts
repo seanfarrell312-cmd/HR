@@ -123,40 +123,80 @@ export function ghostModel(withLight: boolean): GhostModel {
   // Handlebar mustache and monocle, shown only on the teacup's ghost.
   const dapper = new THREE.Group();
   dapper.visible = false;
-  /** Where the face is at height y, x along: on the dome above SHOULDER, on the sheet below. */
-  const faceZ = (x: number, y: number): number => {
-    const r = y >= SHOULDER
+  // Each half of the mustache is one tapered tube along a path drawn on the
+  // face, from the middle out to an upturned curl at the tip. The path is
+  // wrapped onto the body and every ring of the tube is pushed out along the
+  // surface normal by its own thickness, so the whole shape, curls included,
+  // lies on the outside of the sheet (designer reference, 2026-11-15).
+  const lipY = SHOULDER - 0.035;
+  /** Radius of the body's cross-section at height y. */
+  const bodyR = (y: number): number =>
+    y >= SHOULDER
       ? Math.sqrt(Math.max(0, RADIUS * RADIUS - (y - SHOULDER) ** 2))
       : HEM_RADIUS + (RADIUS - HEM_RADIUS) * Math.sqrt(Math.max(0, y / SHOULDER));
-    return Math.sqrt(Math.max(0, r * r - x * x));
+  /** The face point at (x, y) and the outward normal there. */
+  const onFace = (x: number, y: number): [THREE.Vector3, THREE.Vector3] => {
+    const z = Math.sqrt(Math.max(0, bodyR(y) ** 2 - x * x));
+    return [new THREE.Vector3(x, y, z), new THREE.Vector3(x, 0, z).normalize()];
   };
-  const stache = dark;
-  const lipY = SHOULDER - 0.035;
+  // The right half's path (x out from the middle, y up from the lip); the
+  // left is its mirror. Down into a plump lobe, up the outside, then curling
+  // back in over the top.
+  const PATH: [number, number][] = [
+    [-0.006, 0.004], [0.03, -0.004], [0.07, -0.015], [0.108, -0.016], [0.138, -0.004],
+    [0.157, 0.017], [0.155, 0.037], [0.139, 0.046], [0.123, 0.037], [0.124, 0.024], [0.134, 0.02],
+  ];
+  /** Half-thickness along the path (0 = middle, 1 = the curl's end). */
+  const THICK: [number, number][] = [[0, 0.011], [0.22, 0.021], [0.42, 0.016], [0.58, 0.009], [0.8, 0.006], [1, 0.0035]];
+  const thick = (t: number): number => {
+    for (let i = 1; i < THICK.length; i++) {
+      const [t1, r1] = THICK[i];
+      const [t0, r0] = THICK[i - 1];
+      if (t <= t1) return r0 + ((r1 - r0) * (t - t0)) / (t1 - t0);
+    }
+    return THICK[THICK.length - 1][1];
+  };
+  /** How flat the tube is front to back, as a share of its width. */
+  const DEPTH = 0.55;
+  /** Clearance between the back of the mustache and the sheet. */
+  const GAP = 0.003;
+  const SEGMENTS = 48;
+  const RADIAL = 8;
   for (const side of [-1, 1]) {
-    // A plump lobe either side of the middle, drooping a touch outwards...
-    const lobe = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), stache);
-    const lx = side * 0.062;
-    lobe.scale.set(0.068, 0.03, 0.022);
-    lobe.position.set(lx, lipY - 0.006, faceZ(lx, lipY) + 0.004);
-    lobe.rotation.set(0, Math.asin(lx / RADIUS), side * -0.22);
-    // ...tapering into an upturned curl at the tip.
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), stache);
-    const tx = side * 0.118;
-    tip.scale.set(0.03, 0.014, 0.014);
-    // Out at the tips the face curves away, so they sit further proud of it.
-    tip.position.set(tx, lipY - 0.016, faceZ(tx, lipY) + 0.018);
-    tip.rotation.set(0, Math.asin(tx / RADIUS), side * 0.35);
-    const curl = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0075, 6, 12, Math.PI * 1.4), stache);
-    const cx = side * 0.15;
-    curl.position.set(cx, lipY + 0.002, faceZ(cx, lipY) + 0.03);
-    curl.rotation.set(0, Math.asin(cx / RADIUS), side > 0 ? -Math.PI * 0.55 : Math.PI * 0.15);
-    curl.scale.set(side, 1, 1);
-    dapper.add(lobe, tip, curl);
+    const curve = new THREE.CatmullRomCurve3(PATH.map(([x, dy]) => onFace(side * x, lipY + dy)[0]));
+    const tube = new THREE.TubeGeometry(curve, SEGMENTS, 1, RADIAL, false);
+    const pos = tube.attributes.position;
+    const v = new THREE.Vector3();
+    for (let i = 0; i <= SEGMENTS; i++) {
+      const centre = curve.getPointAt(i / SEGMENTS);
+      const [, n] = onFace(centre.x, centre.y);
+      const r = thick(i / SEGMENTS);
+      for (let j = 0; j <= RADIAL; j++) {
+        const k = i * (RADIAL + 1) + j;
+        v.fromBufferAttribute(pos, k).sub(centre);
+        // Split the unit offset into its out-of-face part and the rest,
+        // flatten the first, scale both, and lift the ring clear of the face.
+        const out = v.dot(n);
+        v.addScaledVector(n, -out).multiplyScalar(r).addScaledVector(n, out * r * DEPTH + r * DEPTH + GAP).add(centre);
+        pos.setXYZ(k, v.x, v.y, v.z);
+      }
+    }
+    tube.computeVertexNormals();
+    dapper.add(new THREE.Mesh(tube, dark));
   }
+  // A knot in the middle where the halves meet.
+  const [knotAt, knotN] = onFace(0, lipY + 0.004);
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), dark);
+  knot.scale.set(0.014, 0.012, 0.012 * DEPTH);
+  knot.position.copy(knotAt).addScaledVector(knotN, 0.012 * DEPTH + GAP);
+  dapper.add(knot);
+  /** Where the face is at height y, x along. */
+  const faceZ = (x: number, y: number): number => onFace(x, y)[0].z;
   const gold = track(new THREE.MeshLambertMaterial({ color: '#c9a24a', emissive: '#4a3712', opacity: 1 }));
   const mx = 0.095;
   const monocle = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.007, 6, 20), gold);
-  monocle.position.set(mx, eyeY, faceZ(mx, eyeY) + 0.012);
+  // Clear of the sheet, which bulges out a little below the eye.
+  monocle.position.set(mx, eyeY, faceZ(mx, eyeY) + 0.02);
   monocle.rotation.y = Math.asin(mx / faceR);
   dapper.add(monocle);
   // A chain of little links hanging from the rim's outer edge.
@@ -165,7 +205,7 @@ export function ghostModel(withLight: boolean): GhostModel {
   for (let i = 1; i <= 9; i++) {
     const y = eyeY - 0.02 - i * 0.022;
     const bead = new THREE.Mesh(link, gold);
-    bead.position.set(chainX, y, faceZ(chainX, y) + 0.008);
+    bead.position.set(chainX, y, faceZ(chainX, y) + 0.012);
     dapper.add(bead);
   }
   group.add(dapper);

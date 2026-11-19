@@ -611,3 +611,37 @@ Designer rulings (designer copy; spelling and apostrophes tidied):
   whole search, and they stop once all three places are checked.
 - **"Inside the church"** for the dawdling thoughts means anywhere in the
   nave past the doors.
+
+## 2026-11-18 — S3 part 1 playtest 4: search checklist, sealed church
+
+Designer rulings:
+
+- **Office clock thought (Day 2):** "That clock really does look nice in
+  here."
+- **The church is sealed during the search.** From the crucifix going down
+  until "Search the grounds for the chalice" shows, the church doors won't
+  open from inside. Trying them gives "I need to find the chalice. Maybe the
+  other doors are unlocked?" (designer copy, with "chalice" in lower case as
+  elsewhere).
+- **Search checklist.** The objective now reads "Search the church for the
+  chalice", with no 0/3 count. A checklist stays on screen under it: "Check
+  the office", "Check the storage closet", "Check the basement". Each item is
+  crossed off as it's done. It stays up, all crossed off, through "I guess
+  it's outside somewhere?", and goes when the grounds objective shows.
+- **The mustache** is rebuilt as one tapered shape per side, from the middle
+  out to the curl. It's wrapped onto the ghost's face and lifted clear of it
+  along the surface, so the curls run on from the rest and sit outside the
+  body from every angle.
+- **Script review export.** `docs/script-review.md` lists every thought (in
+  play order, with when it plays), text, note, the Bible page and the short
+  reminders, each with an ID and a Proposed column. It's generated from the
+  game's data with `npm run export-script`, and a test keeps it current.
+
+### PROVISIONAL (not yet ruled on)
+
+- **"Check the office"** is still crossed off by stepping behind the desk,
+  as ruled on 2026-11-15, not just by entering the office.
+- **Getting back in.** The doors still open from outside, so a player
+  dropped outside (a debug teleport) can get back in.
+- **The checklist's look.** It uses the objective's dark box with a gold
+  edge, and done items go grey with a tick and a line through them.
