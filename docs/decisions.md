@@ -645,3 +645,14 @@ Designer rulings:
   dropped outside (a debug teleport) can get back in.
 - **The checklist's look.** It uses the objective's dark box with a gold
   edge, and done items go grey with a tick and a line through them.
+
+## 2026-11-22 — Script review round 1
+
+The designer edited five Day 2 thoughts in `docs/script-review.md`:
+
+- D2-02: "I'm definitely getting my steps in today."
+- D2-07: "Locked tight. I hope it's not in the closet."
+- D2-08: "Still locked. I'm kinda glad I don't have to go down there." (The
+  designer wrote "Still Locked"; the capital is dropped.)
+- D2-10: "I should check all the rooms. Maybe the other doors are unlocked?"
+- D2-13: "Harmless, huh? I almost had a heart attack!"

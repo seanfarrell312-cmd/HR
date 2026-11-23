@@ -262,7 +262,7 @@ describe('the missing chalice (D2-02)', () => {
 
     // The basement first this time; the door stays locked.
     expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
-    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Locked. I'm kinda glad I don't have to go down there."]);
+    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Still locked. I'm kinda glad I don't have to go down there."]);
     expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', 'x Check the basement']);
     expect(s.open_doors.has('basement')).toBe(false);
     // Once checked, it's just locked.
@@ -340,7 +340,7 @@ describe('the missing chalice (D2-02)', () => {
     expect(s.chalice).toBe('held');
     expect(task(s)).toBe('');
     const harmless = applyEvent(s, { type: 'prank-done' });
-    expect(says(harmless)).toEqual(['Harmless, huh? I almost had a heart attack.']);
+    expect(says(harmless)).toEqual(['Harmless, huh? I almost had a heart attack!']);
     expect(harmless).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.prankHarmless), event: { type: 'prank-thought-done' } });
     expect(task(s)).toBe('');
     const focus = applyEvent(s, { type: 'prank-thought-done' });
@@ -410,7 +410,7 @@ describe('search nudges (D2-02)', () => {
     expect(SEARCH_NUDGE_SECONDS).toBe(30);
     expect(SEARCH_NUDGES).toBe(3);
     const one = applyEvent(s, { type: 'search-nudge', at: 0, n: 1 });
-    expect(says(one)).toEqual(['I should check all the rooms. Maybe the other doors are opened?']);
+    expect(says(one)).toEqual(['I should check all the rooms. Maybe the other doors are unlocked?']);
     expect(nudgesIn(one)).toEqual([{ kind: 'after', seconds: 30, event: { type: 'search-nudge', at: 0, n: 2 } }]);
     expect(says(applyEvent(s, { type: 'search-nudge', at: 0, n: 2 }))).toEqual([nudge]);
     const three = applyEvent(s, { type: 'search-nudge', at: 0, n: 3 });
@@ -440,7 +440,7 @@ describe('Day 2 thoughts on the way in', () => {
   it('gets its steps in walking up to the church, once', () => {
     const s = at(step('door-opened'));
     const near = { x: CHURCH_APPROACH.x, y: CHURCH_APPROACH.y - CHURCH_APPROACH.r + 1, level: 0 };
-    expect(says(applyEvent(s, { type: 'approach-church', ...near }))).toEqual(['Definitely getting my steps in.']);
+    expect(says(applyEvent(s, { type: 'approach-church', ...near }))).toEqual(["I'm definitely getting my steps in today."]);
     expect(applyEvent(s, { type: 'approach-church', ...near })).toEqual([]);
   });
 

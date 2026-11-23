@@ -228,7 +228,7 @@ export const THOUGHTS = {
   headHome: 'I guess I should head back to the bus stop.',
   // Day 2, designer copy (2026-11-14 and 2026-11-15).
   /** Walking up to the church on Day 2, in place of Day 1's first impression. */
-  churchApproachDay2: 'Definitely getting my steps in.',
+  churchApproachDay2: "I'm definitely getting my steps in today.",
   /** At the altar, where the chalice should be (D2-02). */
   chaliceMissing: "Here's the crucifix, but no chalice...",
   /** Picking the crucifix up off the altar (Day 2); then it's for the ritual table. */
@@ -236,11 +236,11 @@ export const THOUGHTS = {
   /** Searching the church: behind the office desk. */
   searchDesk: "I don't think the chalice would fit in these drawers.",
   /** Searching the church: trying the locked storage closet and basement doors. */
-  searchLocked: "Locked tight. I hope it's not in there.",
+  searchLocked: "Locked tight. I hope it's not in the closet.",
   /** Searching the church: trying the locked basement door. */
-  searchBasement: "Locked. I'm kinda glad I don't have to go down there.",
+  searchBasement: "Still locked. I'm kinda glad I don't have to go down there.",
   /** No search progress for a while: up to three nudges (SEARCH_NUDGES). */
-  searchNudge: 'I should check all the rooms. Maybe the other doors are opened?',
+  searchNudge: 'I should check all the rooms. Maybe the other doors are unlocked?',
   /** Closing the first Day 2 delivery text; then the drop-box objective. */
   alertRead: 'Christ-LERTS? Nice.',
   /** Once all three places have been checked. */
@@ -248,7 +248,7 @@ export const THOUGHTS = {
   /** As the prankster pops up, while it's still on screen. */
   prankScare: 'JESUS!',
   /** Then, one after another, before the next objective. */
-  prankHarmless: 'Harmless, huh? I almost had a heart attack.',
+  prankHarmless: 'Harmless, huh? I almost had a heart attack!',
   prankFocus: 'Gotta stay focused, back to the chapel.',
   /** The chalice is on the ritual table with the crucifix; then the delivery text. */
   tableSetDay2: 'There. All set.',

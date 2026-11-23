@@ -35,18 +35,18 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | ID | When it plays | Text | Proposed |
 |---|---|---|---|
 | D2-01 | Shift start, once the first objective (the keypad) has folded away. Skipped if the gate is already open. | Good thing I remembered the gate code: 4173. | |
-| D2-02 | First time within 25 m of the church doors after the gate opens. | Definitely getting my steps in. | |
+| D2-02 | First time within 25 m of the church doors after the gate opens. | I'm definitely getting my steps in today. | |
 | D2-03 | The office door opens for the first time. | That clock really does look nice in here. | |
 | D2-04 | Within 4 m of the altar once the candles are lit. | Here's the crucifix, but no chalice... | |
 | D2-05 | Picking up the crucifix; then "Put the crucifix on the ritual table". | I guess I'll drop this off first, then look for the cup. | |
 | D2-06 | Searching the church: stepping behind the office desk ("Check the office"). | I don't think the chalice would fit in these drawers. | |
-| D2-07 | Searching the church: trying the locked storage closet door. | Locked tight. I hope it's not in there. | |
-| D2-08 | Searching the church: trying the locked basement door. | Locked. I'm kinda glad I don't have to go down there. | |
+| D2-07 | Searching the church: trying the locked storage closet door. | Locked tight. I hope it's not in the closet. | |
+| D2-08 | Searching the church: trying the locked basement door. | Still locked. I'm kinda glad I don't have to go down there. | |
 | D2-09 | Searching the church: trying the church doors from inside. They stay shut until the grounds objective shows. | I need to find the chalice. Maybe the other doors are unlocked? | |
-| D2-10 | Searching the church: 30 s with nothing new checked. Repeats after each further 30 s, three times at most. | I should check all the rooms. Maybe the other doors are opened? | |
+| D2-10 | Searching the church: 30 s with nothing new checked. Repeats after each further 30 s, three times at most. | I should check all the rooms. Maybe the other doors are unlocked? | |
 | D2-11 | All three places checked; then "Search the grounds for the chalice". | I guess it's outside somewhere? | |
 | D2-12 | Taking the chalice from the garden bench, as the prankster pops up. | JESUS! | |
-| D2-13 | Straight after "JESUS!". | Harmless, huh? I almost had a heart attack. | |
+| D2-13 | Straight after "JESUS!". | Harmless, huh? I almost had a heart attack! | |
 | D2-14 | Straight after "Harmless, huh?"; then "Place the chalice on the ritual table". | Gotta stay focused, back to the chapel. | |
 | D2-15 | The chalice goes on the ritual table with the crucifix; then the delivery text. | There. All set. | |
 | D2-16 | Closing the phone after the delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
