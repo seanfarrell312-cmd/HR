@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { clownModel, poseClown } from '../src/world/clown';
+import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
 
@@ -35,17 +35,29 @@ describe('the clown doll model', () => {
     expect(box.min.z).toBeGreaterThan(0.05);
   });
 
-  it('hangs limp when carried: leaning back, head lolled, legs down', () => {
+  it('hangs limp when carried: legs down along its body, arms at its sides, head rolled over', () => {
     const v = clownModel();
     poseClown(v, { stand: 0, energy: 0, t: 0, fit: 0, slump: 0, limp: 1 });
-    // Its back is -z: leaning back is a negative turn about x.
-    expect(v.body.rotation.x).toBeLessThan(-0.3);
-    expect(v.head.rotation.x).toBeLessThan(-0.3);
-    // The legs hang roughly straight down in the world, not out in front.
-    for (const leg of [v.legL, v.legR]) expect(Math.abs(v.body.rotation.x + leg.rotation.x)).toBeLessThan(0.45);
-    // Arms down too, rather than raised.
+    // Legs run down along the body, not out in front as when it sits.
+    for (const leg of [v.legL, v.legR]) expect(Math.abs(leg.rotation.x)).toBeLessThan(0.4);
     expect(Math.abs(v.armL.rotation.z)).toBeLessThan(0.6);
     expect(Math.abs(v.armR.rotation.z)).toBeLessThan(0.6);
+    // Head rolled towards its left, the player's right.
+    expect(v.head.rotation.z).toBeLessThan(-0.2);
+  });
+
+  it('lies back in the lower right of the view, face up at the player (reference images)', () => {
+    const q = heldClownQuaternion();
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+    const face = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+    // Head away from the player, up and to the right; feet towards them.
+    expect(up.z).toBeLessThan(-0.1);
+    expect(up.x).toBeGreaterThan(0.3);
+    expect(up.y).toBeGreaterThan(0.5);
+    // The camera looks down -z, so a face towards the player points +z.
+    expect(face.z).toBeGreaterThan(0.7);
+    expect(HELD_CLOWN.position.x).toBeGreaterThan(0);
+    expect(HELD_CLOWN.position.y).toBeLessThan(0);
   });
 
   it("doesn't move when carried, whatever the time", () => {

@@ -15,7 +15,7 @@ import {
 import type { GameState, RelicKind } from '../state/store';
 import type { PurifiedRelic } from '../story/events';
 import { siteReady } from '../story/table';
-import { clownModel, danceStand, poseClown, type ClownView } from './clown';
+import { clownModel, danceStand, heldClownQuaternion, HELD_CLOWN, poseClown, type ClownView } from './clown';
 import { ghostModel, type GhostModel } from './ghost';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
@@ -432,11 +432,10 @@ export class StoryProps {
     this.heldTeacup.rotation.set(0.35, 0, 0);
     this.heldTeacup.scale.setScalar(1.3);
     this.heldClown = clownModel();
-    // Limp in the hand, flopped to one side with its head thrown back
-    // (2026-11-22 playtest); the pose itself is poseClown's limp.
-    this.heldClown.group.position.set(0.17, -0.38, -0.62);
-    this.heldClown.group.rotation.set(0.15, -0.3, 0.35);
-    this.heldClown.group.scale.setScalar(0.62);
+    // Lying back limp in the hand (designer reference images, 2026-11-22).
+    this.heldClown.group.position.copy(HELD_CLOWN.position);
+    this.heldClown.group.quaternion.copy(heldClownQuaternion());
+    this.heldClown.group.scale.setScalar(HELD_CLOWN.scale);
     this.heldBucket = bucketModel();
     this.heldBucket.position.set(0.2, -0.62, -0.62);
     this.heldBucket.rotation.set(0.3, 0, 0);

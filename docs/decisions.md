@@ -721,10 +721,12 @@ next."
   fidget in the drop box, in hand or on the ritual table. The failed cross
   blessing wakes it: it dances, then giggles and fidgets on the table while
   the player fetches the key, bucket and water.
-- **Carried, it hangs limp.** It is flopped to one side in the hand, leaning
-  back with its head thrown back, arms and legs hanging, and it doesn't move.
-  The designer's reference images didn't come through, so this is a
-  provisional reading of "slumped backwards".
+- **Carried, it hangs limp**, to the designer's reference images. It is
+  large in the lower right of the view, lying back in the palm with its feet
+  towards the player and its head further off, up and to the right. Its face
+  is turned up at the player and its head is rolled to the player's right.
+  Its arms are at its sides and its legs run down along its body. It doesn't
+  move. No hand is drawn, as with every other carried item.
 - **The smile** is now a line drawn along the faceted head, half sunk into
   it, instead of a flat arc that floated off the face.
 - **Redrafted doll lines (PROVISIONAL).** Approach: "Quiet one this time.

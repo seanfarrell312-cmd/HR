@@ -190,15 +190,36 @@ export interface ClownPose {
   /** Fallen still once cleansed, 0..1. */
   slump: number;
   /**
-   * Carried, 0..1 (2026-11-22 playtest): a lifeless doll held round the
-   * middle, leaning back with its head lolled back, arms and legs hanging.
+   * Carried, 0..1 (designer reference images, 2026-11-22): a lifeless doll
+   * lying back in the hand, legs down along its body, arms at its sides and
+   * its head rolled to one side. HELD_CLOWN lays it back in the view.
    */
   limp?: number;
 }
 
-/** How far the carried doll leans back, and its head on top of that. */
-const LIMP_LEAN = 0.6;
-const LIMP_HEAD = 1.0;
+/**
+ * The carried doll in camera space (designer reference images, 2026-11-22):
+ * large in the lower right, lying back in the palm with its feet towards
+ * the player, its head further off and up to the right, and its face turned
+ * up at the player.
+ */
+export const HELD_CLOWN = {
+  position: new THREE.Vector3(0.1, -0.22, -0.37),
+  /** Its feet-to-hat direction. */
+  up: new THREE.Vector3(0.5, 0.8, -0.3),
+  /** Which way its face looks. */
+  face: new THREE.Vector3(-0.3, 0.2, 0.93),
+  scale: 0.9,
+};
+
+/** The carried doll's turn, from HELD_CLOWN's up and face directions. */
+export function heldClownQuaternion(): THREE.Quaternion {
+  const y = HELD_CLOWN.up.clone().normalize();
+  // The face, made square to the up direction.
+  const z = HELD_CLOWN.face.clone().addScaledVector(y, -HELD_CLOWN.face.dot(y)).normalize();
+  const x = new THREE.Vector3().crossVectors(y, z);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+}
 
 export function poseClown(v: ClownView, p: ClownPose): void {
   const { stand, energy, t, fit, slump } = p;
@@ -207,27 +228,27 @@ export function poseClown(v: ClownView, p: ClownPose): void {
   // legs stay at the hips, so they rise with the body.
   v.body.position.y = stand * LEG + Math.abs(Math.sin(t * 11)) * 0.025 * energy;
   v.body.rotation.y = Math.sin(t * 2.6) * 0.5 * energy;
-  // Leaning back (its back is -z) when carried limp.
-  v.body.rotation.x = -LIMP_LEAN * limp;
   const kick = Math.sin(t * 11) * 0.6 * energy;
-  // Carried, the legs hang down and a little forward, against the lean.
-  const legs = -Math.PI / 2 * (1 - stand) * (1 - limp) + (LIMP_LEAN - 0.3) * limp;
-  v.legL.rotation.x = legs + kick + 0.08 * limp;
-  v.legR.rotation.x = legs - kick - 0.06 * limp;
+  // Carried, the legs run down along its body, bent a little forward and
+  // fallen slightly apart.
+  const legs = -Math.PI / 2 * (1 - stand) * (1 - limp) - 0.12 * limp;
+  v.legL.rotation.set(legs + kick + 0.06 * limp, 0, -0.1 * limp);
+  v.legR.rotation.set(legs - kick - 0.08 * limp, 0, 0.08 * limp);
 
   // Arms: out a little and forward when sitting, thrown up when dancing.
-  // Carried, they hang straight down, out a touch, against the lean.
-  const up = (0.35 + 1.9 * stand - 0.2 * slump) * (1 - limp) + 0.43 * limp;
+  // Carried, they lie at its sides, out a touch.
+  const up = (0.35 + 1.9 * stand - 0.2 * slump) * (1 - limp) + 0.28 * limp;
   const flap = Math.sin(t * 16) * 0.35 * fit;
-  const reach = -0.45 * (1 - stand) * (1 - limp) + LIMP_LEAN * limp;
-  v.armL.rotation.set(reach + 0.1 * limp, 0, -up - Math.sin(t * 13) * 0.4 * energy - flap);
-  v.armR.rotation.set(reach - 0.05 * limp, 0, up + 0.08 * limp + Math.sin(t * 13 + 1) * 0.4 * energy + flap);
+  const reach = -0.45 * (1 - stand) * (1 - limp) - 0.15 * limp;
+  v.armL.rotation.set(reach, 0, -up - Math.sin(t * 13) * 0.4 * energy - flap);
+  v.armR.rotation.set(reach + 0.1 * limp, 0, up + 0.1 * limp + Math.sin(t * 13 + 1) * 0.4 * energy + flap);
 
-  // Carried, the head lolls back and to one side.
+  // Carried, the head rolls over to its left (the player's right) and a
+  // little back.
   v.head.rotation.set(
-    0.35 * slump - LIMP_HEAD * limp,
+    0.35 * slump - 0.12 * limp,
     0,
-    Math.sin(t * 7) * 0.3 * energy + Math.sin(t * 8) * 0.2 * fit + 0.25 * slump + 0.55 * limp,
+    Math.sin(t * 7) * 0.3 * energy + Math.sin(t * 8) * 0.2 * fit + 0.25 * slump - 0.35 * limp,
   );
 }
 
