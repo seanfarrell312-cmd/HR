@@ -681,7 +681,7 @@ next."
   stands up on the table, laughs and dances for 3.2 s, then sits back down.
   Then two thoughts, then the storage key is asked for.
 - **While possessed** the doll giggles and fidgets every few seconds: in the
-  drop box, carried, and on the table.
+  drop box, carried, and on the table. *Superseded 2026-11-22: see below.*
 - **The storage key** is in the office desk drawers, a callback to the search
   line about the drawers. "E  Search the desk drawers" appears once holy water
   is wanted, and aiming at the clock on the desk counts as aiming at the
@@ -706,3 +706,27 @@ next."
 - **Draft copy** for the doll's lines, the two thoughts after the dance, the
   key thought and the new reminders. All of it is in
   `docs/script-review.md` for review.
+
+## 2026-11-22 — S3 part 2 playtest
+
+- **Two new thoughts (designer copy).** "If they're all like this today, I
+  might get to go home early." plays as the teacup goes on the cleaned-relic
+  table. The second delivery text now follows that thought instead of a fixed
+  6 s wait. "I should have brought a bike or something. This walk is
+  ridiculous." plays once, on stepping out of the church's front doors
+  (south of y = 49) after the second delivery text has arrived and before the
+  doll is collected. Day 2's first delivery walk doesn't get it. That is a
+  provisional choice.
+- **The doll is still and silent until the cross.** It doesn't giggle or
+  fidget in the drop box, in hand or on the ritual table. The failed cross
+  blessing wakes it: it dances, then giggles and fidgets on the table while
+  the player fetches the key, bucket and water.
+- **Carried, it hangs limp.** It is flopped to one side in the hand, leaning
+  back with its head thrown back, arms and legs hanging, and it doesn't move.
+  The designer's reference images didn't come through, so this is a
+  provisional reading of "slumped backwards".
+- **The smile** is now a line drawn along the faceted head, half sunk into
+  it, instead of a flat arc that floated off the face.
+- **Redrafted doll lines (PROVISIONAL).** Approach: "Quiet one this time.
+  That makes a nice change." Carry: "It's just... limp. Maybe this one's a
+  dud." The pickup line and the ghost line are unchanged.

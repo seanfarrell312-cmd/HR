@@ -18,7 +18,7 @@ import {
   SEARCH_SPOTS,
   S3_PART2_END,
   CLOWN_DANCE_SECONDS,
-  D2_DELIVERY2_DELAY,
+  CHURCH_LEFT_Y,
   SMS,
   THOUGHTS,
 } from '../src/data/story';
@@ -91,6 +91,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   // D2-05: the clown doll; the cross only makes it dance.
   { type: 'receive-sms', id: 'd2delivery2' },
   { type: 'read-sms' },
+  { type: 'leave-church', x: 0, y: 46, level: 0 },
   { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
   { type: 'take-relic' },
   { type: 'relic-pickup-thought-done' },
@@ -577,8 +578,9 @@ describe('cleansing the teacup (D2-04)', () => {
     const fx = applyEvent(s, { type: 'store-relic' });
     expect(fx).toEqual([
       { kind: 'sfx', id: 'place' },
-      // The clown doll is on its way.
-      { kind: 'after', seconds: D2_DELIVERY2_DELAY, event: { type: 'receive-sms', id: 'd2delivery2' } },
+      // A hopeful thought, then the clown doll is on its way.
+      { kind: 'say', text: "If they're all like this today, I might get to go home early." },
+      { kind: 'after', seconds: afterThought(THOUGHTS.homeEarly), event: { type: 'receive-sms', id: 'd2delivery2' } },
       { kind: 'objective', id: 'D2-04' },
     ]);
     expect(s.environment_preset).toBe('BASE_DAY');
@@ -612,6 +614,25 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
     // No "Christ-LERTS? Nice." the second time.
     expect(says(applyEvent(s, { type: 'read-sms' }))).toEqual([]);
     expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
+  });
+
+  it('grumbles about the walk on leaving the church for it, once', () => {
+    const s = at(step('leave-church'));
+    // Still inside, or upstairs: nothing yet.
+    expect(applyEvent(s, { type: 'leave-church', x: 0, y: 55, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'leave-church', x: 0, y: 40, level: 1 })).toEqual([]);
+    expect(says(applyEvent(s, { type: 'leave-church', x: 0, y: CHURCH_LEFT_Y - 1, level: 0 }))).toEqual([
+      'I should have brought a bike or something. This walk is ridiculous.',
+    ]);
+    expect(applyEvent(s, { type: 'leave-church', x: 0, y: 30, level: 0 })).toEqual([]);
+  });
+
+  it('says nothing about the walk before the text, or once the doll is collected', () => {
+    const before = at(step('receive-sms', 2));
+    expect(applyEvent(before, { type: 'leave-church', x: 0, y: 40, level: 0 })).toEqual([]);
+    const after = at(step('take-relic', 2));
+    applyEvent(after, { type: 'take-relic' });
+    expect(applyEvent(after, { type: 'leave-church', x: 0, y: 40, level: 0 })).toEqual([]);
   });
 
   it('has its own lines', () => {

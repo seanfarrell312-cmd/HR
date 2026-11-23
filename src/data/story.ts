@@ -278,6 +278,11 @@ export const THOUGHTS = {
   storageKey: 'There it is. I knew these drawers were good for something.',
   /** Trying the church doors from inside while searching it for the chalice. */
   searchStayInside: 'I need to find the chalice. Maybe the other doors are unlocked?',
+  // Designer copy, 2026-11-22 (part 2 playtest).
+  /** The teacup is on the cleaned-relic table; then the second delivery text. */
+  homeEarly: "If they're all like this today, I might get to go home early.",
+  /** Leaving the church for the drop box once the second delivery text is in. */
+  longWalk: 'I should have brought a bike or something. This walk is ridiculous.',
 };
 
 /**
@@ -316,17 +321,22 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
     carry: "I should hurry, this thing's about to bounce outta my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
-  // PROVISIONAL copy (S3 part 2).
+  // PROVISIONAL copy (S3 part 2; approach and carry redrafted 2026-11-22 now
+  // the doll is still and silent until the cross).
   clown: {
-    approach: 'Is that... giggling?',
+    approach: 'Quiet one this time. That makes a nice change.',
     pickup: "A clown doll. Why is it always a clown doll?",
-    carry: "Quit wriggling, you little creep.",
+    carry: "It's just... limp. Maybe this one's a dud.",
     ghost: 'Laughing all the way to the other side.',
   },
 };
 
-/** Day 2's second delivery: this long after the teacup is put away. */
-export const D2_DELIVERY2_DELAY = 6;
+/**
+ * Day 2 (2026-11-22): south of the church doors, outside. Leaving the church
+ * for the drop box once the second delivery text is in brings the long-walk
+ * thought.
+ */
+export const CHURCH_LEFT_Y = 49;
 /** Seconds the clown doll dances and laughs when the cross fails on it (D2-05). */
 export const CLOWN_DANCE_SECONDS = 3.2;
 

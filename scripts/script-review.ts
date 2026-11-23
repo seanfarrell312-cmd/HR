@@ -67,6 +67,8 @@ export const DAY2: Cue[] = [
   { key: 'prankFocus', when: 'Straight after "Harmless, huh?"; then "Place the chalice on the ritual table".' },
   { key: 'tableSetDay2', when: 'The chalice goes on the ritual table with the crucifix; then the delivery text.' },
   { key: 'alertRead', when: 'Closing the phone after the first delivery text; then the drop-box objective.' },
+  { key: 'homeEarly', when: 'The teacup goes on the cleaned-relic table; then the second delivery text.' },
+  { key: 'longWalk', when: 'Leaving the church by its front doors once the second delivery text is in, before the doll is collected.' },
   { key: 'clownDance', when: 'Blessing the clown doll with the cross: once it has finished laughing and dancing.' },
   { key: 'clownWater', when: 'Straight after; then "Find the storage closet key in the office".' },
   { key: 'storageKey', when: 'Searching the office desk drawers for the storage closet key.' },
@@ -94,7 +96,7 @@ export const SMS_WHEN: Record<string, string> = {
   gateCode: 'Day 1, 6.5 s into the shift.',
   delivery1: "Day 1, 5 s after the clock is put on the supervisor's desk.",
   d2delivery1: 'Day 2, after "There. All set."',
-  d2delivery2: 'Day 2, 6 s after the teacup is put away.',
+  d2delivery2: "Day 2, once the teacup is put away, after 'If they're all like this today…'.",
 };
 
 /** Escape a table cell. */

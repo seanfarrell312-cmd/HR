@@ -432,8 +432,10 @@ export class StoryProps {
     this.heldTeacup.rotation.set(0.35, 0, 0);
     this.heldTeacup.scale.setScalar(1.3);
     this.heldClown = clownModel();
-    this.heldClown.group.position.set(0.17, -0.42, -0.62);
-    this.heldClown.group.rotation.set(0.3, -0.25, 0);
+    // Limp in the hand, flopped to one side with its head thrown back
+    // (2026-11-22 playtest); the pose itself is poseClown's limp.
+    this.heldClown.group.position.set(0.17, -0.38, -0.62);
+    this.heldClown.group.rotation.set(0.15, -0.3, 0.35);
     this.heldClown.group.scale.setScalar(0.62);
     this.heldBucket = bucketModel();
     this.heldBucket.position.set(0.2, -0.62, -0.62);
@@ -807,9 +809,9 @@ export class StoryProps {
 
   /**
    * Day 2's clown doll: in the drop box, carried, on the ritual table, then on
-   * the cleaned-relic table. While possessed it giggles and fidgets now and
-   * then; the cross makes it stand up and dance; the water ritual winds it
-   * down until it slumps, still.
+   * the cleaned-relic table. It lies still and silent (limp in hand) until the
+   * cross makes it stand up and dance; then it giggles and fidgets now and
+   * then until the water ritual winds it down and it slumps, still.
    */
   private syncClown(s: GameState, dt: number, fxDt: number, listener: THREE.Vector3): void {
     const current = s.relic_kind === 'clown';
@@ -819,8 +821,11 @@ export class StoryProps {
     at(this.clown.group, stored ?? SPOTS.relicRitual);
     this.clown.group.rotation.set(0, -Math.PI / 2, 0);
 
-    const possessed = current && (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-blessed');
-    let agitation = possessed ? 1 : 0;
+    // Still and silent in the box, in hand and on the table until the cross
+    // wakes it (2026-11-22 playtest); from then it fidgets and giggles while
+    // the player fetches holy water.
+    const awake = current && s.relic === 'ritual-table' && s.flags.has('clown-danced') && !s.flags.has('relic-blessed');
+    let agitation = awake ? 1 : 0;
     const p = this.purification;
     if (p && p.relic === 'clown') agitation = Math.max(0, 1 - p.t / PURIFY.windDown);
     const slump = s.flags.has('relic-blessed') && current ? 1 - agitation : stored ? 1 : 0;
@@ -834,14 +839,13 @@ export class StoryProps {
     // Fits of fidgeting every few seconds while it sits possessed.
     const fit = agitation * Math.max(0, Math.sin(now * 1.3)) ** 4;
     poseClown(this.clown, { stand, energy: stand, t: this.danceT >= 0 ? this.danceT : now, fit, slump });
-    poseClown(this.heldClown, { stand: 0, energy: 0, t: now, fit, slump: 0 });
+    poseClown(this.heldClown, { stand: 0, energy: 0, t: 0, fit: 0, slump: 0, limp: 1 });
 
-    if (possessed && this.danceT < 0) {
+    if (awake && this.danceT < 0) {
       this.giggleTimer -= dt;
       if (this.giggleTimer <= 0 && fit > 0.5) {
         this.giggleTimer = 2.6;
-        const src = s.relic === 'drop-box' ? SPOTS.dropBox : SPOTS.relicRitual;
-        const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
+        const d = Math.hypot(listener.x - SPOTS.relicRitual.x, -listener.z - SPOTS.relicRitual.y);
         this.onGiggle(listener.y < -3 ? 0 : tuneVolume(d));
       }
     }

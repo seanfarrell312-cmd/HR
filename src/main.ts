@@ -610,6 +610,7 @@ renderer.setAnimationLoop(() => {
     const at = { x: player.x, y: player.y, level: player.level };
     if (!state.flags.has('church-approached')) dispatch({ type: 'approach-church', ...at });
     if (state.relic === 'drop-box' && !state.flags.has('drop-box-approached')) dispatch({ type: 'approach-drop-box', ...at });
+    if (state.relic === 'drop-box' && state.relic_kind === 'clown' && !state.flags.has('long-walk')) dispatch({ type: 'leave-church', ...at });
     if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('chalice-missing')) dispatch({ type: 'near-altar', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('searched-desk')) dispatch({ type: 'search-desk', ...at });

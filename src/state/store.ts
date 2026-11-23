@@ -106,6 +106,8 @@ export type Flag =
   | 'water-wanted'
   /** The storage closet has been opened with its key. */
   | 'storage-opened'
+  /** Leaving the church for the second delivery: the long-walk thought. */
+  | 'long-walk'
   /** The gate-code thought has played (Day 2 on). */
   | 'gate-code-recalled'
   /** The office door has been opened on Day 2, with its clock thought. */

@@ -31,7 +31,7 @@ import {
   SEARCH_NUDGE_SECONDS,
   SEARCH_NUDGES,
   CLOWN_DANCE_SECONDS,
-  D2_DELIVERY2_DELAY,
+  CHURCH_LEFT_Y,
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
@@ -111,6 +111,8 @@ export type StoryEvent =
   | { type: 'place-clock' }
   /** The player's position; the drop-box thought once the music box is in it. */
   | { type: 'approach-drop-box'; x: number; y: number; level: number }
+  /** The player's position; Day 2's long-walk thought on leaving for the second delivery. */
+  | { type: 'leave-church'; x: number; y: number; level: number }
   /** Take the delivered relic out of the drop box. */
   | { type: 'take-relic' }
   /** Timed, after the pickup thought: the ritual table objective shows. */
@@ -258,6 +260,14 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'say', text: line.text });
       break;
     }
+
+    case 'leave-church':
+      // Day 2: heading out for the second delivery (designer copy, 2026-11-22).
+      if (s.flags.has('long-walk') || !s.inbox.includes('d2delivery2') || s.relic_kind !== 'clown' || s.relic !== 'drop-box') return [];
+      if (e.level !== 0 || e.y > CHURCH_LEFT_Y) return [];
+      s.flags.add('long-walk');
+      out.push({ kind: 'say', text: THOUGHTS.longWalk });
+      break;
 
     case 'enter-church':
       if (s.flags.has('entered-church') || e.level !== 0) return [];
@@ -786,8 +796,12 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.day_index !== 1) {
         out.push({ kind: 'sfx', id: 'place' });
         // Day 2: the teacup is away; the clown doll is next (D2-05).
+        // A hopeful thought, then the text.
         if (s.relic_kind === 'teacup' && !s.inbox.includes('d2delivery2')) {
-          out.push({ kind: 'after', seconds: D2_DELIVERY2_DELAY, event: { type: 'receive-sms', id: 'd2delivery2' } });
+          out.push(
+            { kind: 'say', text: THOUGHTS.homeEarly },
+            { kind: 'after', seconds: afterThought(THOUGHTS.homeEarly), event: { type: 'receive-sms', id: 'd2delivery2' } },
+          );
         }
         break;
       }

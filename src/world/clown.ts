@@ -35,6 +35,46 @@ export interface ClownView {
   legR: THREE.Group;
 }
 
+const SKULL_R = 0.078;
+/** The smile's half-width, and the heights of its corners and its lowest point, on the face. */
+const SMILE = { half: 0.033, corner: -0.016, bottom: -0.034, radius: 0.0042 };
+
+/**
+ * The smile, drawn along the head itself (2026-11-22 playtest: a flat arc
+ * floated off the round head). Each point of a U is found on the faceted
+ * skull by casting out from its centre, so the line follows the facets and
+ * sits half sunk into them, like paint.
+ */
+export function smileMesh(skull: THREE.BufferGeometry, material: THREE.Material): THREE.Group {
+  const probe = new THREE.Mesh(skull, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+  probe.updateMatrixWorld();
+  const ray = new THREE.Raycaster();
+  const origin = new THREE.Vector3();
+  const N = 18;
+  const points: THREE.Vector3[] = [];
+  for (let i = 0; i <= N; i++) {
+    const u = (i / N) * 2 - 1;
+    const x = u * SMILE.half;
+    const y = SMILE.bottom + (SMILE.corner - SMILE.bottom) * u * u;
+    const dir = new THREE.Vector3(x, y, Math.sqrt(SKULL_R ** 2 - x * x - y * y)).normalize();
+    ray.set(origin, dir);
+    const hit = ray.intersectObject(probe)[0];
+    const r = hit ? hit.distance : SKULL_R;
+    points.push(dir.multiplyScalar(r + SMILE.radius * 0.25));
+  }
+  const group = new THREE.Group();
+  const curve = new THREE.CatmullRomCurve3(points);
+  group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, SMILE.radius, 6, false), material));
+  // Rounded ends.
+  for (const p of [points[0], points[N]]) {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(SMILE.radius, 6, 4), material);
+    cap.position.copy(p);
+    group.add(cap);
+  }
+  group.name = 'smile';
+  return group;
+}
+
 /** Hip height when sitting, and how far the body rises when it stands. */
 const HIP = 0.045;
 const LEG = 0.125;
@@ -68,7 +108,8 @@ export function clownModel(): ClownView {
   // A big head, as on the concept art; the hat scales with it.
   head.scale.setScalar(1.15);
   body.add(head);
-  const skull = new THREE.Mesh(new THREE.IcosahedronGeometry(0.078, 1), m.white);
+  const skullGeometry = new THREE.IcosahedronGeometry(SKULL_R, 1);
+  const skull = new THREE.Mesh(skullGeometry, m.white);
   skull.position.y = 0.068;
   head.add(skull);
   const face = new THREE.Group();
@@ -87,10 +128,7 @@ export function clownModel(): ClownView {
   }
   const nose = new THREE.Mesh(new THREE.SphereGeometry(0.017, 8, 6), m.rouge);
   nose.position.set(0, -0.002, 0.079);
-  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.0045, 4, 12, Math.PI), m.mouth);
-  smile.rotation.set(-0.3, 0, Math.PI);
-  smile.position.set(0, -0.019, 0.07);
-  face.add(nose, smile);
+  face.add(nose, smileMesh(skullGeometry, m.mouth));
 
   // Cone hat, blue on its right and yellow on its left, leaning a touch, with a pompom.
   const hat = new THREE.Group();
@@ -136,7 +174,7 @@ export function clownModel(): ClownView {
   const legR = leg(1, m.red);
 
   const v: ClownView = { group, body, head, armL, armR, legL, legR };
-  poseClown(v, { stand: 0, energy: 0, t: 0, fit: 0, slump: 0 });
+  poseClown(v, { stand: 0, energy: 0, t: 0, fit: 0, slump: 0, limp: 0 });
   return v;
 }
 
@@ -151,25 +189,46 @@ export interface ClownPose {
   fit: number;
   /** Fallen still once cleansed, 0..1. */
   slump: number;
+  /**
+   * Carried, 0..1 (2026-11-22 playtest): a lifeless doll held round the
+   * middle, leaning back with its head lolled back, arms and legs hanging.
+   */
+  limp?: number;
 }
+
+/** How far the carried doll leans back, and its head on top of that. */
+const LIMP_LEAN = 0.6;
+const LIMP_HEAD = 1.0;
 
 export function poseClown(v: ClownView, p: ClownPose): void {
   const { stand, energy, t, fit, slump } = p;
+  const limp = p.limp ?? 0;
   // Standing lifts everything on the legs, which swing down under it; the
   // legs stay at the hips, so they rise with the body.
   v.body.position.y = stand * LEG + Math.abs(Math.sin(t * 11)) * 0.025 * energy;
   v.body.rotation.y = Math.sin(t * 2.6) * 0.5 * energy;
+  // Leaning back (its back is -z) when carried limp.
+  v.body.rotation.x = -LIMP_LEAN * limp;
   const kick = Math.sin(t * 11) * 0.6 * energy;
-  v.legL.rotation.x = -Math.PI / 2 * (1 - stand) + kick;
-  v.legR.rotation.x = -Math.PI / 2 * (1 - stand) - kick;
+  // Carried, the legs hang down and a little forward, against the lean.
+  const legs = -Math.PI / 2 * (1 - stand) * (1 - limp) + (LIMP_LEAN - 0.3) * limp;
+  v.legL.rotation.x = legs + kick + 0.08 * limp;
+  v.legR.rotation.x = legs - kick - 0.06 * limp;
 
   // Arms: out a little and forward when sitting, thrown up when dancing.
-  const up = 0.35 + 1.9 * stand - 0.2 * slump;
+  // Carried, they hang straight down, out a touch, against the lean.
+  const up = (0.35 + 1.9 * stand - 0.2 * slump) * (1 - limp) + 0.43 * limp;
   const flap = Math.sin(t * 16) * 0.35 * fit;
-  v.armL.rotation.set(-0.45 * (1 - stand), 0, -up - Math.sin(t * 13) * 0.4 * energy - flap);
-  v.armR.rotation.set(-0.45 * (1 - stand), 0, up + Math.sin(t * 13 + 1) * 0.4 * energy + flap);
+  const reach = -0.45 * (1 - stand) * (1 - limp) + LIMP_LEAN * limp;
+  v.armL.rotation.set(reach + 0.1 * limp, 0, -up - Math.sin(t * 13) * 0.4 * energy - flap);
+  v.armR.rotation.set(reach - 0.05 * limp, 0, up + 0.08 * limp + Math.sin(t * 13 + 1) * 0.4 * energy + flap);
 
-  v.head.rotation.set(0.35 * slump, 0, Math.sin(t * 7) * 0.3 * energy + Math.sin(t * 8) * 0.2 * fit + 0.25 * slump);
+  // Carried, the head lolls back and to one side.
+  v.head.rotation.set(
+    0.35 * slump - LIMP_HEAD * limp,
+    0,
+    Math.sin(t * 7) * 0.3 * energy + Math.sin(t * 8) * 0.2 * fit + 0.25 * slump + 0.55 * limp,
+  );
 }
 
 /** Dance shape over its length: stand up, dance, sit back down. */
