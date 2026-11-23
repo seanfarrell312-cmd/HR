@@ -1,4 +1,4 @@
-import { RELIC_NAMES, S3_PART1_END, SEARCH_CHECKLIST } from '../data/story';
+import { RELIC_NAMES, S3_PART2_END, SEARCH_CHECKLIST } from '../data/story';
 import type { GameState } from '../state/store';
 import { churchSealed } from './search';
 import { tableReady } from './table';
@@ -229,9 +229,54 @@ export const DAY2: Objective[] = [
     done: (s) => s.day_index === 2 && s.relics_stored.includes('teacup'),
   },
   {
-    // The rest of Day 2 comes in the next parts of S3.
+    // The clown doll arrives, and the cross only makes it dance (D2-05).
     id: 'D2-05',
-    task: () => S3_PART1_END,
+    task: (s) => {
+      if (!s.inbox.includes('d2delivery2')) return '';
+      if (!s.sms_read.has('d2delivery2')) return 'Check your phone (Q)';
+      if (s.relic === 'drop-box') return 'Collect the delivery from the drop box by the gate';
+      if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the clown doll on the ritual table' : '';
+      if (s.flags.has('clown-danced')) return '';
+      if (!s.inventory.has('cross')) return 'Take the cross from the chapel shelf';
+      return 'Stand in the holy circle and bless the clown doll';
+    },
+    done: (s) => s.day_index === 2 && s.relic_kind === 'clown' && s.flags.has('water-wanted'),
+  },
+  {
+    // Holy water: the storage key, the closet, the bucket and rod (D2-06).
+    id: 'D2-06',
+    task: (s) => {
+      if (!s.inventory.has('storage-key')) return 'Find the storage closet key in the office';
+      if (!s.flags.has('storage-opened')) return 'Unlock the storage closet';
+      const bucket = s.bucket === 'closet';
+      const rod = !s.inventory.has('rod');
+      if (bucket && rod) return 'Take the bucket and holy-water rod from the storage closet';
+      if (bucket) return 'Pick up the bucket from the storage closet';
+      return 'Take the holy-water rod from the storage closet';
+    },
+    done: (s) => s.day_index === 2 && s.inventory.has('rod') && s.bucket !== 'closet',
+  },
+  {
+    // Fill the bucket at the fountain; the water ritual; store the doll (D2-07).
+    id: 'D2-07',
+    task: (s) => {
+      if (!s.flags.has('relic-blessed')) {
+        if (s.bucket === 'held') {
+          return s.bucket_filled ? 'Put the bucket down by the ritual table' : 'Fill the bucket at the fountain in the west garden';
+        }
+        if (s.bucket === 'chapel' && !s.bucket_filled) return 'Fill the bucket at the fountain in the west garden';
+        return 'Stand in the holy circle and sprinkle the clown doll with holy water';
+      }
+      if (!s.flags.has('relic-thought-done')) return '';
+      if (s.relic === 'held') return 'Put the clown doll on the table outside the chapel';
+      return 'Pick up the clown doll';
+    },
+    done: (s) => s.day_index === 2 && s.relics_stored.includes('clown'),
+  },
+  {
+    // The rest of Day 2 comes in part 3 of S3.
+    id: 'D2-08',
+    task: () => S3_PART2_END,
     done: () => false,
   },
 ];

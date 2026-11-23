@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AREAS, DOORS, toWorld } from '../data/layout';
 import {
   CANDLES,
+  CLOWN_DANCE_SECONDS,
   HOLY_CIRCLE,
   PRANK_SECONDS,
   PURIFY,
@@ -14,6 +15,7 @@ import {
 import type { GameState, RelicKind } from '../state/store';
 import type { PurifiedRelic } from '../story/events';
 import { siteReady } from '../story/table';
+import { clownModel, danceStand, poseClown, type ClownView } from './clown';
 import { ghostModel, type GhostModel } from './ghost';
 
 // Story items whose look follows game state (S1 placeholders). `sync` is
@@ -177,6 +179,41 @@ function teacupModel(): THREE.Group {
   return g;
 }
 
+/** A metal pail with a wire handle; `userData.water` shows when it's filled (D2-06). */
+function bucketModel(): THREE.Group {
+  const g = new THREE.Group();
+  const metal = new THREE.MeshLambertMaterial({ color: '#8f989e', flatShading: true, side: THREE.DoubleSide });
+  const pail = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.27, 10, 1, true), metal);
+  pail.position.y = 0.135;
+  const base = new THREE.Mesh(new THREE.CircleGeometry(0.12, 10), metal);
+  base.rotation.x = -Math.PI / 2;
+  base.position.y = 0.005;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.008, 4, 14), lambert('#a9b1b6'));
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.27;
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.006, 4, 12, Math.PI), lambert('#5d6266'));
+  handle.position.y = 0.27;
+  const water = new THREE.Mesh(new THREE.CircleGeometry(0.142, 12), basic('#5aa7d8', 0.9));
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = 0.23;
+  g.add(pail, base, rim, handle, water);
+  g.userData.water = water;
+  return g;
+}
+
+/** The holy-water rod (aspergillum): a wooden handle with a pierced silver ball. */
+function rodModel(): THREE.Group {
+  const g = new THREE.Group();
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.32, 6), lambert('#6b4a2b'));
+  handle.position.y = 0.16;
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.025, 8), lambert('#c9cdd0'));
+  collar.position.y = 0.33;
+  const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.038, 1), lambert('#d4d8db'));
+  ball.position.y = 0.37;
+  g.add(handle, collar, ball);
+  return g;
+}
+
 interface CandleView {
   flame: THREE.Mesh;
   light: THREE.PointLight;
@@ -263,6 +300,15 @@ export class StoryProps {
   private heldMusicBox: MusicBoxView;
   private teacup: THREE.Group;
   private heldTeacup: THREE.Group;
+  private clown: ClownView;
+  private heldClown: ClownView;
+  /** Seconds into the clown's dance; -1 when it isn't dancing. */
+  private danceT = -1;
+  private giggleTimer = 2;
+  private bucket: THREE.Group;
+  private heldBucket: THREE.Group;
+  private rod: THREE.Group;
+  private heldRod: THREE.Group;
   private clinkTimer = 1;
   /** The Day 2 prankster ghost behind the garden bench (D2-02). */
   private prankster: GhostModel;
@@ -299,6 +345,9 @@ export class StoryProps {
   /** Called when the possessed teacup rattles on its saucer, with volume 0..1. */
   onClink: (volume: number) => void = () => {};
 
+  /** Called when the possessed clown doll giggles, with volume 0..1. */
+  onGiggle: (volume: number) => void = () => {};
+
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
 
@@ -319,6 +368,21 @@ export class StoryProps {
     this.teacup = tagged(teacupModel(), 'teacup') as THREE.Group;
     // Larger than life so it reads on the tables from a few steps away.
     this.teacup.scale.setScalar(1.7);
+    this.clown = clownModel();
+    tagged(this.clown.group, 'clown');
+    // A little larger than life, like the teacup, so it reads on the tables.
+    this.clown.group.scale.setScalar(1.15);
+    this.bucket = tagged(bucketModel(), 'bucket') as THREE.Group;
+    this.rod = tagged(at(rodModel(), SPOTS.rodCloset), 'rod') as THREE.Group;
+    // The handle is thin: an invisible sleeve round it makes it easy to aim at.
+    const sleeve = new THREE.Mesh(
+      new THREE.BoxGeometry(0.16, 0.44, 0.16),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+    );
+    sleeve.position.y = 0.21;
+    this.rod.add(sleeve);
+    // Leaning in the closet's corner.
+    this.rod.rotation.set(0.25, 0, -0.2);
 
     for (const [i, c] of CANDLES.entries()) {
       const stand = new THREE.Group();
@@ -367,7 +431,29 @@ export class StoryProps {
     this.heldTeacup.position.set(0.15, -0.36, -0.55);
     this.heldTeacup.rotation.set(0.35, 0, 0);
     this.heldTeacup.scale.setScalar(1.3);
-    camera.add(this.heldClock, this.heldCross, this.heldChalice, this.heldCrucifix, this.heldBible, this.heldMusicBox.group, this.heldTeacup);
+    this.heldClown = clownModel();
+    this.heldClown.group.position.set(0.17, -0.42, -0.62);
+    this.heldClown.group.rotation.set(0.3, -0.25, 0);
+    this.heldClown.group.scale.setScalar(0.62);
+    this.heldBucket = bucketModel();
+    this.heldBucket.position.set(0.2, -0.62, -0.62);
+    this.heldBucket.rotation.set(0.3, 0, 0);
+    // The rod rises into view while the water ritual is held, like the cross.
+    this.heldRod = rodModel();
+    this.heldRod.position.set(0.24, -0.6, -0.55);
+    this.heldRod.rotation.set(-0.5, 0, -0.3);
+    camera.add(
+      this.heldClock,
+      this.heldCross,
+      this.heldChalice,
+      this.heldCrucifix,
+      this.heldBible,
+      this.heldMusicBox.group,
+      this.heldTeacup,
+      this.heldClown.group,
+      this.heldBucket,
+      this.heldRod,
+    );
 
     // Lights stay in the scene at zero intensity: adding one later would make
     // Three.js recompile every shader and hitch.
@@ -380,7 +466,7 @@ export class StoryProps {
     this.root.add(this.relicGhost.group, this.peeker.group, this.prankster.group);
 
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
-    this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup);
+    this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup, this.clown.group, this.bucket, this.rod);
     this.raycastTargets.push(
       this.note,
       this.key,
@@ -392,6 +478,9 @@ export class StoryProps {
       this.bible,
       this.musicBox.group,
       this.teacup,
+      this.clown.group,
+      this.bucket,
+      this.rod,
     );
   }
 
@@ -407,6 +496,7 @@ export class StoryProps {
     this.prankT = -1;
     this.prankster.group.visible = false;
     this.prankster.setTongue(0);
+    this.danceT = -1;
     if (this.bus) this.root.remove(this.bus);
     this.bus = null;
   }
@@ -450,10 +540,15 @@ export class StoryProps {
     this.prankster.group.visible = true;
   }
 
+  /** The clown doll stands up on the table, laughs and dances (D2-05). */
+  startDance(): void {
+    this.danceT = 0;
+  }
+
   startPurification(relic: PurifiedRelic): void {
     this.endPurification();
     const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
-    const lift = relic === 'clock' ? 0.22 : relic === 'teacup' ? 0.08 : 0.12;
+    const lift = relic === 'clock' ? 0.22 : relic === 'teacup' ? 0.08 : relic === 'clown' ? 0.22 : 0.12;
     const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + lift));
     const sparkles: Sparkle[] = [];
     for (let i = 0; i < SPARKLE_COUNT; i++) {
@@ -513,6 +608,8 @@ export class StoryProps {
     this.relicGhost.setWink(0);
     // The teacup's ghost is a dapper old gent: mustache and monocle.
     this.relicGhost.setDapper(relic === 'teacup');
+    // The clown's is the laughing ghost, in its hat and nose.
+    this.relicGhost.setClown(relic === 'clown');
     this.relicGhost.group.visible = true;
   }
 
@@ -520,7 +617,13 @@ export class StoryProps {
    * `paused` freezes timed effects (purification, ghost, bus) while the
    * inventory is open; the clock keeps chiming so the world still sounds alive.
    */
-  sync(s: GameState, dt: number, hold: { active: boolean; progress: number; cross: boolean }, listener: THREE.Vector3, paused = false): void {
+  sync(
+    s: GameState,
+    dt: number,
+    hold: { active: boolean; progress: number; cross: boolean; rod: boolean },
+    listener: THREE.Vector3,
+    paused = false,
+  ): void {
     const fxDt = paused ? 0 : dt;
     this.note.visible = true;
     this.key.visible = !s.inventory.has('chapel-key');
@@ -572,10 +675,16 @@ export class StoryProps {
     this.syncChalice(s);
     this.syncMusicBox(s, dt, fxDt, listener);
     this.syncTeacup(s, dt, listener);
+    this.syncClown(s, dt, fxDt, listener);
+    this.syncBucket(s);
 
-    // The hand cross rises into view while a blessing is held.
+    // The hand cross rises into view while a blessing is held; the rod for
+    // the water ritual.
     this.heldCross.visible = hold.cross && hold.active && hold.progress > 0;
     this.heldCross.position.y = -0.45 + hold.progress * 0.2;
+    this.heldRod.visible = hold.rod && hold.active && hold.progress > 0;
+    this.heldRod.position.y = -0.6 + hold.progress * 0.25;
+    this.heldRod.rotation.z = -0.3 - hold.progress * 0.5;
 
     const cam = this.camera.getWorldPosition(new THREE.Vector3());
     this.updatePurification(fxDt);
@@ -694,6 +803,58 @@ export class StoryProps {
         this.onClink(listener.y < -3 ? 0 : tuneVolume(d) * agitation);
       }
     }
+  }
+
+  /**
+   * Day 2's clown doll: in the drop box, carried, on the ritual table, then on
+   * the cleaned-relic table. While possessed it giggles and fidgets now and
+   * then; the cross makes it stand up and dance; the water ritual winds it
+   * down until it slumps, still.
+   */
+  private syncClown(s: GameState, dt: number, fxDt: number, listener: THREE.Vector3): void {
+    const current = s.relic_kind === 'clown';
+    const stored = storedSpot(s, 'clown');
+    this.clown.group.visible = (current && s.relic === 'ritual-table') || !!stored;
+    this.heldClown.group.visible = current && s.relic === 'held';
+    at(this.clown.group, stored ?? SPOTS.relicRitual);
+    this.clown.group.rotation.set(0, -Math.PI / 2, 0);
+
+    const possessed = current && (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-blessed');
+    let agitation = possessed ? 1 : 0;
+    const p = this.purification;
+    if (p && p.relic === 'clown') agitation = Math.max(0, 1 - p.t / PURIFY.windDown);
+    const slump = s.flags.has('relic-blessed') && current ? 1 - agitation : stored ? 1 : 0;
+
+    const now = performance.now() / 1000;
+    if (this.danceT >= 0) {
+      this.danceT += fxDt;
+      if (this.danceT > CLOWN_DANCE_SECONDS) this.danceT = -1;
+    }
+    const stand = this.danceT >= 0 ? danceStand(this.danceT, CLOWN_DANCE_SECONDS) : 0;
+    // Fits of fidgeting every few seconds while it sits possessed.
+    const fit = agitation * Math.max(0, Math.sin(now * 1.3)) ** 4;
+    poseClown(this.clown, { stand, energy: stand, t: this.danceT >= 0 ? this.danceT : now, fit, slump });
+    poseClown(this.heldClown, { stand: 0, energy: 0, t: now, fit, slump: 0 });
+
+    if (possessed && this.danceT < 0) {
+      this.giggleTimer -= dt;
+      if (this.giggleTimer <= 0 && fit > 0.5) {
+        this.giggleTimer = 2.6;
+        const src = s.relic === 'drop-box' ? SPOTS.dropBox : SPOTS.relicRitual;
+        const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
+        this.onGiggle(listener.y < -3 ? 0 : tuneVolume(d));
+      }
+    }
+  }
+
+  /** The bucket: in the closet, carried, or by the ritual table; and the rod until it's taken. */
+  private syncBucket(s: GameState): void {
+    this.bucket.visible = s.bucket !== 'held';
+    this.heldBucket.visible = s.bucket === 'held';
+    at(this.bucket, s.bucket === 'chapel' ? SPOTS.bucketChapel : SPOTS.bucketCloset);
+    (this.bucket.userData.water as THREE.Object3D).visible = s.bucket_filled;
+    (this.heldBucket.userData.water as THREE.Object3D).visible = s.bucket_filled;
+    this.rod.visible = !s.inventory.has('rod');
   }
 
   /**

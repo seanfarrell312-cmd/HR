@@ -126,6 +126,12 @@ The church layout follows
   set, the teacup needs scripture before the cross, the table answers for
   the small teacup during holds, and it goes onto its own place on the
   cleaned-relic table without Day 1's dusk.
+- `tests/day2.test.ts` also covers S3 part 2 (D2-05 to D2-07): the clown
+  doll arrives once the teacup is away, the cross only makes it dance, the
+  storage key is in the desk drawers once holy water is wanted, the bucket
+  and rod come from the closet, the bucket fills at the fountain and goes
+  by the ritual table, and the water ritual releases the laughing ghost and
+  empties the bucket.
 - `tests/script-review.test.ts`: `docs/script-review.md` (every scripted
   thought, text and note, for review) lists every thought and matches the
   game's copy. Run `npm run export-script` after changing any copy.

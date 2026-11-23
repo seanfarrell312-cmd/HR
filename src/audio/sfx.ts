@@ -143,6 +143,36 @@ export class Sfx {
         }
         this.tone('sine', 2200, 1.4, 0.4, 0.1);
         break;
+      case 'clown-laugh':
+        // "Ha-ha-ha-ha-haaa": bouncy, falling honks with a breathy edge.
+        for (let i = 0; i < 8; i++) {
+          const f = 620 - i * 28 + (i % 2) * 40;
+          const long = i === 7 ? 0.32 : 0.11;
+          this.glide('sawtooth', f, f * 0.82, i * 0.15, long, 0.07);
+          this.glide('triangle', f * 2, f * 1.6, i * 0.15, long, 0.05);
+          this.hiss(i * 0.15, 0.05, 2200, 0.05);
+        }
+        break;
+      case 'clown-wind-down':
+        // The laughing slows and sinks, then stops.
+        for (let i = 0; i < 6; i++) {
+          const t = i * 0.18 + i * i * 0.035;
+          const f = 560 - i * 55;
+          this.glide('triangle', f, f * 0.75, t, 0.14, 0.09 * (1 - i / 7));
+        }
+        break;
+      case 'fill':
+        // Water pouring into a pail: hiss rising in pitch as it fills.
+        for (let i = 0; i < 6; i++) this.hiss(i * 0.18, 0.22, 900 + i * 260, 0.16);
+        this.tone('sine', 300, 0.1, 1.1, 0.03);
+        break;
+      case 'sprinkle':
+        // Three flicks of the rod: a splash of droplets each.
+        for (let i = 0; i < 3; i++) {
+          this.hiss(i * 0.3, 0.12, 4200, 0.2);
+          for (let j = 0; j < 3; j++) this.tone('sine', 1800 + Math.random() * 1600, i * 0.3 + 0.03 + j * 0.03, 0.05, 0.05);
+        }
+        break;
       case 'paper':
         this.hiss(0, 0.08, 4000, 0.25);
         this.hiss(0.12, 0.08, 3500, 0.2);
@@ -178,6 +208,16 @@ export class Sfx {
       const t = i * (0.05 + Math.random() * 0.03);
       this.tone('sine', 2500 + Math.random() * 1100, t, 0.1, 0.14 * volume);
       this.hiss(t, 0.02, 5200, 0.18 * volume);
+    }
+  }
+
+  /** The possessed clown doll's titter, at volume 0..1 (by distance). */
+  giggle(volume: number): void {
+    if (volume <= 0.01) return;
+    for (let i = 0; i < 5; i++) {
+      const f = 1150 - i * 50 + Math.random() * 40;
+      this.glide('triangle', f, f * 0.78, i * 0.12, 0.09, 0.12 * volume);
+      this.glide('sine', f * 2, f * 1.6, i * 0.12, 0.07, 0.04 * volume);
     }
   }
 

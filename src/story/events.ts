@@ -30,6 +30,8 @@ import {
   LOITER_LINES,
   SEARCH_NUDGE_SECONDS,
   SEARCH_NUDGES,
+  CLOWN_DANCE_SECONDS,
+  D2_DELIVERY2_DELAY,
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
@@ -65,6 +67,14 @@ export type StoryEvent =
   /** Day 2, dawdling outside after the gate: the `n`th line (1 to 3). */
   | { type: 'loiter'; n: number }
   | { type: 'enter-church'; x: number; y: number; level: number }
+  /** The clown doll (D2-05 to D2-07). */
+  | { type: 'clown-dance-done' }
+  | { type: 'water-idea' }
+  | { type: 'water-wanted' }
+  | { type: 'pickup-bucket' }
+  | { type: 'fill-bucket' }
+  | { type: 'place-bucket' }
+  | { type: 'bless-water' }
   | { type: 'search-thought-done' }
   | { type: 'prank-focus-done' }
   /** Timed: the prankster ghost has floated off; its thought plays. */
@@ -158,7 +168,11 @@ export type SfxId =
   | 'giggle'
   | 'raspberry'
   | 'clink'
-  | 'cup-wind-down';
+  | 'cup-wind-down'
+  | 'clown-laugh'
+  | 'clown-wind-down'
+  | 'fill'
+  | 'sprinkle';
 
 export type PurifiedRelic = 'clock' | RelicKind;
 
@@ -176,6 +190,8 @@ export type Effect =
   | { kind: 'open-scripture' }
   /** The prankster ghost pops up behind the garden bench and floats off (D2-02). */
   | { kind: 'prank' }
+  /** The clown doll stands up on the table, laughs and dances (D2-05). */
+  | { kind: 'dance' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -295,8 +311,12 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (e.item === 'crucifix' && !altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.crucifixEarly }];
       // The Bible comes off its stand once the relic needs scripture.
       if (e.item === 'bible' && !bibleWanted(s)) return [];
+      // The storage key turns up in the desk once holy water is wanted (D2-06).
+      if (e.item === 'storage-key' && !s.flags.has('water-wanted')) return [];
+      if (e.item === 'rod' && !s.flags.has('storage-opened')) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
+      if (e.item === 'storage-key') out.push({ kind: 'say', text: THOUGHTS.storageKey });
       // Day 2: no chalice to go with it yet (D2-02).
       if (e.item === 'crucifix' && s.day_index === 2 && s.chalice === 'garden-bench') {
         out.push(
@@ -579,8 +599,19 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'ritual-table' || s.flags.has('relic-blessed')) return [];
       if (!tableReady(s)) return flash(REMINDERS.tableNotReady);
       if (!s.inventory.has('cross')) return flash(REMINDERS.needCross);
+      // The clown doll (D2-05): the cross only sets it laughing and dancing.
+      if (s.relic_kind === 'clown') {
+        if (s.flags.has('clown-danced')) return [];
+        s.flags.add('clown-danced');
+        out.push(
+          { kind: 'dance' },
+          { kind: 'sfx', id: 'clown-laugh' },
+          { kind: 'after', seconds: CLOWN_DANCE_SECONDS, event: { type: 'clown-dance-done' } },
+        );
+        break;
+      }
       // Day 2's first relic (D2-04): scripture, then the cross, and it's done.
-      if (s.relic_kind !== 'music-box') {
+      if (s.relic_kind === 'teacup') {
         if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
         s.flags.add('relic-blessed');
         s.fired_scares.push(`d2-${s.relic_kind}-ghost`);
@@ -605,6 +636,66 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.flags.add('relic-blessed');
       s.fired_scares.push('d1-relic-ghost');
       out.push({ kind: 'purify', relic: 'music-box' });
+      break;
+    }
+
+    case 'clown-dance-done':
+      if (!s.flags.has('clown-danced') || s.flags.has('clown-dance-done')) return [];
+      s.flags.add('clown-dance-done');
+      out.push(
+        { kind: 'say', text: THOUGHTS.clownDance },
+        { kind: 'after', seconds: afterThought(THOUGHTS.clownDance), event: { type: 'water-idea' } },
+      );
+      break;
+
+    case 'water-idea':
+      if (!s.flags.has('clown-dance-done') || s.flags.has('water-idea')) return [];
+      s.flags.add('water-idea');
+      out.push(
+        { kind: 'say', text: THOUGHTS.clownWater },
+        { kind: 'after', seconds: afterThought(THOUGHTS.clownWater), event: { type: 'water-wanted' } },
+      );
+      break;
+
+    case 'water-wanted':
+      if (!s.flags.has('water-idea') || s.flags.has('water-wanted')) return [];
+      s.flags.add('water-wanted');
+      break;
+
+    case 'pickup-bucket':
+      // From the closet, or an empty one from beside the ritual table.
+      if (s.bucket === 'held' || (s.bucket === 'chapel' && s.bucket_filled)) return [];
+      if (s.bucket === 'closet' && !s.flags.has('storage-opened')) return [];
+      if (s.held_prop_id) return flash(REMINDERS.handsFull);
+      s.bucket = 'held';
+      s.held_prop_id = 'bucket';
+      out.push({ kind: 'sfx', id: 'pickup' });
+      break;
+
+    case 'fill-bucket':
+      if (s.bucket !== 'held' || s.bucket_filled) return [];
+      s.bucket_filled = true;
+      out.push({ kind: 'sfx', id: 'fill' });
+      break;
+
+    case 'place-bucket':
+      if (s.bucket !== 'held') return [];
+      if (!s.bucket_filled) return flash(REMINDERS.bucketEmpty);
+      s.bucket = 'chapel';
+      s.held_prop_id = null;
+      out.push({ kind: 'sfx', id: 'place' });
+      break;
+
+    case 'bless-water': {
+      // The water ritual (D2-07): the clown falls still and its ghost departs.
+      if (s.relic !== 'ritual-table' || s.relic_kind !== 'clown' || s.flags.has('relic-blessed')) return [];
+      if (!s.flags.has('water-wanted')) return [];
+      if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
+      if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
+      s.flags.add('relic-blessed');
+      s.bucket_filled = false;
+      s.fired_scares.push('d2-clown-ghost');
+      out.push({ kind: 'sfx', id: 'sprinkle' }, { kind: 'purify', relic: 'clown' });
       break;
     }
 
@@ -694,6 +785,10 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.relics_stored.push(s.relic_kind);
       if (s.day_index !== 1) {
         out.push({ kind: 'sfx', id: 'place' });
+        // Day 2: the teacup is away; the clown doll is next (D2-05).
+        if (s.relic_kind === 'teacup' && !s.inbox.includes('d2delivery2')) {
+          out.push({ kind: 'after', seconds: D2_DELIVERY2_DELAY, event: { type: 'receive-sms', id: 'd2delivery2' } });
+        }
         break;
       }
       // Day 1's second relic is done: dusk falls (doc 7.1 D1_EVENING).
@@ -746,6 +841,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
           );
         }
       }
+      if (e.id === 'storage' && s.inventory.has('storage-key') && !s.flags.has('storage-opened')) s.flags.add('storage-opened');
       // Day 2: the cleansed clock, on the desk since yesterday.
       if (e.id === 'office' && s.day_index === 2 && !s.flags.has('office-opened')) {
         s.flags.add('office-opened');
@@ -773,11 +869,6 @@ export function blessBlocker(s: GameState): string | null {
   return null;
 }
 
-/**
- * The chalice and crucifix can come off the altar once the objective asks for
- * them (D1-05), not before (S2 playtest, 2026-11-09). Later days set their
- * own rules in S3.
- */
 /** One more place checked: its thought, and once all are done, the next. */
 function searched(s: GameState, out: Effect[], line: string): void {
   out.push({ kind: 'say', text: line });
@@ -792,6 +883,11 @@ function nudgeLater(s: GameState, out: Effect[]): void {
   out.push({ kind: 'after', seconds: SEARCH_NUDGE_SECONDS, event: { type: 'search-nudge', at: searchCount(s), n } });
 }
 
+/**
+ * The chalice and crucifix can come off the altar once the objective asks for
+ * them (D1-05), not before (S2 playtest, 2026-11-09). Later days set their
+ * own rules in S3.
+ */
 export function altarOpen(s: GameState): boolean {
   // Day 2: once the candles are lit (D2-02), whatever is left on the altar.
   if (s.day_index === 2) return s.candles_lit.size === 4;
@@ -805,7 +901,8 @@ export function altarOpen(s: GameState): boolean {
  */
 export function bibleWanted(s: GameState): boolean {
   if (s.relic !== 'ritual-table' || s.flags.has('scripture-read')) return false;
-  return s.relic_kind !== 'music-box' || s.flags.has('bible-prompted');
+  if (s.relic_kind === 'teacup') return true;
+  return s.relic_kind === 'music-box' && s.flags.has('bible-prompted');
 }
 
 const near = (p: { x: number; y: number; level: number }, c: { x: number; y: number; r: number }): boolean =>

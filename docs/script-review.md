@@ -49,7 +49,10 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-13 | Straight after "JESUS!". | Harmless, huh? I almost had a heart attack! | |
 | D2-14 | Straight after "Harmless, huh?"; then "Place the chalice on the ritual table". | Gotta stay focused, back to the chapel. | |
 | D2-15 | The chalice goes on the ritual table with the crucifix; then the delivery text. | There. All set. | |
-| D2-16 | Closing the phone after the delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
+| D2-16 | Closing the phone after the first delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
+| D2-17 | Blessing the clown doll with the cross: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
+| D2-18 | Straight after; then "Find the storage closet key in the office". | Time for some holy water. There should be a bucket in the storage closet. | |
+| D2-19 | Searching the office desk drawers for the storage closet key. | There it is. I knew these drawers were good for something. | |
 
 ### Day 2: dawdling outside
 
@@ -81,6 +84,15 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | TC-03 | Carrying it up the path, 17 m from the church doors. | I should hurry, this thing's about to bounce outta my hands. | |
 | TC-04 | Its ghost, once it has gone. | I guess he must have really liked tea. | |
 
+#### Clown doll (Day 2, second delivery)
+
+| ID | When it plays | Text | Proposed |
+|---|---|---|---|
+| CD-01 | Nearing the drop box once it has been delivered. | Is that... giggling? | |
+| CD-02 | Taking it out of the drop box. | A clown doll. Why is it always a clown doll? | |
+| CD-03 | Carrying it up the path, 17 m from the church doors. | Quit wriggling, you little creep. | |
+| CD-04 | Its ghost, once it has gone. | Laughing all the way to the other side. | |
+
 ## Texts
 
 | ID | When it arrives | From | Text | Proposed |
@@ -88,6 +100,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | S-01 | Day 1, 6.5 s into the shift. | Supervisor | Afternoon! I forgot to mention, the gate code is 4173. Your instructions should be in my office. Just hang a left once you get into the church. | |
 | S-02 | Day 1, 5 s after the clock is put on the supervisor's desk. | Supervisor | Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel. | |
 | S-03 | Day 2, after "There. All set." | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
+| S-04 | Day 2, 6 s after the teacup is put away. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
 
 ## Notes
 
@@ -171,3 +184,6 @@ Proposed changes to B:
 | R-10 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
 | R-11 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
 | R-12 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
+| R-13 | Trying the water ritual before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
+| R-14 | Trying the water ritual without the holy-water rod. | I need the holy-water rod. | |
+| R-15 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

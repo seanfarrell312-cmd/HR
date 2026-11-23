@@ -66,7 +66,10 @@ export const DAY2: Cue[] = [
   { key: 'prankHarmless', when: 'Straight after "JESUS!".' },
   { key: 'prankFocus', when: 'Straight after "Harmless, huh?"; then "Place the chalice on the ritual table".' },
   { key: 'tableSetDay2', when: 'The chalice goes on the ritual table with the crucifix; then the delivery text.' },
-  { key: 'alertRead', when: 'Closing the phone after the delivery text; then the drop-box objective.' },
+  { key: 'alertRead', when: 'Closing the phone after the first delivery text; then the drop-box objective.' },
+  { key: 'clownDance', when: 'Blessing the clown doll with the cross: once it has finished laughing and dancing.' },
+  { key: 'clownWater', when: 'Straight after; then "Find the storage closet key in the office".' },
+  { key: 'storageKey', when: 'Searching the office desk drawers for the storage closet key.' },
 ];
 
 /** Thoughts that sit with the relics instead (RELIC_LINES), so they're listed by relic. */
@@ -78,6 +81,7 @@ export const LISTED: ThoughtKey[] = [...ANY_DAY, ...DAY1, ...DAY2].map((c) => c.
 const RELIC_CUES: { kind: keyof typeof RELIC_LINES; day: string; title: string }[] = [
   { kind: 'music-box', day: 'Day 1', title: 'Music box (Day 1, second delivery)' },
   { kind: 'teacup', day: 'Day 2', title: 'Teacup (Day 2, first delivery)' },
+  { kind: 'clown', day: 'Day 2', title: 'Clown doll (Day 2, second delivery)' },
 ];
 const RELIC_WHEN: Record<'approach' | 'pickup' | 'carry' | 'ghost', string> = {
   approach: 'Nearing the drop box once it has been delivered.',
@@ -90,6 +94,7 @@ export const SMS_WHEN: Record<string, string> = {
   gateCode: 'Day 1, 6.5 s into the shift.',
   delivery1: "Day 1, 5 s after the clock is put on the supervisor's desk.",
   d2delivery1: 'Day 2, after "There. All set."',
+  d2delivery2: 'Day 2, 6 s after the teacup is put away.',
 };
 
 /** Escape a table cell. */
@@ -143,7 +148,7 @@ export function scriptReview(): string {
   ];
   for (const r of RELIC_CUES) {
     const lines = RELIC_LINES[r.kind];
-    const id = r.kind === 'music-box' ? 'MB' : 'TC';
+    const id = r.kind === 'music-box' ? 'MB' : r.kind === 'teacup' ? 'TC' : 'CD';
     out.push(`#### ${r.title}`, '', '| ID | When it plays | Text | Proposed |', '|---|---|---|---|');
     (['approach', 'pickup', 'carry', 'ghost'] as const).forEach((k, i) => {
       out.push(`| ${id}-0${i + 1} | ${RELIC_WHEN[k]} | ${cell(lines[k])} | |`);
@@ -193,4 +198,7 @@ const REMINDER_WHEN: Record<keyof typeof REMINDERS, string> = {
   bibleFirst: 'Trying to read scripture without the Bible.',
   bibleBack: 'Picking up a cleansed relic while still holding the Bible.',
   standInCircle: 'Trying to bless or read from outside the holy circle.',
+  holyWaterFirst: 'Trying the water ritual before the bucket of holy water is by the ritual table.',
+  needRod: 'Trying the water ritual without the holy-water rod.',
+  bucketEmpty: 'Putting the bucket down by the ritual table before filling it.',
 };

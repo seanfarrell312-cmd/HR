@@ -25,6 +25,11 @@ export interface GhostModel {
    * over its left eye (the player's right).
    */
   setDapper(on: boolean): void;
+  /**
+   * The clown doll's laughing ghost (D2-07): a red clown nose, the doll's
+   * blue-and-yellow cone hat with its pompom, and a big open laughing mouth.
+   */
+  setClown(on: boolean): void;
 }
 
 let bodyGeometry: THREE.BufferGeometry | null = null;
@@ -210,6 +215,29 @@ export function ghostModel(withLight: boolean): GhostModel {
   }
   group.add(dapper);
 
+  // The laughing clown ghost's nose, hat and open mouth.
+  const clown = new THREE.Group();
+  clown.visible = false;
+  const rouge = track(new THREE.MeshLambertMaterial({ color: '#d23b33', emissive: '#5a1210', opacity: 1 }));
+  const [noseAt, noseN] = onFace(0, SHOULDER + 0.01);
+  const nose = new THREE.Mesh(new THREE.IcosahedronGeometry(0.038, 1), rouge);
+  nose.position.copy(noseAt).addScaledVector(noseN, 0.022);
+  const [mouthAt] = onFace(0, SHOULDER - 0.06);
+  const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.075, 14, Math.PI, Math.PI), dark);
+  mouth.position.copy(mouthAt).add(new THREE.Vector3(0, 0.02, 0.004));
+  mouth.scale.set(1, 0.85, 1);
+  const hat = new THREE.Group();
+  hat.position.set(0.05, SHOULDER + RADIUS + 0.09, -0.03);
+  hat.rotation.z = -0.3;
+  for (const [color, start] of [['#e2b33c', 0], ['#3d3f9c', Math.PI]] as const) {
+    hat.add(new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 8, 1, false, start, Math.PI), track(new THREE.MeshLambertMaterial({ color, flatShading: true, opacity: 1 }))));
+  }
+  const pompom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), rouge);
+  pompom.position.y = 0.15;
+  hat.add(pompom);
+  clown.add(nose, mouth, hat);
+  group.add(clown);
+
   const tex = mist();
   if (tex) {
     const wisp = new THREE.Mesh(
@@ -240,7 +268,13 @@ export function ghostModel(withLight: boolean): GhostModel {
     },
     setDapper(on: boolean) {
       dapper.visible = on;
-      smile.visible = !on;
+      smile.visible = !on && !clown.visible;
+    },
+    setClown(on: boolean) {
+      clown.visible = on;
+      smile.visible = !on && !dapper.visible;
+      // Eyes squeezed into a laugh.
+      for (const eye of eyes) eye.scale.y = on ? 0.8 : 1.25;
     },
     setTongue(k: number) {
       tongue.visible = k > 0.01;

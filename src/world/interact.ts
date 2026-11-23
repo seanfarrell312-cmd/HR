@@ -32,6 +32,7 @@ export function lockState(state: GameState, doorId: string): LockState {
   // Story progress unlocks doors the preset starts locked.
   if (doorId === 'gate' && state.flags.has('gate-unlocked')) return 'unlocked';
   if (doorId === 'chapel' && state.inventory.has('chapel-key')) return 'unlocked';
+  if (doorId === 'storage' && state.inventory.has('storage-key')) return 'unlocked';
   const preset = DOOR_PRESETS.find((p) => p.id === state.door_preset);
   return preset?.locks[doorId] ?? 'unlocked';
 }
@@ -128,6 +129,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       if (!altarOpen(s)) return story('Crucifix', { type: 'take', item: 'crucifix' });
       return story('E  Take crucifix', { type: 'take', item: 'crucifix' });
     case 'clock': {
+      // On the desk it's part of the desk: aiming at it searches the drawers.
+      if (s.clock === 'office-desk') return resolveItem('office-desk', s, player);
       if (s.clock !== 'ritual-table') return NONE;
       if (s.flags.has('clock-blessed')) {
         if (s.held_prop_id) return say('Mantel clock', 'My hands are full.');
@@ -142,8 +145,30 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       };
     }
     case 'office-desk':
+      // Day 2: the storage closet key is in the drawers (D2-06).
+      if (s.flags.has('water-wanted') && !s.inventory.has('storage-key')) {
+        return story('E  Search the desk drawers', { type: 'take', item: 'storage-key' });
+      }
       if (s.clock !== 'held') return NONE;
       return story('E  Put the clock down', { type: 'place-clock' });
+
+    case 'bucket':
+      if (s.bucket === 'held') return NONE;
+      if (s.bucket === 'closet' && !s.flags.has('storage-opened')) return NONE;
+      if (s.bucket === 'chapel' && s.bucket_filled) return NONE;
+      if (s.held_prop_id) return say('Bucket', REMINDERS.handsFull);
+      return story('E  Pick up the bucket', { type: 'pickup-bucket' });
+
+    case 'rod':
+      if (s.inventory.has('rod') || !s.flags.has('storage-opened')) return NONE;
+      return story('E  Take the holy-water rod', { type: 'take', item: 'rod' });
+
+    case 'fountain':
+      if (s.bucket !== 'held' || s.bucket_filled) return NONE;
+      return story('E  Fill the bucket', { type: 'fill-bucket' });
+
+    case 'clown':
+      return resolveClown(s, player);
 
     case 'chalice':
       // Day 2: left on the garden bench by a prankster ghost (D2-02).
@@ -160,6 +185,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story('E  Take the chalice', { type: 'pickup-chalice' });
 
     case 'ritual-table': {
+      // The bucket of holy water goes down beside it (D2-07).
+      if (s.bucket === 'held') return story('E  Put the bucket down', { type: 'place-bucket' });
       const chalice = s.chalice === 'held';
       const crucifix = s.inventory.has('crucifix') && !s.flags.has('crucifix-staged');
       if (chalice || crucifix) {
@@ -223,6 +250,42 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story(`E  Put the ${RELIC_NAMES[s.relic_kind]} on the table`, { type: 'store-relic' });
   }
   return NONE;
+}
+
+/**
+ * Day 2's clown doll on the ritual table: the cross only sets it dancing
+ * (D2-05); then holy water from the bucket by the table, sprinkled with the
+ * rod, releases it (D2-07).
+ */
+function resolveClown(s: GameState, player: Player): Resolution {
+  if (s.relic_kind !== 'clown' || s.relic !== 'ritual-table') return NONE;
+  // Aiming at the doll with the bucket in hand still sets the bucket down.
+  if (s.bucket === 'held') return story('E  Put the bucket down', { type: 'place-bucket' });
+  const label = 'Clown doll';
+  if (s.flags.has('relic-blessed')) {
+    if (s.held_prop_id) return say(label, REMINDERS.handsFull);
+    return story('E  Pick up the clown doll', { type: 'pickup-relic' });
+  }
+  if (!tableReady(s)) return say(label, REMINDERS.tableNotReady);
+  if (!s.flags.has('clown-danced')) {
+    if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return {
+      prompt: 'Hold click  Bless the clown doll',
+      action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
+      hold: { type: 'bless-relic' },
+    };
+  }
+  // Dancing, then the two thoughts.
+  if (!s.flags.has('water-wanted')) return NONE;
+  if (s.bucket !== 'chapel' || !s.bucket_filled) return say(label, REMINDERS.holyWaterFirst);
+  if (!s.inventory.has('rod')) return say(label, REMINDERS.needRod);
+  if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+  return {
+    prompt: 'Hold click  Sprinkle the clown doll with holy water',
+    action: { kind: 'message', text: 'Hold the left mouse button to sprinkle it.' },
+    hold: { type: 'bless-water' },
+  };
 }
 
 /**

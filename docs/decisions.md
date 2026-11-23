@@ -656,3 +656,53 @@ The designer edited five Day 2 thoughts in `docs/script-review.md`:
   designer wrote "Still Locked"; the capital is dropped.)
 - D2-10: "I should check all the rooms. Maybe the other doors are unlocked?"
 - D2-13: "Harmless, huh? I almost had a heart attack!"
+
+## 2026-11-22 — S3 part 2: the clown doll, holy water (D2-05 to D2-07)
+
+The clown doll follows the designer's concept art (2026-11-22). It's low-poly
+and flat-shaded:
+- a big white head with a blue-and-yellow cone hat and red pompom, a red nose,
+  rosy cheeks and a red smile;
+- a yellow ruffled collar and a suit split blue and red, with two yellow
+  buttons;
+- white hands and dark shoes.
+
+It sits with its legs out, and stands up to dance. After the second relic is
+put away the objective reads "End of S3 part 2. The third delivery comes
+next."
+
+### PROVISIONAL (not yet ruled on)
+
+- **The second delivery** arrives 6 s after the teacup is put away, with the
+  same Christ-LERTS text as the first. There's no "Christ-LERTS? Nice."
+  thought the second time.
+- **The ordinary ritual (D2-05)** is the cross alone, held in the holy circle.
+  The Bible isn't wanted, so the teacup's routine isn't repeated. The doll
+  stands up on the table, laughs and dances for 3.2 s, then sits back down.
+  Then two thoughts, then the storage key is asked for.
+- **While possessed** the doll giggles and fidgets every few seconds: in the
+  drop box, carried, and on the table.
+- **The storage key** is in the office desk drawers, a callback to the search
+  line about the drawers. "E  Search the desk drawers" appears once holy water
+  is wanted, and aiming at the clock on the desk counts as aiming at the
+  desk. The key is an invisible inventory item (doc 5.2).
+- **The closet** opens with the key. The bucket stands on the floor in the
+  back corner and the holy-water rod leans in the other corner. Neither can be
+  taken through the locked door. The rod has a larger invisible hit area, as
+  its handle is thin.
+- **The bucket** is the held prop. The rod is an inventory item, like the
+  cross. The bucket is filled at the west-garden fountain ("E  Fill the
+  bucket") and set down by the ritual table's south end, by aiming at the
+  table or the doll. It can't be set down empty.
+- **The water ritual** is a hold in the holy circle with the rod, which rises
+  into view like the cross. It empties the bucket. The doll winds down and
+  slumps, still, and the laughing ghost rises: the green sheet ghost with
+  the doll's hat, a red nose, squeezed eyes and an open laughing mouth. It
+  laughs as it appears. The doll then goes on the cleaned-relic table's
+  second place.
+- **Leaving the bucket.** The empty bucket stays by the ritual table and can
+  be picked up again for the refill in part 3. It's back in the closet,
+  empty, each morning.
+- **Draft copy** for the doll's lines, the two thoughts after the dance, the
+  key thought and the new reminders. All of it is in
+  `docs/script-review.md` for review.

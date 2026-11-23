@@ -17,17 +17,22 @@ export type EnvironmentPreset =
  * is the larger standing one from the altar, set out on the ritual table
  * (decisions 2026-11-09, S2 playtest).
  */
-export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible';
+export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible' | 'storage-key' | 'rod';
 
 /**
  * The delivered relics, one at a time through the drop box (doc 3.2). Day 1:
  * the music box. Day 2 (S3): the teacup is a PLACEHOLDER for relic 1 until
  * the designer names it (decisions 2026-11-13).
  */
-export type RelicKind = 'music-box' | 'teacup';
+export type RelicKind = 'music-box' | 'teacup' | 'clown';
 
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
-export type HeldProp = 'clock' | 'chalice' | RelicKind;
+export type HeldProp = 'clock' | 'chalice' | 'bucket' | RelicKind;
+/**
+ * The holy-water bucket (D2-06): in the storage closet each morning, carried,
+ * or set down by the ritual table in the chapel.
+ */
+export type BucketLocation = 'closet' | 'held' | 'chapel';
 
 /** One-shot story facts for the current day. A new day starts with none. */
 export type Flag =
@@ -92,6 +97,15 @@ export type Flag =
   | 'prank-focus-done'
   /** The chalice is on the table with the crucifix: "There. All set." */
   | 'table-set'
+  // Day 2, the clown doll (S3 part 2).
+  /** The cross made it dance (the dance is playing); then the two thoughts. */
+  | 'clown-danced'
+  | 'clown-dance-done'
+  | 'water-idea'
+  /** Holy water is called for: the storage key can be found. */
+  | 'water-wanted'
+  /** The storage closet has been opened with its key. */
+  | 'storage-opened'
   /** The gate-code thought has played (Day 2 on). */
   | 'gate-code-recalled'
   /** The office door has been opened on Day 2, with its clock thought. */
@@ -115,6 +129,9 @@ export const RELIC_FLAGS: readonly Flag[] = [
   'relic-blessed',
   'relic-ghost-gone',
   'relic-thought-done',
+  'clown-danced',
+  'clown-dance-done',
+  'water-idea',
 ];
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';
@@ -151,6 +168,9 @@ export interface GameState {
   relic_kind: RelicKind;
   /** Cleansed relics on the table outside the chapel this shift, in the order put there. */
   relics_stored: RelicKind[];
+  bucket: BucketLocation;
+  /** Holy water in the bucket (doc 8.3 bucket_filled). */
+  bucket_filled: boolean;
 }
 
 export function createInitialState(doorPreset = 'day1-start'): GameState {
@@ -173,5 +193,7 @@ export function createInitialState(doorPreset = 'day1-start'): GameState {
     relic: 'none',
     relic_kind: 'music-box',
     relics_stored: [],
+    bucket: 'closet',
+    bucket_filled: false,
   };
 }

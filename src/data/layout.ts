@@ -339,7 +339,7 @@ function garden(): Prop[] {
     // Gravel from the gateway to a circle round the fountain.
     { id: 'garden-path', label: 'Gravel path', rect: rect(GARDEN_X - 0.85, g.y1, GARDEN_X + 0.85, FOUNTAIN_Y - 2.1), height: 0.02, level: 0, color: gravel, shape: 'flat', solid: false },
     { id: 'garden-gravel', label: 'Gravel', rect: rect(GARDEN_X - 2.4, FOUNTAIN_Y - 2.4, GARDEN_X + 2.4, FOUNTAIN_Y + 2.4), height: 0.04, level: 0, color: gravel, shape: 'disc', solid: false },
-    { id: 'fountain', label: 'Holy water fountain', rect: rect(GARDEN_X - 1.5, FOUNTAIN_Y - 1.5, GARDEN_X + 1.5, FOUNTAIN_Y + 1.5), height: 0.8, level: 0, color: '#a7b4bb', shape: 'fountain' },
+    { id: 'fountain', label: 'Holy water fountain', rect: rect(GARDEN_X - 1.5, FOUNTAIN_Y - 1.5, GARDEN_X + 1.5, FOUNTAIN_Y + 1.5), height: 0.8, level: 0, color: '#a7b4bb', shape: 'fountain', interact: 'fountain' },
     // A long bench down each side, facing the fountain. The prankster leaves
     // the chalice at the north end of the east one (D2-02).
     { id: 'garden-bench-w', label: 'Garden bench', rect: rect(-34.8, 50.6, -34.2, 56.6), height: 0.5, level: 0, color: WOOD },

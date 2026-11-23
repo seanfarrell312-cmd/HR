@@ -60,6 +60,11 @@ export const SPOTS = {
    * end of the east garden bench, out of sight of the main path.
    */
   chaliceBench: { x: -24.0, y: 56.0, z: 0.5 },
+  /** Day 2 (D2-06): the bucket and holy-water rod in the storage closet, on the floor. */
+  bucketCloset: { x: -10.05, y: 62.3, z: 0 },
+  rodCloset: { x: -10.35, y: 60.8, z: 0 },
+  /** Where the bucket of holy water is set down, by the ritual table's south end. */
+  bucketChapel: { x: 13.05, y: 51.35, z: 0 },
   /** Inside the drop box at the gate, where the music box is heard from. */
   dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
@@ -102,8 +107,14 @@ export const SMS: Record<string, Sms> = {
     text: "Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel.",
   },
   // Day 2 (designer copy, 2026-11-15): the supervisor forwards the alert.
+  // The second uses the same alert (S3 part 2, PROVISIONAL).
   d2delivery1: {
     id: 'd2delivery1',
+    from: 'Supervisor',
+    text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
+  },
+  d2delivery2: {
+    id: 'd2delivery2',
     from: 'Supervisor',
     text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
   },
@@ -113,12 +124,14 @@ export const SMS: Record<string, Sms> = {
 export const DELIVERIES: Record<string, RelicKind> = {
   delivery1: 'music-box',
   d2delivery1: 'teacup',
+  d2delivery2: 'clown',
 };
 
 /** What each relic is called in prompts and objectives. */
 export const RELIC_NAMES: Record<RelicKind, string> = {
   'music-box': 'music box',
   teacup: 'teacup',
+  clown: 'clown doll',
 };
 
 /** The front gate shuts itself this long after it opens (decisions 2026-11-10). */
@@ -256,6 +269,13 @@ export const THOUGHTS = {
   gateCodeRecall: `Good thing I remembered the gate code: ${GATE_CODE}.`,
   /** Opening the office door for the first time on Day 2; the clock is on the desk. */
   officeClock: 'That clock really does look nice in here.',
+  // Day 2, the clown doll. PROVISIONAL copy (S3 part 2, decisions 2026-11-22).
+  /** Once the cross has made the clown doll dance instead of settling. */
+  clownDance: "It's... dancing? Okay, that definitely didn't work.",
+  /** Straight after; then the storage key is wanted. */
+  clownWater: 'Time for some holy water. There should be a bucket in the storage closet.',
+  /** Finding the storage closet key in the office desk drawers. */
+  storageKey: 'There it is. I knew these drawers were good for something.',
   /** Trying the church doors from inside while searching it for the chalice. */
   searchStayInside: 'I need to find the chalice. Maybe the other doors are unlocked?',
 };
@@ -296,7 +316,19 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
     carry: "I should hurry, this thing's about to bounce outta my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
+  // PROVISIONAL copy (S3 part 2).
+  clown: {
+    approach: 'Is that... giggling?',
+    pickup: "A clown doll. Why is it always a clown doll?",
+    carry: "Quit wriggling, you little creep.",
+    ghost: 'Laughing all the way to the other side.',
+  },
 };
+
+/** Day 2's second delivery: this long after the teacup is put away. */
+export const D2_DELIVERY2_DELAY = 6;
+/** Seconds the clown doll dances and laughs when the cross fails on it (D2-05). */
+export const CLOWN_DANCE_SECONDS = 3.2;
 
 /**
  * Seconds the prankster ghost is on screen (D2-02): pops up behind the bench,
@@ -329,6 +361,10 @@ export const REMINDERS = {
   bibleFirst: 'I need the Bible from the stand.',
   bibleBack: 'I should put the Bible back on its stand first.',
   standInCircle: 'I should stand in the holy circle.',
+  // S3 part 2, PROVISIONAL.
+  holyWaterFirst: 'I need the bucket of holy water by the table first.',
+  needRod: 'I need the holy-water rod.',
+  bucketEmpty: "It's empty. I should fill it at the fountain first.",
 };
 
 /** The verse on the Bible stand: Numbers 6:24-26, King James Version (public domain). */
@@ -426,8 +462,8 @@ export const CHURCH_APPROACH_LINES: Record<number, string> = {
   2: THOUGHTS.churchApproachDay2,
 };
 
-/** Shown once Day 2's first relic is put away, until the rest of S3 is built. */
-export const S3_PART1_END = 'End of S3 part 1. The clown doll comes next.';
+/** Shown once Day 2's second relic is put away, until the rest of S3 is built. */
+export const S3_PART2_END = 'End of S3 part 2. The third delivery comes next.';
 
 /**
  * First-day control guide (designer copy, 2026-11-09), shown once the day card

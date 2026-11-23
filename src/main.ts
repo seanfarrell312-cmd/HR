@@ -92,12 +92,20 @@ const blessMeter = new HoldMeter(BLESS_SECONDS);
 props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onTune = (volume) => sfx.tune(volume);
 props.onClink = (volume) => sfx.clink(volume);
+props.onGiggle = (volume) => sfx.giggle(volume);
 props.onCue = (cue, relic) => {
-  if (cue === 'ghost') sfx.play('release');
+  if (cue === 'ghost') {
+    sfx.play('release');
+    // The clown's ghost laughs as it goes.
+    if (relic === 'clown') sfx.play('clown-laugh');
+  }
   // The thought waits until the ghost has risen and gone; it goes through the
   // story because the next objective waits for it in turn.
   else if (cue === 'ghost-gone') dispatch({ type: relic === 'clock' ? 'clock-ghost-gone' : 'relic-ghost-gone' });
-  else if (cue === 'wind-down') sfx.play(relic === 'clock' ? 'wind-down' : relic === 'teacup' ? 'cup-wind-down' : 'box-wind-down');
+  else if (cue === 'wind-down') {
+    const id = relic === 'clock' ? 'wind-down' : relic === 'teacup' ? 'cup-wind-down' : relic === 'clown' ? 'clown-wind-down' : 'box-wind-down';
+    sfx.play(id);
+  }
   else sfx.play(cue);
 };
 
@@ -175,6 +183,9 @@ function handleEffect(e: Effect): void {
       break;
     case 'prank':
       props.startPrank();
+      break;
+    case 'dance':
+      props.startDance();
       break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
@@ -514,8 +525,17 @@ const TOOL_NAMES: Record<string, string> = {
   cross: 'Cross',
   crucifix: 'Standing crucifix',
   bible: 'Bible',
+  'storage-key': 'Storage closet key',
+  rod: 'Holy-water rod',
 };
-const HELD_NAMES: Record<string, string> = { clock: 'Mantel clock', chalice: 'Chalice', 'music-box': 'Music box', teacup: 'Teacup' };
+const HELD_NAMES: Record<string, string> = {
+  clock: 'Mantel clock',
+  chalice: 'Chalice',
+  'music-box': 'Music box',
+  teacup: 'Teacup',
+  clown: 'Clown doll',
+  bucket: 'Bucket',
+};
 
 let fps = 0;
 function debugText(): string {
@@ -610,7 +630,7 @@ renderer.setAnimationLoop(() => {
   target = player.active && !panel ? findTarget() : null;
   // The clock can't be picked up until it has finished settling.
   // Nor the music box.
-  if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:ritual-table'].includes(target ?? '')) target = null;
+  if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:clown', 'item:ritual-table'].includes(target ?? '')) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);
@@ -628,7 +648,14 @@ renderer.setAnimationLoop(() => {
   applyEnvironment(state.environment_preset);
 
   // Reading scripture is a hold too, but with the Bible, not the cross.
-  const hold = { active: !!res.hold && primaryDown, progress: blessMeter.progress, cross: res.hold?.type !== 'begin-scripture' };
+  // The water ritual raises the holy-water rod instead.
+  const holdType = res.hold?.type;
+  const hold = {
+    active: !!res.hold && primaryDown,
+    progress: blessMeter.progress,
+    cross: holdType !== 'begin-scripture' && holdType !== 'bless-water',
+    rod: holdType === 'bless-water',
+  };
   props.sync(state, dt, hold, camera.position, worldPaused);
   renderer.render(scene, camera);
 });
