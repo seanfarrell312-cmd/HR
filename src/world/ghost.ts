@@ -34,8 +34,10 @@ export interface GhostModel {
 
 /** The wig's colours, banded across the head from its right (-x) to its left. */
 export const WIG_COLOURS = ['#e0322b', '#f08a24', '#f4d23a', '#1f9e6a', '#2f6fe0', '#8a3fd1'] as const;
+/** How far the curls' centres sit off the dome. */
+const WIG_LIFT = 0.03;
 /** Points tried over the dome's sphere when placing curls. */
-const WIG_SAMPLES = 230;
+const WIG_SAMPLES = 520;
 
 /**
  * Whether a direction from the dome's centre is under the wig: the crown
@@ -236,9 +238,9 @@ export function ghostModel(withLight: boolean): GhostModel {
   group.add(dapper);
 
   // The clown doll's ghost: the usual face under a rainbow clown wig
-  // (designer, 2026-11-24). Chunky low-poly curls cover the crown and puff
-  // out wide at the sides, banded red to purple from its right to its left,
-  // with the hairline kept well above the eyes at the front.
+  // (designer, 2026-11-24). An afro of small, close-packed low-poly curls,
+  // an even layer hugging the dome, banded red to purple from its right to
+  // its left, with the hairline kept well above the eyes at the front.
   const wig = new THREE.Group();
   wig.name = 'clown-wig';
   wig.visible = false;
@@ -254,12 +256,12 @@ export function ghostModel(withLight: boolean): GhostModel {
     const ring = Math.sqrt(1 - y * y);
     const d = new THREE.Vector3(Math.cos(golden * i) * ring, y, Math.sin(golden * i) * ring);
     if (!onWig(d)) continue;
-    const size = 0.055 + 0.03 * ((i * 7) % 5) / 4;
+    const size = 0.044 + 0.014 * ((i * 7) % 5) / 4;
     const c = new THREE.Mesh(curl, rainbow[wigBand(d.x)]);
     c.scale.setScalar(size);
-    // Puffed out wider at the sides, like a clown wig.
-    const puff = 1 + 0.6 * d.x * d.x;
-    c.position.set(d.x * (RADIUS + 0.02) * puff, SHOULDER + d.y * (RADIUS + 0.02), d.z * (RADIUS + 0.02));
+    // An even layer just off the dome, so it follows the head's curve.
+    c.position.set(d.x, d.y, d.z).multiplyScalar(RADIUS + WIG_LIFT);
+    c.position.y += SHOULDER;
     c.rotation.set(i * 1.3, i * 0.7, i * 2.1);
     wig.add(c);
   }

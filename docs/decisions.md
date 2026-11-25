@@ -738,7 +738,9 @@ next."
 - **Ordinary face, rainbow wig (designer).** The ghost that rises from the
   cleansed doll has the same eyes and smile as every other ghost. The hat,
   red nose, squeezed eyes and open mouth are gone. The only difference is a
-  rainbow clown wig: chunky low-poly curls over the crown that puff out wide
-  at the sides. The curls are banded red, orange, yellow, green, blue and
+  rainbow clown wig: an afro of small, close-packed low-poly curls in an
+  even layer that hugs the curve of the head. An earlier version puffed out
+  at the sides like a broccoli floret, and the designer asked for this
+  instead. The curls are banded red, orange, yellow, green, blue and
   purple from the ghost's right to its left, and the hairline sits well
   above the eyes at the front. Its laugh as it appears is unchanged.
