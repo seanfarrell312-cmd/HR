@@ -609,7 +609,7 @@ export class StoryProps {
     this.relicGhost.setWink(0);
     // The teacup's ghost is a dapper old gent: mustache and monocle.
     this.relicGhost.setDapper(relic === 'teacup');
-    // The clown's is the laughing ghost, in its hat and nose.
+    // The clown's wears a rainbow wig.
     this.relicGhost.setClown(relic === 'clown');
     this.relicGhost.group.visible = true;
   }

@@ -697,8 +697,8 @@ next."
 - **The water ritual** is a hold in the holy circle with the rod, which rises
   into view like the cross. It empties the bucket. The doll winds down and
   slumps, still, and the laughing ghost rises: the green sheet ghost with
-  the doll's hat, a red nose, squeezed eyes and an open laughing mouth. It
-  laughs as it appears. The doll then goes on the cleaned-relic table's
+  the doll's hat, a red nose, squeezed eyes and an open laughing mouth
+  (*superseded 2026-11-24: see below*). It laughs as it appears. The doll then goes on the cleaned-relic table's
   second place.
 - **Leaving the bucket.** The empty bucket stays by the ritual table and can
   be picked up again for the refill in part 3. It's back in the closet,
@@ -732,3 +732,13 @@ next."
 - **Redrafted doll lines (PROVISIONAL).** Approach: "Quiet one this time.
   That makes a nice change." Carry: "It's just... limp. Maybe this one's a
   dud." The pickup line and the ghost line are unchanged.
+
+## 2026-11-24 — The clown doll's ghost
+
+- **Ordinary face, rainbow wig (designer).** The ghost that rises from the
+  cleansed doll has the same eyes and smile as every other ghost. The hat,
+  red nose, squeezed eyes and open mouth are gone. The only difference is a
+  rainbow clown wig: chunky low-poly curls over the crown that puff out wide
+  at the sides. The curls are banded red, orange, yellow, green, blue and
+  purple from the ghost's right to its left, and the hairline sits well
+  above the eyes at the front. Its laugh as it appears is unchanged.

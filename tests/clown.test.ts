@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
+import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
 
@@ -68,5 +69,39 @@ describe('the clown doll model', () => {
     for (const k of ['body', 'head', 'armL', 'armR', 'legL', 'legR'] as const) {
       expect(b[k].rotation.toArray()).toEqual(a[k].rotation.toArray());
     }
+  });
+});
+
+describe("the clown doll's ghost", () => {
+  it('keeps the ordinary eyes and smile and adds only a rainbow wig (designer, 2026-11-24)', () => {
+    const plain = ghostModel(false);
+    const clown = ghostModel(false);
+    clown.setClown(true);
+    const wig = clown.group.getObjectByName('clown-wig')!;
+    expect(wig.visible).toBe(true);
+    expect(plain.group.getObjectByName('clown-wig')!.visible).toBe(false);
+    // Apart from the wig, the same parts are showing, at the same sizes.
+    const shown = (g: THREE.Object3D) =>
+      g.children.filter((c) => c.visible && c.name !== 'clown-wig').map((c) => [c.type, c.scale.toArray()]);
+    expect(shown(clown.group)).toEqual(shown(plain.group));
+    // Every colour of the rainbow is in it.
+    const colours = new Set(
+      wig.children.map((c) => ((c as THREE.Mesh).material as THREE.MeshLambertMaterial).color.getHexString()),
+    );
+    expect(colours.size).toBe(WIG_COLOURS.length);
+    clown.setClown(false);
+    expect(wig.visible).toBe(false);
+  });
+
+  it('keeps the hairline above the eyes at the front', () => {
+    // Straight ahead at eye height and a little above: bare.
+    expect(onWig(new THREE.Vector3(0, 0.27, 0.96).normalize())).toBe(false);
+    expect(onWig(new THREE.Vector3(0, 0.6, 0.8).normalize())).toBe(false);
+    // The crown, the sides and the back: covered.
+    expect(onWig(new THREE.Vector3(0, 1, 0))).toBe(true);
+    expect(onWig(new THREE.Vector3(1, 0.3, 0).normalize())).toBe(true);
+    expect(onWig(new THREE.Vector3(0, 0.3, -1).normalize())).toBe(true);
+    expect(wigBand(-1)).toBe(0);
+    expect(wigBand(1)).toBe(WIG_COLOURS.length - 1);
   });
 });

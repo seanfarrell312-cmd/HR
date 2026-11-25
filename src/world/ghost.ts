@@ -26,10 +26,30 @@ export interface GhostModel {
    */
   setDapper(on: boolean): void;
   /**
-   * The clown doll's laughing ghost (D2-07): a red clown nose, the doll's
-   * blue-and-yellow cone hat with its pompom, and a big open laughing mouth.
+   * The clown doll's ghost (D2-07): the same eyes and smile as every ghost,
+   * under a rainbow clown wig (designer, 2026-11-24).
    */
   setClown(on: boolean): void;
+}
+
+/** The wig's colours, banded across the head from its right (-x) to its left. */
+export const WIG_COLOURS = ['#e0322b', '#f08a24', '#f4d23a', '#1f9e6a', '#2f6fe0', '#8a3fd1'] as const;
+/** Points tried over the dome's sphere when placing curls. */
+const WIG_SAMPLES = 230;
+
+/**
+ * Whether a direction from the dome's centre is under the wig: the crown
+ * and sides, with the hairline rising to about 45 degrees at the front so
+ * the eyes stay clear.
+ */
+export function onWig(d: THREE.Vector3): boolean {
+  return d.y > 0.15 + 0.75 * Math.max(0, d.z);
+}
+
+/** Which colour band a curl at side-to-side position x (-1..1) gets. */
+export function wigBand(x: number): number {
+  const n = WIG_COLOURS.length;
+  return Math.min(n - 1, Math.max(0, Math.floor(((x + 1) / 2) * n)));
 }
 
 let bodyGeometry: THREE.BufferGeometry | null = null;
@@ -215,28 +235,35 @@ export function ghostModel(withLight: boolean): GhostModel {
   }
   group.add(dapper);
 
-  // The laughing clown ghost's nose, hat and open mouth.
-  const clown = new THREE.Group();
-  clown.visible = false;
-  const rouge = track(new THREE.MeshLambertMaterial({ color: '#d23b33', emissive: '#5a1210', opacity: 1 }));
-  const [noseAt, noseN] = onFace(0, SHOULDER + 0.01);
-  const nose = new THREE.Mesh(new THREE.IcosahedronGeometry(0.038, 1), rouge);
-  nose.position.copy(noseAt).addScaledVector(noseN, 0.022);
-  const [mouthAt] = onFace(0, SHOULDER - 0.06);
-  const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.075, 14, Math.PI, Math.PI), dark);
-  mouth.position.copy(mouthAt).add(new THREE.Vector3(0, 0.02, 0.004));
-  mouth.scale.set(1, 0.85, 1);
-  const hat = new THREE.Group();
-  hat.position.set(0.05, SHOULDER + RADIUS + 0.09, -0.03);
-  hat.rotation.z = -0.3;
-  for (const [color, start] of [['#e2b33c', 0], ['#3d3f9c', Math.PI]] as const) {
-    hat.add(new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 8, 1, false, start, Math.PI), track(new THREE.MeshLambertMaterial({ color, flatShading: true, opacity: 1 }))));
+  // The clown doll's ghost: the usual face under a rainbow clown wig
+  // (designer, 2026-11-24). Chunky low-poly curls cover the crown and puff
+  // out wide at the sides, banded red to purple from its right to its left,
+  // with the hairline kept well above the eyes at the front.
+  const wig = new THREE.Group();
+  wig.name = 'clown-wig';
+  wig.visible = false;
+  const curl = new THREE.IcosahedronGeometry(1, 0);
+  const rainbow = WIG_COLOURS.map((color) =>
+    track(new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.25, flatShading: true, opacity: 1 })),
+  );
+  const N = WIG_SAMPLES;
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < N; i++) {
+    // Even spread over the dome's sphere; keep only where the wig sits.
+    const y = 1 - (2 * (i + 0.5)) / N;
+    const ring = Math.sqrt(1 - y * y);
+    const d = new THREE.Vector3(Math.cos(golden * i) * ring, y, Math.sin(golden * i) * ring);
+    if (!onWig(d)) continue;
+    const size = 0.055 + 0.03 * ((i * 7) % 5) / 4;
+    const c = new THREE.Mesh(curl, rainbow[wigBand(d.x)]);
+    c.scale.setScalar(size);
+    // Puffed out wider at the sides, like a clown wig.
+    const puff = 1 + 0.6 * d.x * d.x;
+    c.position.set(d.x * (RADIUS + 0.02) * puff, SHOULDER + d.y * (RADIUS + 0.02), d.z * (RADIUS + 0.02));
+    c.rotation.set(i * 1.3, i * 0.7, i * 2.1);
+    wig.add(c);
   }
-  const pompom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), rouge);
-  pompom.position.y = 0.15;
-  hat.add(pompom);
-  clown.add(nose, mouth, hat);
-  group.add(clown);
+  group.add(wig);
 
   const tex = mist();
   if (tex) {
@@ -268,13 +295,10 @@ export function ghostModel(withLight: boolean): GhostModel {
     },
     setDapper(on: boolean) {
       dapper.visible = on;
-      smile.visible = !on && !clown.visible;
+      smile.visible = !on;
     },
     setClown(on: boolean) {
-      clown.visible = on;
-      smile.visible = !on && !dapper.visible;
-      // Eyes squeezed into a laugh.
-      for (const eye of eyes) eye.scale.y = on ? 0.8 : 1.25;
+      wig.visible = on;
     },
     setTongue(k: number) {
       tongue.visible = k > 0.01;
