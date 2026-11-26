@@ -679,7 +679,8 @@ next."
 - **The ordinary ritual (D2-05)** is the cross alone, held in the holy circle.
   The Bible isn't wanted, so the teacup's routine isn't repeated. The doll
   stands up on the table, laughs and dances for 3.2 s, then sits back down.
-  Then two thoughts, then the storage key is asked for.
+  Then two thoughts, then the storage key is asked for. *Superseded
+  2026-11-26: see "The clown doll's blessing, reordered".*
 - **While possessed** the doll giggles and fidgets every few seconds: in the
   drop box, carried, and on the table. *Superseded 2026-11-22: see below.*
 - **The storage key** is in the office desk drawers, a callback to the search
@@ -694,7 +695,8 @@ next."
   cross. The bucket is filled at the west-garden fountain ("E  Fill the
   bucket") and set down by the ritual table's south end, by aiming at the
   table or the doll. It can't be set down empty.
-- **The water ritual** is a hold in the holy circle with the rod, which rises
+- **The water ritual** (*superseded 2026-11-26: the splash only stills the
+  doll, and the cross releases it*) is a hold in the holy circle with the rod, which rises
   into view like the cross. It empties the bucket. The doll winds down and
   slumps, still, and the laughing ghost rises: the green sheet ghost with
   the doll's hat, a red nose, squeezed eyes and an open laughing mouth
@@ -731,7 +733,8 @@ next."
   it, instead of a flat arc that floated off the face.
 - **Redrafted doll lines (PROVISIONAL).** Approach: "Quiet one this time.
   That makes a nice change." Carry: "It's just... limp. Maybe this one's a
-  dud." The pickup line and the ghost line are unchanged.
+  dud." The pickup line and the ghost line are unchanged. *The pickup, carry
+  and ghost lines were superseded 2026-11-26 by designer copy.*
 
 ## 2026-11-24 — The clown doll's ghost
 
@@ -744,3 +747,47 @@ next."
   instead. The curls are banded red, orange, yellow, green, blue and
   purple from the ghost's right to its left, and the hairline sits well
   above the eyes at the front. Its laugh as it appears is unchanged.
+
+## 2026-11-26 — The clown doll's blessing, reordered
+
+Designer ruling. The doll's steps are now:
+1. **Picked up:** "A doll?", then "I'm not exactly sure what's haunted about
+   it, but I guess a little blessing couldn't hurt." The table objective
+   waits for both.
+2. **Carried up to the church** (the usual 17 m from the doors): "I wonder if
+   it's just a clown thing. A lot of people think they're creepy nowadays.",
+   then "Poor little guy."
+3. **The first cross:** a small giggle and wiggle where it sits, then still
+   again.
+4. **Scripture**, from the Bible on its stand, as with the teacup. The doll
+   doesn't react to it.
+5. **The second cross:** it stands up, laughs and dances, then "It's...
+   dancing?" and the holy-water thought, and the fetch for holy water as
+   before. It giggles and fidgets on the table from here.
+6. **Holy water:** fill the bucket at the fountain and set it down by the
+   ritual table. Then dip the rod in it ("E  Dip the rod in the holy
+   water"). Then hold in the circle to splash the doll: the rod rises, and
+   on release it strikes at the doll three times like a hammer, away from the
+   player. Each strike throws a small burst of blue droplets off the doll, a
+   simple stand-in until a proper water effect is made. The splash uses up
+   the bucket's water.
+7. The doll stops, winds down and slumps, then "Looks like that cooled him
+   off."
+8. **The third cross:** the usual sparkles, and the ghost with the rainbow
+   wig floats out, laughing.
+9. **Once it has gone:** "I suppose a toy makes more sense than a teacup.",
+   then "The things these spirits will get into these days." Then the Bible
+   goes back on its stand and the doll goes on the cleaned-relic table.
+
+Small fixes to the designer's copy: capital "I" in "I guess", and "it's" in
+"I wonder if it's".
+
+### PROVISIONAL (not yet ruled on)
+
+- No thought between the giggle and the Bible objective; the objective just
+  changes.
+- The dip is a single press, not a hold. The splash needs the player in the
+  holy circle, like the blessings.
+- New reminder: "I should dip the rod in the holy water first."
+- The relics' second lines appear in the script review as CD-02b, CD-03b and
+  CD-04b, so the existing line IDs don't change.

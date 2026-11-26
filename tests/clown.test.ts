@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
+import { rodStrike } from '../src/world/storyProps';
+import { SPLASH_STRIKE } from '../src/data/story';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
 
@@ -103,5 +105,18 @@ describe("the clown doll's ghost", () => {
     expect(onWig(new THREE.Vector3(0, 0.3, -1).normalize())).toBe(true);
     expect(wigBand(-1)).toBe(0);
     expect(wigBand(1)).toBe(WIG_COLOURS.length - 1);
+  });
+});
+
+describe('the holy-water rod splash (2026-11-26)', () => {
+  it('strikes at the doll three times, then drops away', () => {
+    expect(rodStrike(0).swing).toBe(0);
+    for (const i of [0, 1, 2]) {
+      const peak = rodStrike((i + 0.35) * SPLASH_STRIKE);
+      expect(peak.strike).toBe(i);
+      expect(peak.swing).toBeCloseTo(1);
+    }
+    expect(rodStrike(3 * SPLASH_STRIKE).lower).toBe(0);
+    expect(rodStrike(3 * SPLASH_STRIKE + 1).lower).toBe(1);
   });
 });

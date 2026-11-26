@@ -51,6 +51,10 @@ export type Flag =
   | 'crucifix-staged'
   | 'drop-box-approached'
   | 'relic-pickup-thought-done'
+  /** The relic's second pickup, carry and ghost lines, where it has them. */
+  | 'relic-pickup-2'
+  | 'relic-carry-2'
+  | 'relic-ghost-2'
   | 'relic-annoyed'
   | 'relic-rattled'
   | 'relic-settled'
@@ -97,13 +101,22 @@ export type Flag =
   | 'prank-focus-done'
   /** The chalice is on the table with the crucifix: "There. All set." */
   | 'table-set'
-  // Day 2, the clown doll (S3 part 2).
-  /** The cross made it dance (the dance is playing); then the two thoughts. */
+  // Day 2, the clown doll (S3 part 2; reordered 2026-11-26).
+  /** The first cross made it giggle and wiggle; then scripture is wanted. */
+  | 'clown-wiggled'
+  | 'clown-wiggle-done'
+  /** The second cross, after scripture, made it dance; then the two thoughts. */
   | 'clown-danced'
   | 'clown-dance-done'
   | 'water-idea'
   /** Holy water is called for: the storage key can be found. */
   | 'water-wanted'
+  /** The rod has been dipped in the bucket of holy water. */
+  | 'rod-wet'
+  /** The doll has been splashed with holy water and lies still; then its thought. */
+  | 'clown-doused'
+  | 'clown-cooled'
+  | 'clown-cool-thought-done'
   /** The storage closet has been opened with its key. */
   | 'storage-opened'
   /** Leaving the church for the second delivery: the long-walk thought. */
@@ -120,6 +133,9 @@ export type Flag =
 export const RELIC_FLAGS: readonly Flag[] = [
   'drop-box-approached',
   'relic-pickup-thought-done',
+  'relic-pickup-2',
+  'relic-carry-2',
+  'relic-ghost-2',
   'relic-annoyed',
   'relic-rattled',
   'relic-settled',
@@ -131,9 +147,15 @@ export const RELIC_FLAGS: readonly Flag[] = [
   'relic-blessed',
   'relic-ghost-gone',
   'relic-thought-done',
+  'clown-wiggled',
+  'clown-wiggle-done',
   'clown-danced',
   'clown-dance-done',
   'water-idea',
+  'rod-wet',
+  'clown-doused',
+  'clown-cooled',
+  'clown-cool-thought-done',
 ];
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';

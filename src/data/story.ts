@@ -270,7 +270,7 @@ export const THOUGHTS = {
   /** Opening the office door for the first time on Day 2; the clock is on the desk. */
   officeClock: 'That clock really does look nice in here.',
   // Day 2, the clown doll. PROVISIONAL copy (S3 part 2, decisions 2026-11-22).
-  /** Once the cross has made the clown doll dance instead of settling. */
+  /** Once the second cross (after scripture) has made the clown doll dance instead of settling. */
   clownDance: "It's... dancing? Okay, that definitely didn't work.",
   /** Straight after; then the storage key is wanted. */
   clownWater: 'Time for some holy water. There should be a bucket in the storage closet.',
@@ -283,6 +283,9 @@ export const THOUGHTS = {
   homeEarly: "If they're all like this today, I might get to go home early.",
   /** Leaving the church for the drop box once the second delivery text is in. */
   longWalk: 'I should have brought a bike or something. This walk is ridiculous.',
+  // Designer copy, 2026-11-26.
+  /** The holy water has stilled the clown doll; then the cross again. */
+  cooledOff: 'Looks like that cooled him off.',
 };
 
 /**
@@ -311,8 +314,18 @@ export const SEARCH_NUDGES = 3;
 /**
  * Per-relic lines (S3): nearing the drop box once it's in there, picking it
  * up, carrying it up towards the church doors, and once its ghost has gone.
+ * The optional second lines play straight after the first.
  */
-export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; carry: string; ghost: string }> = {
+export interface RelicLines {
+  approach: string;
+  pickup: string;
+  pickup2?: string;
+  carry: string;
+  carry2?: string;
+  ghost: string;
+  ghost2?: string;
+}
+export const RELIC_LINES: Record<RelicKind, RelicLines> = {
   'music-box': { approach: THOUGHTS.dropBox, pickup: THOUGHTS.relicPickup, carry: THOUGHTS.relicAnnoying, ghost: THOUGHTS.relicGhost },
   // Designer copy, 2026-11-15 and 2026-11-16.
   teacup: {
@@ -321,13 +334,16 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
     carry: "I should hurry, this thing's about to bounce outta my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
-  // PROVISIONAL copy (S3 part 2; approach and carry redrafted 2026-11-22 now
-  // the doll is still and silent until the cross).
+  // Designer copy, 2026-11-26, except the approach line (PROVISIONAL,
+  // 2026-11-22).
   clown: {
     approach: 'Quiet one this time. That makes a nice change.',
-    pickup: "A clown doll. Why is it always a clown doll?",
-    carry: "It's just... limp. Maybe this one's a dud.",
-    ghost: 'Laughing all the way to the other side.',
+    pickup: 'A doll?',
+    pickup2: "I'm not exactly sure what's haunted about it, but I guess a little blessing couldn't hurt.",
+    carry: "I wonder if it's just a clown thing. A lot of people think they're creepy nowadays.",
+    carry2: 'Poor little guy.',
+    ghost: 'I suppose a toy makes more sense than a teacup.',
+    ghost2: 'The things these spirits will get into these days.',
   },
 };
 
@@ -337,8 +353,17 @@ export const RELIC_LINES: Record<RelicKind, { approach: string; pickup: string; 
  * thought.
  */
 export const CHURCH_LEFT_Y = 49;
-/** Seconds the clown doll dances and laughs when the cross fails on it (D2-05). */
+/** Seconds the clown doll dances and laughs when the second cross fails on it (D2-05). */
 export const CLOWN_DANCE_SECONDS = 3.2;
+/** Seconds of the small giggle and wiggle at the first cross (D2-05). */
+export const CLOWN_WIGGLE_SECONDS = 1.4;
+/**
+ * The splash (D2-07): the rod strikes three times, `SPLASH_STRIKE` seconds
+ * apart, then the doll stops and slumps; the thought follows at
+ * `SPLASH_SECONDS`.
+ */
+export const SPLASH_STRIKE = 0.3;
+export const SPLASH_SECONDS = 2.6;
 
 /**
  * Seconds the prankster ghost is on screen (D2-02): pops up behind the bench,
@@ -374,6 +399,7 @@ export const REMINDERS = {
   // S3 part 2, PROVISIONAL.
   holyWaterFirst: 'I need the bucket of holy water by the table first.',
   needRod: 'I need the holy-water rod.',
+  rodDry: 'I should dip the rod in the holy water first.',
   bucketEmpty: "It's empty. I should fill it at the fountain first.",
 };
 

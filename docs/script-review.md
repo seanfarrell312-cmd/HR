@@ -52,9 +52,10 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-16 | Closing the phone after the first delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
 | D2-17 | The teacup goes on the cleaned-relic table; then the second delivery text. | If they're all like this today, I might get to go home early. | |
 | D2-18 | Leaving the church by its front doors once the second delivery text is in, before the doll is collected. | I should have brought a bike or something. This walk is ridiculous. | |
-| D2-19 | Blessing the clown doll with the cross: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
+| D2-19 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
 | D2-20 | Straight after; then "Find the storage closet key in the office". | Time for some holy water. There should be a bucket in the storage closet. | |
 | D2-21 | Searching the office desk drawers for the storage closet key. | There it is. I knew these drawers were good for something. | |
+| D2-22 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
 
 ### Day 2: dawdling outside
 
@@ -91,9 +92,12 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | ID | When it plays | Text | Proposed |
 |---|---|---|---|
 | CD-01 | Nearing the drop box once it has been delivered. | Quiet one this time. That makes a nice change. | |
-| CD-02 | Taking it out of the drop box. | A clown doll. Why is it always a clown doll? | |
-| CD-03 | Carrying it up the path, 17 m from the church doors. | It's just... limp. Maybe this one's a dud. | |
-| CD-04 | Its ghost, once it has gone. | Laughing all the way to the other side. | |
+| CD-02 | Taking it out of the drop box. | A doll? | |
+| CD-02b | Straight after; then the ritual table objective. | I'm not exactly sure what's haunted about it, but I guess a little blessing couldn't hurt. | |
+| CD-03 | Carrying it up the path, 17 m from the church doors. | I wonder if it's just a clown thing. A lot of people think they're creepy nowadays. | |
+| CD-03b | Straight after. | Poor little guy. | |
+| CD-04 | Its ghost, once it has gone. | I suppose a toy makes more sense than a teacup. | |
+| CD-04b | Straight after; then the next objective. | The things these spirits will get into these days. | |
 
 ## Texts
 
@@ -186,6 +190,7 @@ Proposed changes to B:
 | R-10 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
 | R-11 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
 | R-12 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
-| R-13 | Trying the water ritual before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
-| R-14 | Trying the water ritual without the holy-water rod. | I need the holy-water rod. | |
-| R-15 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-13 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
+| R-14 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
+| R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
+| R-16 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

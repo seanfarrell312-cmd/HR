@@ -229,16 +229,25 @@ export const DAY2: Objective[] = [
     done: (s) => s.day_index === 2 && s.relics_stored.includes('teacup'),
   },
   {
-    // The clown doll arrives, and the cross only makes it dance (D2-05).
+    // The clown doll arrives. The cross gets a giggle and a wiggle; after
+    // scripture, the cross again only makes it dance (D2-05; designer,
+    // 2026-11-26).
     id: 'D2-05',
     task: (s) => {
       if (!s.inbox.includes('d2delivery2')) return '';
       if (!s.sms_read.has('d2delivery2')) return 'Check your phone (Q)';
       if (s.relic === 'drop-box') return 'Collect the delivery from the drop box by the gate';
       if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the clown doll on the ritual table' : '';
+      const cross = !s.inventory.has('cross') ? 'Take the cross from the chapel shelf' : '';
+      if (!s.flags.has('clown-wiggled')) return cross || 'Stand in the holy circle and bless the clown doll';
+      // Nothing new while it giggles.
+      if (!s.flags.has('clown-wiggle-done')) return '';
+      if (!s.flags.has('scripture-read')) {
+        return s.inventory.has('bible') ? 'Read the clown doll some scripture' : 'Pick up the Bible from the stand';
+      }
+      // Dancing, then its two thoughts.
       if (s.flags.has('clown-danced')) return '';
-      if (!s.inventory.has('cross')) return 'Take the cross from the chapel shelf';
-      return 'Stand in the holy circle and bless the clown doll';
+      return cross || 'Bless the clown doll again';
     },
     done: (s) => s.day_index === 2 && s.relic_kind === 'clown' && s.flags.has('water-wanted'),
   },
@@ -257,19 +266,27 @@ export const DAY2: Objective[] = [
     done: (s) => s.day_index === 2 && s.inventory.has('rod') && s.bucket !== 'closet',
   },
   {
-    // Fill the bucket at the fountain; the water ritual; store the doll (D2-07).
+    // Fill the bucket at the fountain and set it down, dip the rod and splash
+    // the doll still; the cross once more releases it; store it (D2-07;
+    // designer, 2026-11-26).
     id: 'D2-07',
     task: (s) => {
-      if (!s.flags.has('relic-blessed')) {
+      if (!s.flags.has('clown-doused')) {
         if (s.bucket === 'held') {
           return s.bucket_filled ? 'Put the bucket down by the ritual table' : 'Fill the bucket at the fountain in the west garden';
         }
-        if (s.bucket === 'chapel' && !s.bucket_filled) return 'Fill the bucket at the fountain in the west garden';
-        return 'Stand in the holy circle and sprinkle the clown doll with holy water';
+        if (!s.flags.has('rod-wet')) {
+          if (!s.bucket_filled) return 'Fill the bucket at the fountain in the west garden';
+          return 'Dip the holy-water rod in the bucket';
+        }
+        return 'Stand in the holy circle and splash the clown doll with holy water';
       }
+      // It goes still, then "Looks like that cooled him off."
+      if (!s.flags.has('clown-cool-thought-done')) return '';
+      if (!s.flags.has('relic-blessed')) return 'Bless the clown doll again';
       if (!s.flags.has('relic-thought-done')) return '';
       if (s.relic === 'held') return 'Put the clown doll on the table outside the chapel';
-      return 'Pick up the clown doll';
+      return s.inventory.has('bible') ? 'Put the Bible back on the stand and pick up the clown doll' : 'Pick up the clown doll';
     },
     done: (s) => s.day_index === 2 && s.relics_stored.includes('clown'),
   },

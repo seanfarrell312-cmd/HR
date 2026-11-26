@@ -11,6 +11,7 @@ import {
   OFFICE_NOTE_DAY2,
   RELIC_LINES,
   REMINDERS,
+  type RelicLines,
   SCRIPTURE,
   SEARCH_CHECKLIST,
   SMS,
@@ -69,9 +70,10 @@ export const DAY2: Cue[] = [
   { key: 'alertRead', when: 'Closing the phone after the first delivery text; then the drop-box objective.' },
   { key: 'homeEarly', when: 'The teacup goes on the cleaned-relic table; then the second delivery text.' },
   { key: 'longWalk', when: 'Leaving the church by its front doors once the second delivery text is in, before the doll is collected.' },
-  { key: 'clownDance', when: 'Blessing the clown doll with the cross: once it has finished laughing and dancing.' },
+  { key: 'clownDance', when: 'Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing.' },
   { key: 'clownWater', when: 'Straight after; then "Find the storage closet key in the office".' },
   { key: 'storageKey', when: 'Searching the office desk drawers for the storage closet key.' },
+  { key: 'cooledOff', when: 'Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again.' },
 ];
 
 /** Thoughts that sit with the relics instead (RELIC_LINES), so they're listed by relic. */
@@ -85,12 +87,25 @@ const RELIC_CUES: { kind: keyof typeof RELIC_LINES; day: string; title: string }
   { kind: 'teacup', day: 'Day 2', title: 'Teacup (Day 2, first delivery)' },
   { kind: 'clown', day: 'Day 2', title: 'Clown doll (Day 2, second delivery)' },
 ];
-const RELIC_WHEN: Record<'approach' | 'pickup' | 'carry' | 'ghost', string> = {
+const RELIC_WHEN: Record<keyof RelicLines, string> = {
   approach: 'Nearing the drop box once it has been delivered.',
   pickup: 'Taking it out of the drop box.',
+  pickup2: 'Straight after; then the ritual table objective.',
   carry: 'Carrying it up the path, 17 m from the church doors.',
+  carry2: 'Straight after.',
   ghost: 'Its ghost, once it has gone.',
+  ghost2: 'Straight after; then the next objective.',
 };
+/** Each relic line's ID suffix; a second line takes its first line's number and a "b". */
+const RELIC_IDS: [keyof RelicLines, string][] = [
+  ['approach', '01'],
+  ['pickup', '02'],
+  ['pickup2', '02b'],
+  ['carry', '03'],
+  ['carry2', '03b'],
+  ['ghost', '04'],
+  ['ghost2', '04b'],
+];
 
 export const SMS_WHEN: Record<string, string> = {
   gateCode: 'Day 1, 6.5 s into the shift.',
@@ -152,9 +167,10 @@ export function scriptReview(): string {
     const lines = RELIC_LINES[r.kind];
     const id = r.kind === 'music-box' ? 'MB' : r.kind === 'teacup' ? 'TC' : 'CD';
     out.push(`#### ${r.title}`, '', '| ID | When it plays | Text | Proposed |', '|---|---|---|---|');
-    (['approach', 'pickup', 'carry', 'ghost'] as const).forEach((k, i) => {
-      out.push(`| ${id}-0${i + 1} | ${RELIC_WHEN[k]} | ${cell(lines[k])} | |`);
-    });
+    for (const [k, n] of RELIC_IDS) {
+      const line = lines[k];
+      if (line) out.push(`| ${id}-${n} | ${RELIC_WHEN[k]} | ${cell(line)} | |`);
+    }
     out.push('');
   }
 
@@ -200,7 +216,8 @@ const REMINDER_WHEN: Record<keyof typeof REMINDERS, string> = {
   bibleFirst: 'Trying to read scripture without the Bible.',
   bibleBack: 'Picking up a cleansed relic while still holding the Bible.',
   standInCircle: 'Trying to bless or read from outside the holy circle.',
-  holyWaterFirst: 'Trying the water ritual before the bucket of holy water is by the ritual table.',
-  needRod: 'Trying the water ritual without the holy-water rod.',
+  holyWaterFirst: 'Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table.',
+  needRod: 'Trying to splash the clown doll, or dip the rod, without the holy-water rod.',
+  rodDry: 'Trying to splash the clown doll before dipping the rod in the bucket.',
   bucketEmpty: 'Putting the bucket down by the ritual table before filling it.',
 };

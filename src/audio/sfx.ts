@@ -166,6 +166,12 @@ export class Sfx {
         for (let i = 0; i < 6; i++) this.hiss(i * 0.18, 0.22, 900 + i * 260, 0.16);
         this.tone('sine', 300, 0.1, 1.1, 0.03);
         break;
+      case 'dip':
+        // The rod dunked in the pail: a short slosh and a low plop.
+        this.hiss(0, 0.25, 1100, 0.14);
+        this.hiss(0.08, 0.18, 2400, 0.08);
+        this.glide('sine', 420, 180, 0, 0.18, 0.06);
+        break;
       case 'sprinkle':
         // Three flicks of the rod: a splash of droplets each.
         for (let i = 0; i < 3; i++) {

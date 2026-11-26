@@ -184,8 +184,14 @@ function handleEffect(e: Effect): void {
     case 'prank':
       props.startPrank();
       break;
+    case 'wiggle':
+      props.startWiggle();
+      break;
     case 'dance':
       props.startDance();
+      break;
+    case 'splash':
+      props.startSplash();
       break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
@@ -649,13 +655,13 @@ renderer.setAnimationLoop(() => {
   applyEnvironment(state.environment_preset);
 
   // Reading scripture is a hold too, but with the Bible, not the cross.
-  // The water ritual raises the holy-water rod instead.
+  // Splashing the clown doll raises the holy-water rod instead.
   const holdType = res.hold?.type;
   const hold = {
     active: !!res.hold && primaryDown,
     progress: blessMeter.progress,
-    cross: holdType !== 'begin-scripture' && holdType !== 'bless-water',
-    rod: holdType === 'bless-water',
+    cross: holdType !== 'begin-scripture' && holdType !== 'splash-doll',
+    rod: holdType === 'splash-doll',
   };
   props.sync(state, dt, hold, camera.position, worldPaused);
   renderer.render(scene, camera);

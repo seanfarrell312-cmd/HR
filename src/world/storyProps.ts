@@ -3,11 +3,13 @@ import { AREAS, DOORS, toWorld } from '../data/layout';
 import {
   CANDLES,
   CLOWN_DANCE_SECONDS,
+  CLOWN_WIGGLE_SECONDS,
   HOLY_CIRCLE,
   PRANK_SECONDS,
   PURIFY,
   RATTLE_SECONDS,
   RELIC_TABLE_SLOTS,
+  SPLASH_STRIKE,
   SPOTS,
   TREE_PEEK,
   type ItemSpot,
@@ -202,7 +204,7 @@ function bucketModel(): THREE.Group {
 }
 
 /** The holy-water rod (aspergillum): a wooden handle with a pierced silver ball. */
-function rodModel(): THREE.Group {
+export function rodModel(): THREE.Group {
   const g = new THREE.Group();
   const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.014, 0.32, 6), lambert('#6b4a2b'));
   handle.position.y = 0.16;
@@ -244,6 +246,48 @@ export type PurifyCue = 'wind-down' | 'sparkle' | 'ghost' | 'ghost-gone';
 function storedSpot(s: GameState, kind: RelicKind): ItemSpot | null {
   const i = s.relics_stored.indexOf(kind);
   return i < 0 ? null : RELIC_TABLE_SLOTS[Math.min(i, RELIC_TABLE_SLOTS.length - 1)];
+}
+
+/** The splash (D2-07): the rod strikes three times, then the doll stops at SPLASH_STILL. */
+const SPLASH_STRIKES = 3;
+const SPLASH_STILL = SPLASH_STRIKES * SPLASH_STRIKE;
+/** Seconds for the rod to drop out of view after the last strike. */
+const ROD_LOWER = 0.35;
+/** Fraction of each strike spent swinging forward; the rest draws back. */
+const STRIKE_HIT = 0.35;
+const DROPLETS = 36;
+const DROPLET_LIFE = 0.6;
+
+/**
+ * The holy-water rod in the splash, `t` seconds in: `swing` 0..1 for each
+ * hammering strike towards the doll, then `lower` 0..1 as it drops away.
+ */
+export function rodStrike(t: number): { swing: number; lower: number; strike: number } {
+  const ease = (x: number) => x * x * (3 - 2 * x);
+  if (t >= SPLASH_STILL) return { swing: 0, lower: Math.min(1, (t - SPLASH_STILL) / ROD_LOWER), strike: -1 };
+  const strike = Math.floor(t / SPLASH_STRIKE);
+  const u = t / SPLASH_STRIKE - strike;
+  const swing = u < STRIKE_HIT ? ease(u / STRIKE_HIT) : 1 - ease((u - STRIKE_HIT) / (1 - STRIKE_HIT));
+  return { swing, lower: 0, strike };
+}
+
+/**
+ * The rod in camera space: `raise` 0..1 brings it up and draws it back while
+ * the splash is held; `swing` 0..1 brings its head down and forward at the
+ * doll (the crosshair) like a hammer; `lower` 0..1 drops it out of view.
+ */
+export function poseHeldRod(rod: THREE.Object3D, raise: number, swing: number, lower: number): void {
+  // Raised, its head leans back towards the player and in towards the
+  // middle; struck, it points forward at the doll.
+  rod.position.set(0.26 - 0.08 * swing, -0.78 + 0.33 * raise + 0.08 * swing - 0.35 * lower, -0.5 - 0.14 * swing);
+  rod.rotation.set(-0.2 + 0.5 * raise - 1.4 * swing + 0.5 * lower, 0, 0.3 * raise - 0.15 * swing);
+}
+
+interface Droplet {
+  mesh: THREE.Mesh;
+  mat: THREE.MeshBasicMaterial;
+  v: THREE.Vector3;
+  age: number;
 }
 
 /** Seconds the clock ghost is on screen: rise, smile, fade. */
@@ -304,6 +348,15 @@ export class StoryProps {
   private heldClown: ClownView;
   /** Seconds into the clown's dance; -1 when it isn't dancing. */
   private danceT = -1;
+  /** Seconds into its giggle and wiggle at the first cross; -1 when not. */
+  private wiggleT = -1;
+  private wiggleGiggle = false;
+  /** Seconds into the splash (rod strikes, then the doll stops); -1 when not. */
+  private splashT = -1;
+  /** How possessed and how slumped the doll looks, eased so it settles rather than snaps. */
+  private clownAgitation = 0;
+  private clownSlump = 0;
+  private droplets: Droplet[] = [];
   private giggleTimer = 2;
   private bucket: THREE.Group;
   private heldBucket: THREE.Group;
@@ -466,6 +519,16 @@ export class StoryProps {
     this.prankster.group.visible = false;
     this.root.add(this.relicGhost.group, this.peeker.group, this.prankster.group);
 
+    // Holy water flying off the doll as the rod strikes (D2-07).
+    const dropGeometry = new THREE.IcosahedronGeometry(0.02, 0);
+    for (let i = 0; i < DROPLETS; i++) {
+      const mat = basic('#5fb8ff', 0.95);
+      const mesh = new THREE.Mesh(dropGeometry, mat);
+      mesh.visible = false;
+      this.root.add(mesh);
+      this.droplets.push({ mesh, mat, v: new THREE.Vector3(), age: DROPLET_LIFE });
+    }
+
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
     this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup, this.clown.group, this.bucket, this.rod);
     this.raycastTargets.push(
@@ -498,6 +561,12 @@ export class StoryProps {
     this.prankster.group.visible = false;
     this.prankster.setTongue(0);
     this.danceT = -1;
+    this.wiggleT = -1;
+    this.splashT = -1;
+    for (const d of this.droplets) {
+      d.age = DROPLET_LIFE;
+      d.mesh.visible = false;
+    }
     if (this.bus) this.root.remove(this.bus);
     this.bus = null;
   }
@@ -546,6 +615,17 @@ export class StoryProps {
     this.danceT = 0;
   }
 
+  /** The clown doll giggles and wiggles where it sits (the first cross, D2-05). */
+  startWiggle(): void {
+    this.wiggleT = 0;
+    this.wiggleGiggle = true;
+  }
+
+  /** The rod strikes at the clown doll, splashing it, and it goes still (D2-07). */
+  startSplash(): void {
+    this.splashT = 0;
+  }
+
   startPurification(relic: PurifiedRelic): void {
     this.endPurification();
     const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
@@ -560,7 +640,8 @@ export class StoryProps {
       sparkles.push({ mesh, mat, delay: (i / SPARKLE_COUNT) * SPARKLE_SPREAD, angle: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 0.5 });
     }
     this.purification = { relic, t: 0, origin, sparkles, fired: new Set(['wind-down']) };
-    this.onCue('wind-down', relic);
+    // The clown doll wound down when the holy water stilled it.
+    if (relic !== 'clown') this.onCue('wind-down', relic);
   }
 
   private endPurification(): void {
@@ -683,9 +764,16 @@ export class StoryProps {
     // the water ritual.
     this.heldCross.visible = hold.cross && hold.active && hold.progress > 0;
     this.heldCross.position.y = -0.45 + hold.progress * 0.2;
-    this.heldRod.visible = hold.rod && hold.active && hold.progress > 0;
-    this.heldRod.position.y = -0.6 + hold.progress * 0.25;
-    this.heldRod.rotation.z = -0.3 - hold.progress * 0.5;
+    // Held, the rod rises and draws back; the splash brings it down on the
+    // doll like a hammer, away from the player, three times.
+    if (this.splashT >= 0 && this.splashT < SPLASH_STILL + ROD_LOWER) {
+      const { swing, lower } = rodStrike(this.splashT);
+      this.heldRod.visible = true;
+      poseHeldRod(this.heldRod, 1, swing, lower);
+    } else {
+      this.heldRod.visible = hold.rod && hold.active && hold.progress > 0;
+      poseHeldRod(this.heldRod, hold.progress, 0, 0);
+    }
 
     const cam = this.camera.getWorldPosition(new THREE.Vector3());
     this.updatePurification(fxDt);
@@ -809,8 +897,10 @@ export class StoryProps {
   /**
    * Day 2's clown doll: in the drop box, carried, on the ritual table, then on
    * the cleaned-relic table. It lies still and silent (limp in hand) until the
-   * cross makes it stand up and dance; then it giggles and fidgets now and
-   * then until the water ritual winds it down and it slumps, still.
+   * first cross gets a small giggle and wiggle out of it. The second, after
+   * scripture, makes it stand up and dance; then it giggles and fidgets now
+   * and then until the holy water splashed from the rod stills it, and it
+   * slumps (designer, 2026-11-26).
    */
   private syncClown(s: GameState, dt: number, fxDt: number, listener: THREE.Vector3): void {
     const current = s.relic_kind === 'clown';
@@ -820,33 +910,96 @@ export class StoryProps {
     at(this.clown.group, stored ?? SPOTS.relicRitual);
     this.clown.group.rotation.set(0, -Math.PI / 2, 0);
 
-    // Still and silent in the box, in hand and on the table until the cross
-    // wakes it (2026-11-22 playtest); from then it fidgets and giggles while
-    // the player fetches holy water.
-    const awake = current && s.relic === 'ritual-table' && s.flags.has('clown-danced') && !s.flags.has('relic-blessed');
-    let agitation = awake ? 1 : 0;
-    const p = this.purification;
-    if (p && p.relic === 'clown') agitation = Math.max(0, 1 - p.t / PURIFY.windDown);
-    const slump = s.flags.has('relic-blessed') && current ? 1 - agitation : stored ? 1 : 0;
+    // The splash: the strikes land, then it stops and winds down.
+    if (this.splashT >= 0) {
+      const before = this.splashT;
+      this.splashT += fxDt;
+      const hit = (t: number) => (t < SPLASH_STILL ? Math.floor(t / SPLASH_STRIKE - STRIKE_HIT) : SPLASH_STRIKES - 1);
+      if (hit(this.splashT) > hit(before)) this.splashDroplets();
+      if (before < SPLASH_STILL && this.splashT >= SPLASH_STILL) this.onCue('wind-down', 'clown');
+      if (this.splashT > SPLASH_STILL + ROD_LOWER) this.splashT = -1;
+    }
+    this.updateDroplets(fxDt);
+    const striking = this.splashT >= 0 && this.splashT < SPLASH_STILL;
+
+    // Still and silent in the box, in hand and on the table until the second
+    // cross; from then it fidgets and giggles while the player fetches holy
+    // water, until the splash.
+    const onTable = current && s.relic === 'ritual-table';
+    const doused = s.flags.has('clown-doused');
+    const awake = onTable && s.flags.has('clown-danced') && (!doused || striking);
+    const still = (current && doused && !striking) || !!stored;
+    const k = Math.min(1, fxDt * 3);
+    this.clownAgitation += ((awake ? 1 : 0) - this.clownAgitation) * k;
+    this.clownSlump += ((still ? 1 : 0) - this.clownSlump) * k;
+    if (!current) {
+      this.clownAgitation = 0;
+      this.clownSlump = stored ? 1 : 0;
+    }
 
     const now = performance.now() / 1000;
     if (this.danceT >= 0) {
       this.danceT += fxDt;
       if (this.danceT > CLOWN_DANCE_SECONDS) this.danceT = -1;
     }
+    // The first cross: a giggle and a little wiggle, then still again.
+    let wiggle = 0;
+    if (this.wiggleT >= 0) {
+      if (this.wiggleGiggle) this.onGiggle(this.giggleVolume(listener));
+      this.wiggleGiggle = false;
+      this.wiggleT += fxDt;
+      if (this.wiggleT > CLOWN_WIGGLE_SECONDS) this.wiggleT = -1;
+      else wiggle = Math.sin((Math.PI * this.wiggleT) / CLOWN_WIGGLE_SECONDS);
+    }
     const stand = this.danceT >= 0 ? danceStand(this.danceT, CLOWN_DANCE_SECONDS) : 0;
     // Fits of fidgeting every few seconds while it sits possessed.
-    const fit = agitation * Math.max(0, Math.sin(now * 1.3)) ** 4;
-    poseClown(this.clown, { stand, energy: stand, t: this.danceT >= 0 ? this.danceT : now, fit, slump });
+    const fit = Math.max(wiggle, this.clownAgitation * Math.max(0, Math.sin(now * 1.3)) ** 4);
+    const energy = Math.max(stand, 0.3 * wiggle);
+    const t = this.danceT >= 0 ? this.danceT : this.wiggleT >= 0 ? this.wiggleT : now;
+    poseClown(this.clown, { stand, energy, t, fit, slump: this.clownSlump });
     poseClown(this.heldClown, { stand: 0, energy: 0, t: 0, fit: 0, slump: 0, limp: 1 });
 
     if (awake && this.danceT < 0) {
       this.giggleTimer -= dt;
       if (this.giggleTimer <= 0 && fit > 0.5) {
         this.giggleTimer = 2.6;
-        const d = Math.hypot(listener.x - SPOTS.relicRitual.x, -listener.z - SPOTS.relicRitual.y);
-        this.onGiggle(listener.y < -3 ? 0 : tuneVolume(d));
+        this.onGiggle(this.giggleVolume(listener));
       }
+    }
+  }
+
+  /** The doll's giggle, by how far the listener is from the ritual table. */
+  private giggleVolume(listener: THREE.Vector3): number {
+    const d = Math.hypot(listener.x - SPOTS.relicRitual.x, -listener.z - SPOTS.relicRitual.y);
+    return listener.y < -3 ? 0 : tuneVolume(d);
+  }
+
+  /** A burst of holy water off the doll as a strike lands. */
+  private splashDroplets(): void {
+    const spot = SPOTS.relicRitual;
+    const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + 0.16));
+    let n = 12;
+    for (const d of this.droplets) {
+      if (n === 0) break;
+      if (d.age < DROPLET_LIFE) continue;
+      n--;
+      d.age = 0;
+      d.mesh.position.copy(origin).add(new THREE.Vector3((Math.random() - 0.5) * 0.12, Math.random() * 0.08, (Math.random() - 0.5) * 0.12));
+      const a = Math.random() * Math.PI * 2;
+      const out = 0.4 + Math.random() * 0.5;
+      d.v.set(Math.cos(a) * out, 0.9 + Math.random() * 0.7, Math.sin(a) * out);
+      d.mesh.visible = true;
+    }
+  }
+
+  private updateDroplets(dt: number): void {
+    for (const d of this.droplets) {
+      if (d.age >= DROPLET_LIFE) continue;
+      d.age += dt;
+      d.v.y -= 5 * dt;
+      d.mesh.position.addScaledVector(d.v, dt);
+      d.mat.opacity = 0.95 * (1 - (d.age / DROPLET_LIFE) ** 2);
+      d.mesh.visible = d.age < DROPLET_LIFE;
     }
   }
 

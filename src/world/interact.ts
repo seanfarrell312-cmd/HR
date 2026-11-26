@@ -155,7 +155,11 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'bucket':
       if (s.bucket === 'held') return NONE;
       if (s.bucket === 'closet' && !s.flags.has('storage-opened')) return NONE;
-      if (s.bucket === 'chapel' && s.bucket_filled) return NONE;
+      if (s.bucket === 'chapel' && s.bucket_filled) {
+        // The rod goes in before the doll is splashed (designer, 2026-11-26).
+        if (!s.inventory.has('rod') || s.flags.has('rod-wet') || s.flags.has('clown-doused') || !s.flags.has('water-wanted')) return NONE;
+        return story('E  Dip the rod in the holy water', { type: 'wet-rod' });
+      }
       if (s.held_prop_id) return say('Bucket', REMINDERS.handsFull);
       return story('E  Pick up the bucket', { type: 'pickup-bucket' });
 
@@ -253,9 +257,10 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 }
 
 /**
- * Day 2's clown doll on the ritual table: the cross only sets it dancing
- * (D2-05); then holy water from the bucket by the table, sprinkled with the
- * rod, releases it (D2-07).
+ * Day 2's clown doll on the ritual table (designer, 2026-11-26): the cross
+ * gets a giggle and a wiggle; scripture; the cross again sets it dancing
+ * (D2-05); holy water splashed from the rod stills it, and the cross once
+ * more releases it (D2-07).
  */
 function resolveClown(s: GameState, player: Player): Resolution {
   if (s.relic_kind !== 'clown' || s.relic !== 'ritual-table') return NONE;
@@ -264,28 +269,53 @@ function resolveClown(s: GameState, player: Player): Resolution {
   const label = 'Clown doll';
   if (s.flags.has('relic-blessed')) {
     if (s.held_prop_id) return say(label, REMINDERS.handsFull);
+    if (s.inventory.has('bible')) return say(label, REMINDERS.bibleBack);
     return story('E  Pick up the clown doll', { type: 'pickup-relic' });
   }
   if (!tableReady(s)) return say(label, REMINDERS.tableNotReady);
+  const bless: Resolution = {
+    prompt: 'Hold click  Bless the clown doll',
+    action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
+    hold: { type: 'bless-relic' },
+  };
+  if (!s.flags.has('clown-wiggled')) {
+    if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return bless;
+  }
+  // Giggling and wiggling.
+  if (!s.flags.has('clown-wiggle-done')) return NONE;
+  if (!s.flags.has('scripture-read')) {
+    if (!s.inventory.has('bible')) return say(label, REMINDERS.bibleFirst);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return {
+      prompt: 'Hold click  Read the clown doll some scripture',
+      action: { kind: 'message', text: 'Hold the left mouse button to read to it.' },
+      hold: { type: 'begin-scripture' },
+    };
+  }
   if (!s.flags.has('clown-danced')) {
     if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
     if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
-    return {
-      prompt: 'Hold click  Bless the clown doll',
-      action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
-      hold: { type: 'bless-relic' },
-    };
+    return bless;
   }
   // Dancing, then the two thoughts.
   if (!s.flags.has('water-wanted')) return NONE;
-  if (s.bucket !== 'chapel' || !s.bucket_filled) return say(label, REMINDERS.holyWaterFirst);
-  if (!s.inventory.has('rod')) return say(label, REMINDERS.needRod);
+  if (!s.flags.has('clown-doused')) {
+    if (!s.inventory.has('rod')) return say(label, REMINDERS.needRod);
+    if (!s.flags.has('rod-wet')) return say(label, s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return {
+      prompt: 'Hold click  Splash the clown doll with holy water',
+      action: { kind: 'message', text: 'Hold the left mouse button to splash it.' },
+      hold: { type: 'splash-doll' },
+    };
+  }
+  // Going still, then "Looks like that cooled him off."
+  if (!s.flags.has('clown-cool-thought-done')) return NONE;
+  if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
   if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
-  return {
-    prompt: 'Hold click  Sprinkle the clown doll with holy water',
-    action: { kind: 'message', text: 'Hold the left mouse button to sprinkle it.' },
-    hold: { type: 'bless-water' },
-  };
+  return bless;
 }
 
 /**

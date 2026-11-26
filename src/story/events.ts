@@ -31,6 +31,8 @@ import {
   SEARCH_NUDGE_SECONDS,
   SEARCH_NUDGES,
   CLOWN_DANCE_SECONDS,
+  CLOWN_WIGGLE_SECONDS,
+  SPLASH_SECONDS,
   CHURCH_LEFT_Y,
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
@@ -67,14 +69,26 @@ export type StoryEvent =
   /** Day 2, dawdling outside after the gate: the `n`th line (1 to 3). */
   | { type: 'loiter'; n: number }
   | { type: 'enter-church'; x: number; y: number; level: number }
-  /** The clown doll (D2-05 to D2-07). */
+  /**
+   * The clown doll (D2-05 to D2-07, reordered 2026-11-26): the first cross
+   * makes it giggle and wiggle; scripture; the second cross makes it dance;
+   * holy water stills it; the third cross releases it.
+   */
+  | { type: 'clown-wiggle-done' }
   | { type: 'clown-dance-done' }
   | { type: 'water-idea' }
   | { type: 'water-wanted' }
   | { type: 'pickup-bucket' }
   | { type: 'fill-bucket' }
   | { type: 'place-bucket' }
-  | { type: 'bless-water' }
+  /** Dip the holy-water rod in the bucket by the ritual table. */
+  | { type: 'wet-rod' }
+  /** Splash the doll with the wet rod: it stops and lies still. */
+  | { type: 'splash-doll' }
+  /** Timed: the doll has slumped; its thought plays. */
+  | { type: 'clown-cooled' }
+  /** Timed, after that thought: the last blessing is asked for. */
+  | { type: 'clown-cool-thought-done' }
   | { type: 'search-thought-done' }
   | { type: 'prank-focus-done' }
   /** Timed: the prankster ghost has floated off; its thought plays. */
@@ -115,8 +129,12 @@ export type StoryEvent =
   | { type: 'leave-church'; x: number; y: number; level: number }
   /** Take the delivered relic out of the drop box. */
   | { type: 'take-relic' }
-  /** Timed, after the pickup thought: the ritual table objective shows. */
+  /** Timed, after the first pickup thought: the second, where the relic has one. */
+  | { type: 'relic-pickup-2' }
+  /** Timed, after the pickup thoughts: the ritual table objective shows. */
   | { type: 'relic-pickup-thought-done' }
+  /** Timed, after the carry thought: the second, where the relic has one. */
+  | { type: 'relic-carry-2' }
   /** The player's position; the "annoying" thought carrying the music box up to the church. */
   | { type: 'relic-near-church'; x: number; y: number; level: number }
   | { type: 'place-relic' }
@@ -138,6 +156,8 @@ export type StoryEvent =
   | { type: 'return-bible' }
   /** The music box's ghost has risen and gone (from the view's timing). */
   | { type: 'relic-ghost-gone' }
+  /** Timed, after the ghost thought: the second, where the relic has one. */
+  | { type: 'relic-ghost-2' }
   /** Timed: a beat after the wink thought, the music box's next objective shows. */
   | { type: 'relic-thought-done' }
   | { type: 'pickup-relic' }
@@ -174,6 +194,7 @@ export type SfxId =
   | 'clown-laugh'
   | 'clown-wind-down'
   | 'fill'
+  | 'dip'
   | 'sprinkle';
 
 export type PurifiedRelic = 'clock' | RelicKind;
@@ -192,8 +213,12 @@ export type Effect =
   | { kind: 'open-scripture' }
   /** The prankster ghost pops up behind the garden bench and floats off (D2-02). */
   | { kind: 'prank' }
+  /** The clown doll giggles and wiggles where it lies (the first cross, D2-05). */
+  | { kind: 'wiggle' }
   /** The clown doll stands up on the table, laughs and dances (D2-05). */
   | { kind: 'dance' }
+  /** The rod strikes at the doll, splashing it, and the doll goes still (D2-07). */
+  | { kind: 'splash' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -575,17 +600,27 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.held_prop_id = s.relic_kind;
       s.flags.add('drop-box-approached');
       {
-        const line = RELIC_LINES[s.relic_kind].pickup;
+        const lines = RELIC_LINES[s.relic_kind];
+        const next: StoryEvent = { type: lines.pickup2 ? 'relic-pickup-2' : 'relic-pickup-thought-done' };
         out.push(
           { kind: 'sfx', id: 'pickup' },
-          { kind: 'say', text: line },
-          { kind: 'after', seconds: afterThought(line), event: { type: 'relic-pickup-thought-done' } },
+          { kind: 'say', text: lines.pickup },
+          { kind: 'after', seconds: afterThought(lines.pickup), event: next },
         );
       }
       break;
 
+    case 'relic-pickup-2': {
+      const line = RELIC_LINES[s.relic_kind].pickup2;
+      if (!line || s.relic === 'drop-box' || s.relic === 'none' || s.flags.has('relic-pickup-2')) return [];
+      s.flags.add('relic-pickup-2');
+      out.push({ kind: 'say', text: line }, { kind: 'after', seconds: afterThought(line), event: { type: 'relic-pickup-thought-done' } });
+      break;
+    }
+
     case 'relic-pickup-thought-done':
       if (s.relic === 'drop-box' || s.relic === 'none' || s.flags.has('relic-pickup-thought-done')) return [];
+      if (RELIC_LINES[s.relic_kind].pickup2 && !s.flags.has('relic-pickup-2')) return [];
       s.flags.add('relic-pickup-thought-done');
       break;
 
@@ -594,8 +629,20 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'held' || s.flags.has('relic-rattled') || s.flags.has('relic-annoyed')) return [];
       if (!near(e, RELIC_ANNOY)) return [];
       s.flags.add('relic-annoyed');
-      out.push({ kind: 'say', text: RELIC_LINES[s.relic_kind].carry });
+      {
+        const lines = RELIC_LINES[s.relic_kind];
+        out.push({ kind: 'say', text: lines.carry });
+        if (lines.carry2) out.push({ kind: 'after', seconds: afterThought(lines.carry), event: { type: 'relic-carry-2' } });
+      }
       break;
+
+    case 'relic-carry-2': {
+      const line = RELIC_LINES[s.relic_kind].carry2;
+      if (!line || !s.flags.has('relic-annoyed') || s.flags.has('relic-carry-2')) return [];
+      s.flags.add('relic-carry-2');
+      out.push({ kind: 'say', text: line });
+      break;
+    }
 
     case 'place-relic':
       if (s.relic !== 'held') return [];
@@ -609,15 +656,30 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'ritual-table' || s.flags.has('relic-blessed')) return [];
       if (!tableReady(s)) return flash(REMINDERS.tableNotReady);
       if (!s.inventory.has('cross')) return flash(REMINDERS.needCross);
-      // The clown doll (D2-05): the cross only sets it laughing and dancing.
+      // The clown doll (designer, 2026-11-26): the first cross gets a small
+      // giggle and wiggle; after scripture the second sets it dancing; once
+      // holy water has stilled it, the third releases it.
       if (s.relic_kind === 'clown') {
-        if (s.flags.has('clown-danced')) return [];
-        s.flags.add('clown-danced');
-        out.push(
-          { kind: 'dance' },
-          { kind: 'sfx', id: 'clown-laugh' },
-          { kind: 'after', seconds: CLOWN_DANCE_SECONDS, event: { type: 'clown-dance-done' } },
-        );
+        if (!s.flags.has('clown-wiggled')) {
+          s.flags.add('clown-wiggled');
+          out.push({ kind: 'wiggle' }, { kind: 'after', seconds: CLOWN_WIGGLE_SECONDS, event: { type: 'clown-wiggle-done' } });
+          break;
+        }
+        if (!s.flags.has('clown-wiggle-done')) return [];
+        if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
+        if (!s.flags.has('clown-danced')) {
+          s.flags.add('clown-danced');
+          out.push(
+            { kind: 'dance' },
+            { kind: 'sfx', id: 'clown-laugh' },
+            { kind: 'after', seconds: CLOWN_DANCE_SECONDS, event: { type: 'clown-dance-done' } },
+          );
+          break;
+        }
+        if (!s.flags.has('clown-cool-thought-done')) return [];
+        s.flags.add('relic-blessed');
+        s.fired_scares.push('d2-clown-ghost');
+        out.push({ kind: 'purify', relic: 'clown' });
         break;
       }
       // Day 2's first relic (D2-04): scripture, then the cross, and it's done.
@@ -648,6 +710,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'purify', relic: 'music-box' });
       break;
     }
+
+    case 'clown-wiggle-done':
+      if (!s.flags.has('clown-wiggled') || s.flags.has('clown-wiggle-done')) return [];
+      s.flags.add('clown-wiggle-done');
+      break;
 
     case 'clown-dance-done':
       if (!s.flags.has('clown-danced') || s.flags.has('clown-dance-done')) return [];
@@ -696,18 +763,40 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'sfx', id: 'place' });
       break;
 
-    case 'bless-water': {
-      // The water ritual (D2-07): the clown falls still and its ghost departs.
-      if (s.relic !== 'ritual-table' || s.relic_kind !== 'clown' || s.flags.has('relic-blessed')) return [];
-      if (!s.flags.has('water-wanted')) return [];
-      if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
+    case 'wet-rod':
+      // The rod goes into the bucket by the ritual table (designer, 2026-11-26).
+      if (s.relic_kind !== 'clown' || !s.flags.has('water-wanted') || s.flags.has('clown-doused') || s.flags.has('rod-wet')) return [];
       if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
-      s.flags.add('relic-blessed');
-      s.bucket_filled = false;
-      s.fired_scares.push('d2-clown-ghost');
-      out.push({ kind: 'sfx', id: 'sprinkle' }, { kind: 'purify', relic: 'clown' });
+      if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
+      s.flags.add('rod-wet');
+      out.push({ kind: 'sfx', id: 'dip' });
       break;
-    }
+
+    case 'splash-doll':
+      // Splashed with holy water, the doll stops and lies still (D2-07). The
+      // splash uses up the water in the bucket.
+      if (s.relic !== 'ritual-table' || s.relic_kind !== 'clown' || s.flags.has('clown-doused')) return [];
+      if (!s.flags.has('water-wanted')) return [];
+      if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
+      if (!s.flags.has('rod-wet')) return flash(s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+      s.flags.add('clown-doused');
+      s.bucket_filled = false;
+      out.push({ kind: 'splash' }, { kind: 'sfx', id: 'sprinkle' }, { kind: 'after', seconds: SPLASH_SECONDS, event: { type: 'clown-cooled' } });
+      break;
+
+    case 'clown-cooled':
+      if (!s.flags.has('clown-doused') || s.flags.has('clown-cooled')) return [];
+      s.flags.add('clown-cooled');
+      out.push(
+        { kind: 'say', text: THOUGHTS.cooledOff },
+        { kind: 'after', seconds: afterThought(THOUGHTS.cooledOff), event: { type: 'clown-cool-thought-done' } },
+      );
+      break;
+
+    case 'clown-cool-thought-done':
+      if (!s.flags.has('clown-cooled') || s.flags.has('clown-cool-thought-done')) return [];
+      s.flags.add('clown-cool-thought-done');
+      break;
 
     case 'relic-settled':
       if (!s.flags.has('relic-rattled') || s.flags.has('relic-settled')) return [];
@@ -768,13 +857,23 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (!s.flags.has('relic-blessed') || s.flags.has('relic-ghost-gone')) return [];
       s.flags.add('relic-ghost-gone');
       {
-        const line = RELIC_LINES[s.relic_kind].ghost;
-        out.push({ kind: 'say', text: line }, { kind: 'after', seconds: afterThought(line), event: { type: 'relic-thought-done' } });
+        const lines = RELIC_LINES[s.relic_kind];
+        const next: StoryEvent = { type: lines.ghost2 ? 'relic-ghost-2' : 'relic-thought-done' };
+        out.push({ kind: 'say', text: lines.ghost }, { kind: 'after', seconds: afterThought(lines.ghost), event: next });
       }
       break;
 
+    case 'relic-ghost-2': {
+      const line = RELIC_LINES[s.relic_kind].ghost2;
+      if (!line || !s.flags.has('relic-ghost-gone') || s.flags.has('relic-ghost-2')) return [];
+      s.flags.add('relic-ghost-2');
+      out.push({ kind: 'say', text: line }, { kind: 'after', seconds: afterThought(line), event: { type: 'relic-thought-done' } });
+      break;
+    }
+
     case 'relic-thought-done':
       if (!s.flags.has('relic-ghost-gone') || s.flags.has('relic-thought-done')) return [];
+      if (RELIC_LINES[s.relic_kind].ghost2 && !s.flags.has('relic-ghost-2')) return [];
       s.flags.add('relic-thought-done');
       break;
 
@@ -911,11 +1010,13 @@ export function altarOpen(s: GameState): boolean {
 /**
  * The Bible comes off its stand while the relic on the ritual table needs
  * scripture: the music box once its first blessing has failed (Day 1); Day
- * 2's first relic as soon as it's on the table (D2-04).
+ * 2's first relic as soon as it's on the table (D2-04); the clown doll once
+ * the first cross has set it giggling (D2-05).
  */
 export function bibleWanted(s: GameState): boolean {
   if (s.relic !== 'ritual-table' || s.flags.has('scripture-read')) return false;
   if (s.relic_kind === 'teacup') return true;
+  if (s.relic_kind === 'clown') return s.flags.has('clown-wiggle-done');
   return s.relic_kind === 'music-box' && s.flags.has('bible-prompted');
 }
 
