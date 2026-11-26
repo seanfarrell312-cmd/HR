@@ -346,8 +346,9 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (e.item === 'crucifix' && !altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.crucifixEarly }];
       // The Bible comes off its stand once the relic needs scripture.
       if (e.item === 'bible' && !bibleWanted(s)) return [];
-      // The storage key turns up in the desk once holy water is wanted (D2-06).
-      if (e.item === 'storage-key' && !s.flags.has('water-wanted')) return [];
+      // The storage key turns up in the desk once holy water is wanted and
+      // the Bible is back on its stand (D2-06).
+      if (e.item === 'storage-key' && !storageKeyWanted(s)) return [];
       if (e.item === 'rod' && !s.flags.has('storage-opened')) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
@@ -848,7 +849,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'return-bible':
-      if (!s.inventory.has('bible') || !s.flags.has('relic-blessed')) return [];
+      if (!bibleReturnable(s)) return [];
       s.inventory.delete('bible');
       out.push({ kind: 'sfx', id: 'place' });
       break;
@@ -1005,6 +1006,21 @@ export function altarOpen(s: GameState): boolean {
   // Day 2: once the candles are lit (D2-02), whatever is left on the altar.
   if (s.day_index === 2) return s.candles_lit.size === 4;
   return s.objective_id === 'D1-05' && s.flags.has('candles-thought-done');
+}
+
+/**
+ * The Bible goes back on its stand once the relic is cleansed, or, for the
+ * clown doll, once it's done with and holy water is wanted, so it isn't
+ * carried through the fetch for the water (designer, 2026-11-27).
+ */
+export function bibleReturnable(s: GameState): boolean {
+  if (!s.inventory.has('bible')) return false;
+  return s.flags.has('relic-blessed') || (s.relic_kind === 'clown' && s.flags.has('water-wanted'));
+}
+
+/** The storage closet key can be found in the desk drawers (D2-06). */
+export function storageKeyWanted(s: GameState): boolean {
+  return s.flags.has('water-wanted') && !s.inventory.has('storage-key') && !s.inventory.has('bible');
 }
 
 /**

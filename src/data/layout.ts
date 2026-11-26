@@ -392,8 +392,9 @@ export const PROPS: Prop[] = [
   // Chapel.
   { id: 'chapel-supply', label: 'Supply shelf', rect: rect(8.3, 53.4, 8.8, 55.5), height: 1.2, level: 0, color: WOOD },
   // Set back against the east wall, clear of the circle, so the released
-  // ghost has room in view (S2 playtest, 2026-11-09).
-  { id: 'ritual-table', label: 'Ritual table', rect: rect(13.45, 52.3, 14.2, 54.3), height: 0.9, level: 0, color: DARK_WOOD, interact: 'ritual-table' },
+  // ghost has room in view (S2 playtest, 2026-11-09). Centred on the circle
+  // north to south, so it's straight ahead from the middle (2026-11-27).
+  { id: 'ritual-table', label: 'Ritual table', rect: rect(13.45, 52.1, 14.2, 54.1), height: 0.9, level: 0, color: DARK_WOOD, interact: 'ritual-table' },
   { id: 'holy-circle', label: 'Holy circle', rect: rect(10.5, 52.2, 12.3, 54.0), height: 0.03, level: 0, color: '#3aa0e0', shape: 'ring', solid: false },
   // Just outside the circle's north-east corner. It moves into the circle on later days.
   { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: BIBLE_STAND_H, level: 0, color: DARK_WOOD, interact: 'bible' },

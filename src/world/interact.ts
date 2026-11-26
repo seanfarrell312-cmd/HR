@@ -1,8 +1,18 @@
 import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
-import { HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
+import { BEHIND_DESK, HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
-import { altarOpen, bibleWanted, blessBlocker, churchSealed, searchesDoor, tableReady, type StoryEvent } from '../story/events';
+import {
+  altarOpen,
+  bibleReturnable,
+  bibleWanted,
+  blessBlocker,
+  churchSealed,
+  searchesDoor,
+  storageKeyWanted,
+  tableReady,
+  type StoryEvent,
+} from '../story/events';
 import { circleHitsRect, doorRect } from './collision';
 
 export type Action =
@@ -39,6 +49,12 @@ export function lockState(state: GameState, doorId: string): LockState {
 
 export function inHolyCircle(p: Player): boolean {
   return p.level === 0 && Math.hypot(p.x - HOLY_CIRCLE.x, p.y - HOLY_CIRCLE.y) <= HOLY_CIRCLE.r;
+}
+
+/** Behind the office desk, between it and the west wall, where its drawers are. */
+export function behindDesk(p: Player): boolean {
+  const r = BEHIND_DESK;
+  return p.level === 0 && p.x >= r.x1 && p.x <= r.x2 && p.y >= r.y1 && p.y <= r.y2;
 }
 
 /**
@@ -146,7 +162,9 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     }
     case 'office-desk':
       // Day 2: the storage closet key is in the drawers (D2-06).
-      if (s.flags.has('water-wanted') && !s.inventory.has('storage-key')) {
+      // Only from behind it, by the west wall (designer, 2026-11-27).
+      if (storageKeyWanted(s)) {
+        if (!behindDesk(player)) return say('Desk', REMINDERS.drawersOtherSide);
         return story('E  Search the desk drawers', { type: 'take', item: 'storage-key' });
       }
       if (s.clock !== 'held') return NONE;
@@ -243,7 +261,7 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'bible':
       // Off the stand once the music box needs scripture; back on it after.
       if (s.inventory.has('bible')) {
-        if (!s.flags.has('relic-blessed')) return NONE;
+        if (!bibleReturnable(s)) return NONE;
         return story('E  Put the Bible back', { type: 'return-bible' });
       }
       if (!bibleWanted(s)) return NONE;

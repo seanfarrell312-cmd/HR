@@ -777,7 +777,8 @@ Designer ruling. The doll's steps are now:
    wig floats out, laughing.
 9. **Once it has gone:** "I suppose a toy makes more sense than a teacup.",
    then "The things these spirits will get into these days." Then the Bible
-   goes back on its stand and the doll goes on the cleaned-relic table.
+   goes back on its stand and the doll goes on the cleaned-relic table. *(Superseded 2026-11-27: the Bible now goes back before the
+   fetch for holy water.)*
 
 Small fixes to the designer's copy: capital "I" in "I guess", and "it's" in
 "I wonder if it's".
@@ -791,3 +792,29 @@ Small fixes to the designer's copy: capital "I" in "I guess", and "it's" in
 - New reminder: "I should dip the rod in the holy water first."
 - The relics' second lines appear in the script review as CD-02b, CD-03b and
   CD-04b, so the existing line IDs don't change.
+
+## 2026-11-27 — Clown doll playtest: Bible, desk drawers, ritual table
+
+Designer rulings:
+- **The doll's approach line** loses "makes". It now reads "Quiet one this
+  time. That's a nice change." Dropping only the word would leave "That a
+  nice change", so "That" became "That's".
+- **The Bible goes back first.** Once the dance thoughts have played, the
+  objective is "Put the Bible back on the stand". The storage key isn't
+  asked for, and can't be found, until it's back. The Bible isn't carried
+  through the fetch for holy water, and the doll needs nothing more from
+  it, so there's no Bible step at the end.
+- **The desk drawers open only from behind the desk**: the strip between the
+  desk and the office's west wall, the same place the chalice search checks.
+  The key is only there while it's being asked for: after holy water is
+  wanted and the Bible is back, and until it's found.
+- **The ritual table** stays against the east wall but has moved 0.2 m south,
+  so it's centred north to south on the holy circle (y = 53.1). Standing in
+  the middle of the circle facing east, it's now straight ahead between the
+  candles. The relic, clock, chalice and crucifix spots on it moved with it.
+
+### PROVISIONAL (not yet ruled on)
+
+- Aiming at the desk from anywhere but behind it, while the key is wanted,
+  shows "Desk"; pressing E gives the reminder "The drawers are on the other
+  side."

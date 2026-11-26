@@ -111,7 +111,9 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'clown-dance-done' },
   { type: 'water-idea' },
   { type: 'water-wanted' },
-  // D2-06: the storage key, the closet, the bucket and rod.
+  // D2-06: the Bible back on its stand, the storage key, the closet, the
+  // bucket and rod.
+  { type: 'return-bible' },
   { type: 'take', item: 'storage-key' },
   { type: 'door-opened', id: 'storage' },
   { type: 'pickup-bucket' },
@@ -128,7 +130,6 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'relic-ghost-gone' },
   { type: 'relic-ghost-2' },
   { type: 'relic-thought-done' },
-  { type: 'return-bible' },
   { type: 'pickup-relic' },
   { type: 'store-relic' },
 ];
@@ -733,23 +734,56 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
     expect(says(applyEvent(s, { type: 'water-idea' }))).toEqual([THOUGHTS.clownWater]);
     applyEvent(s, { type: 'water-wanted' });
     expect(s.objective_id).toBe('D2-06');
+    // The Bible goes back before the fetch for holy water.
+    expect(task(s)).toBe('Put the Bible back on the stand');
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Put the Bible back');
+    applyEvent(s, { type: 'return-bible' });
+    expect(s.inventory.has('bible')).toBe(false);
     expect(task(s)).toBe('Find the storage closet key in the office');
+    // And can't be taken again.
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    expect(applyEvent(s, { type: 'take', item: 'bible' })).toEqual([]);
+  });
+
+  it("keeps the Bible in hand while it's still needed", () => {
+    const s = at(step('bless-relic', 3));
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    expect(applyEvent(s, { type: 'return-bible' })).toEqual([]);
   });
 });
 
 describe('the storage key, closet, bucket and rod (D2-06)', () => {
   const inOffice = { x: -12, y: 52.9, level: 0 as const };
+  /** Between the desk and the west wall, where the drawers are. */
+  const behind = { x: -15.5, y: 52.9, level: 0 as const };
 
   it('keeps the key hidden in the desk until holy water is wanted', () => {
     const before = at(step('water-wanted'));
-    expect(resolve('item:office-desk', before, inOffice).prompt).toBe('');
+    expect(resolve('item:office-desk', before, behind).prompt).toBe('');
     expect(applyEvent(before, { type: 'take', item: 'storage-key' })).toEqual([]);
+    // Nor while the Bible is still in hand.
+    const bible = at(step('return-bible', 2));
+    expect(resolve('item:office-desk', bible, behind).prompt).toBe('');
+    expect(applyEvent(bible, { type: 'take', item: 'storage-key' })).toEqual([]);
     const s = at(DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key'));
-    const res = resolve('item:office-desk', s, inOffice);
+    const res = resolve('item:office-desk', s, behind);
     expect(res.prompt).toBe('E  Search the desk drawers');
     const fx = applyEvent(s, { type: 'take', item: 'storage-key' });
     expect(says(fx)).toEqual([THOUGHTS.storageKey]);
     expect(task(s)).toBe('Unlock the storage closet');
+    // Found: the drawers have nothing more to give.
+    expect(resolve('item:office-desk', s, behind).prompt).toBe('');
+  });
+
+  it('only opens the drawers from behind the desk', () => {
+    const s = at(DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key'));
+    expect(resolve('item:office-desk', s, inOffice)).toEqual({
+      prompt: 'Desk',
+      action: { kind: 'message', text: REMINDERS.drawersOtherSide },
+    });
+    // Either end of the strip behind it counts.
+    expect(resolve('item:office-desk', s, { x: -16, y: 51, level: 0 }).prompt).toBe('E  Search the desk drawers');
+    expect(resolve('item:office-desk', s, { x: -15, y: 55.5, level: 0 }).prompt).toBe('E  Search the desk drawers');
   });
 
   it('opens the storage closet with the key', () => {
@@ -858,9 +892,7 @@ describe('holy water for the clown doll (D2-07)', () => {
     expect(task(s)).toBe('');
     expect(says(applyEvent(s, { type: 'relic-ghost-2' }))).toEqual(['The things these spirits will get into these days.']);
     applyEvent(s, { type: 'relic-thought-done' });
-    expect(task(s)).toBe('Put the Bible back on the stand and pick up the clown doll');
-    expect(resolve('item:clown', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.bibleBack });
-    applyEvent(s, { type: 'return-bible' });
+    // The Bible went back before the fetch for holy water.
     expect(task(s)).toBe('Pick up the clown doll');
     expect(resolve('item:clown', s, inCircle).prompt).toBe('E  Pick up the clown doll');
     applyEvent(s, { type: 'pickup-relic' });
@@ -892,7 +924,7 @@ describe('part 2 interaction details', () => {
       play(g, DAY2_PLAYTHROUGH.slice(0, DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && 'item' in e && e.item === 'storage-key')));
       return g;
     })();
-    expect(resolve('item:clock', s, { x: -12.6, y: 52.9, level: 0 }).prompt).toBe('E  Search the desk drawers');
+    expect(resolve('item:clock', s, { x: -15.5, y: 52.9, level: 0 }).prompt).toBe('E  Search the desk drawers');
   });
 
   it('shows nothing for the bucket and rod while the closet is locked', () => {

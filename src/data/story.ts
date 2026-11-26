@@ -41,16 +41,16 @@ export const SPOTS = {
   matches: { x: 8.55, y: 54.0, z: 1.2 },
   /** The hand cross for blessings, on the chapel shelf. */
   cross: { x: 8.55, y: 54.9, z: 1.2 },
-  clockRitual: { x: 13.83, y: 53.3, z: 0.9 },
+  clockRitual: { x: 13.83, y: 53.1, z: 0.9 },
   clockDesk: { x: -14.1, y: 52.9, z: 0.8 },
   // S2 (decisions 2026-11-09). The chalice and the standing crucifix live
   // side by side on the nave altar, ready for each day's table setting.
   chaliceAltar: { x: -0.3, y: 65.1, z: 1.1 },
   crucifixAltar: { x: 0.3, y: 65.15, z: 1.1 },
   /** The ritual table's sockets: chalice and crucifix either side of the relic. */
-  chaliceRitual: { x: 13.83, y: 52.65, z: 0.9 },
-  crucifixRitual: { x: 13.83, y: 53.95, z: 0.9 },
-  relicRitual: { x: 13.83, y: 53.3, z: 0.9 },
+  chaliceRitual: { x: 13.83, y: 52.45, z: 0.9 },
+  crucifixRitual: { x: 13.83, y: 53.75, z: 0.9 },
+  relicRitual: { x: 13.83, y: 53.1, z: 0.9 },
   /** The Bible, lying open on top of its stand, just outside the circle. */
   bible: { x: 12.05, y: 54.65, z: 1.1 },
   /** Cleaned-relic table outside the chapel door (the first relic's place). */
@@ -334,10 +334,9 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
     carry: "I should hurry, this thing's about to bounce outta my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
-  // Designer copy, 2026-11-26, except the approach line (PROVISIONAL,
-  // 2026-11-22).
+  // Designer copy, 2026-11-26 and 2026-11-27.
   clown: {
-    approach: 'Quiet one this time. That makes a nice change.',
+    approach: "Quiet one this time. That's a nice change.",
     pickup: 'A doll?',
     pickup2: "I'm not exactly sure what's haunted about it, but I guess a little blessing couldn't hurt.",
     carry: "I wonder if it's just a clown thing. A lot of people think they're creepy nowadays.",
@@ -400,6 +399,7 @@ export const REMINDERS = {
   holyWaterFirst: 'I need the bucket of holy water by the table first.',
   needRod: 'I need the holy-water rod.',
   rodDry: 'I should dip the rod in the holy water first.',
+  drawersOtherSide: 'The drawers are on the other side.',
   bucketEmpty: "It's empty. I should fill it at the fountain first.",
 };
 

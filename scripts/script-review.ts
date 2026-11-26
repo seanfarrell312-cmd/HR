@@ -219,5 +219,6 @@ const REMINDER_WHEN: Record<keyof typeof REMINDERS, string> = {
   holyWaterFirst: 'Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table.',
   needRod: 'Trying to splash the clown doll, or dip the rod, without the holy-water rod.',
   rodDry: 'Trying to splash the clown doll before dipping the rod in the bucket.',
+  drawersOtherSide: 'Searching the office desk drawers for the storage closet key from anywhere but behind the desk.',
   bucketEmpty: 'Putting the bucket down by the ritual table before filling it.',
 };

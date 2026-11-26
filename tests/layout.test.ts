@@ -38,6 +38,22 @@ describe('layout data', () => {
     }
   });
 
+  it('centres the ritual table on the holy circle, against the east wall (2026-11-27)', () => {
+    const table = PROPS.find((p) => p.id === 'ritual-table')!.rect;
+    const circle = PROPS.find((p) => p.id === 'holy-circle')!.rect;
+    const chapel = area('chapel').rect;
+    // Straight ahead from the middle of the circle, facing east.
+    expect((table.y1 + table.y2) / 2).toBeCloseTo((circle.y1 + circle.y2) / 2, 5);
+    expect(chapel.x2 - WALL_THICKNESS / 2 - table.x2).toBeLessThan(0.15);
+    // The relic, clock, chalice and crucifix spots sit on it, centred the same way.
+    for (const s of [SPOTS.relicRitual, SPOTS.clockRitual, SPOTS.chaliceRitual, SPOTS.crucifixRitual]) {
+      expect(s.y).toBeGreaterThan(table.y1);
+      expect(s.y).toBeLessThan(table.y2);
+    }
+    expect(SPOTS.relicRitual.y).toBeCloseTo((circle.y1 + circle.y2) / 2, 5);
+    expect((SPOTS.chaliceRitual.y + SPOTS.crucifixRitual.y) / 2).toBeCloseTo(SPOTS.relicRitual.y, 5);
+  });
+
   it('gives the chapel a single entrance', () => {
     const chapel = area('chapel').rect;
     const entrances = DOORS.filter(

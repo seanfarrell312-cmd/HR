@@ -91,7 +91,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 
 | ID | When it plays | Text | Proposed |
 |---|---|---|---|
-| CD-01 | Nearing the drop box once it has been delivered. | Quiet one this time. That makes a nice change. | |
+| CD-01 | Nearing the drop box once it has been delivered. | Quiet one this time. That's a nice change. | |
 | CD-02 | Taking it out of the drop box. | A doll? | |
 | CD-02b | Straight after; then the ritual table objective. | I'm not exactly sure what's haunted about it, but I guess a little blessing couldn't hurt. | |
 | CD-03 | Carrying it up the path, 17 m from the church doors. | I wonder if it's just a clown thing. A lot of people think they're creepy nowadays. | |
@@ -193,4 +193,5 @@ Proposed changes to B:
 | R-13 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
 | R-14 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
 | R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
-| R-16 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-16 | Searching the office desk drawers for the storage closet key from anywhere but behind the desk. | The drawers are on the other side. | |
+| R-17 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

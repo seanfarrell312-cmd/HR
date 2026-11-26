@@ -255,6 +255,8 @@ export const DAY2: Objective[] = [
     // Holy water: the storage key, the closet, the bucket and rod (D2-06).
     id: 'D2-06',
     task: (s) => {
+      // Not carried through the fetch for the water (designer, 2026-11-27).
+      if (s.inventory.has('bible')) return 'Put the Bible back on the stand';
       if (!s.inventory.has('storage-key')) return 'Find the storage closet key in the office';
       if (!s.flags.has('storage-opened')) return 'Unlock the storage closet';
       const bucket = s.bucket === 'closet';
