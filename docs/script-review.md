@@ -39,23 +39,24 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-03 | The office door opens for the first time. | That clock really does look nice in here. | |
 | D2-04 | Within 4 m of the altar once the candles are lit. | Here's the crucifix, but no chalice... | |
 | D2-05 | Picking up the crucifix; then "Put the crucifix on the ritual table". | I guess I'll drop this off first, then look for the cup. | |
-| D2-06 | Searching the church: stepping behind the office desk ("Check the office"). | I don't think the chalice would fit in these drawers. | |
-| D2-07 | Searching the church: trying the locked storage closet door. | Locked tight. I hope it's not in the closet. | |
-| D2-08 | Searching the church: trying the locked basement door. | Still locked. I'm kinda glad I don't have to go down there. | |
-| D2-09 | Searching the church: trying the church doors from inside. They stay shut until the grounds objective shows. | I need to find the chalice. Maybe the other doors are unlocked? | |
-| D2-10 | Searching the church: 30 s with nothing new checked. Repeats after each further 30 s, three times at most. | I should check all the rooms. Maybe the other doors are unlocked? | |
-| D2-11 | All three places checked; then "Search the grounds for the chalice". | I guess it's outside somewhere? | |
-| D2-12 | Taking the chalice from the garden bench, as the prankster pops up. | JESUS! | |
-| D2-13 | Straight after "JESUS!". | Harmless, huh? I almost had a heart attack! | |
-| D2-14 | Straight after "Harmless, huh?"; then "Place the chalice on the ritual table". | Gotta stay focused, back to the chapel. | |
-| D2-15 | The chalice goes on the ritual table with the crucifix; then the delivery text. | There. All set. | |
-| D2-16 | Closing the phone after the first delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
-| D2-17 | The teacup goes on the cleaned-relic table; then the second delivery text. | If they're all like this today, I might get to go home early. | |
-| D2-18 | Leaving the church by its front doors once the second delivery text is in, before the doll is collected. | I should have brought a bike or something. This walk is ridiculous. | |
-| D2-19 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
-| D2-20 | Straight after; then "Find the storage closet key in the office". | Time for some holy water. There should be a bucket in the storage closet. | |
-| D2-21 | Searching the office desk drawers for the storage closet key. | There it is. I knew these drawers were good for something. | |
-| D2-22 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
+| D2-06 | Searching the church: trying the storage closet or basement door before finding the key. Every time. | Locked. Maybe there's a key in the office? | |
+| D2-07 | Searching the church: opening the office desk drawers from behind the desk and finding the key ("Check the office"). | No chalice in these drawers, but there's a key. Maybe it opens the storage closet, or the basement? | |
+| D2-08 | Searching the church: stepping into the storage closet once the key has opened it ("Check the storage closet"). | Just a bucket and a holy-water rod. No chalice in here. | |
+| D2-09 | Searching the church: trying the basement door with the key; it stays shut ("Check the basement"). | It doesn't fit. It must only be for the closet. | |
+| D2-10 | Searching the church: trying the church doors from inside. They stay shut until the grounds objective shows. | I need to find the chalice. I haven't checked all the rooms yet. | |
+| D2-11 | Searching the church, before the key is found: 30 s with nothing new checked. Repeats after each further 30 s, three times at most. | I should look around the office. Maybe there's a key for these doors. | |
+| D2-12 | The same nudge once the key has been found. | I should try this key on the locked doors. | |
+| D2-13 | All three places checked; then "Search the grounds for the chalice". | I guess it's outside somewhere? | |
+| D2-14 | Taking the chalice from the garden bench, as the prankster pops up. | JESUS! | |
+| D2-15 | Straight after "JESUS!". | Harmless, huh? I almost had a heart attack! | |
+| D2-16 | Straight after "Harmless, huh?"; then "Place the chalice on the ritual table". | Gotta stay focused, back to the chapel. | |
+| D2-17 | The chalice goes on the ritual table with the crucifix; then the delivery text. | There. All set. | |
+| D2-18 | Closing the phone after the first delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
+| D2-19 | The teacup goes on the cleaned-relic table; then the second delivery text. | If they're all like this today, I might get to go home early. | |
+| D2-20 | Leaving the church by its front doors once the second delivery text is in, before the doll is collected. | I should have brought a bike or something. This walk is ridiculous. | |
+| D2-21 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
+| D2-22 | Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet. | Time for some holy water. There was a bucket and a rod in the storage closet. | |
+| D2-23 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
 
 ### Day 2: dawdling outside
 
@@ -193,5 +194,5 @@ Proposed changes to B:
 | R-13 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
 | R-14 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
 | R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
-| R-16 | Searching the office desk drawers for the storage closet key from anywhere but behind the desk. | The drawers are on the other side. | |
+| R-16 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
 | R-17 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

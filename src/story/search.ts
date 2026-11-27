@@ -32,10 +32,15 @@ export function searchCount(s: GameState): number {
   return (['searched-desk', 'searched-storage', 'searched-basement'] as const).filter((f) => s.flags.has(f)).length;
 }
 
-/** True when trying this locked door still counts towards the search. */
+/**
+ * True when trying this locked door is part of the search: either door before
+ * the key from the office desk is found (a pointer to the office), and the
+ * basement with it, until the key has been tried there (2026-11-28). The key
+ * unlocks the storage closet.
+ */
 export function searchesDoor(s: GameState, doorId: string): boolean {
   if (!searching(s)) return false;
-  if (doorId === 'storage') return !s.flags.has('searched-storage');
+  if (doorId === 'storage') return !s.inventory.has('storage-key');
   if (doorId === 'basement') return !s.flags.has('searched-basement');
   return false;
 }

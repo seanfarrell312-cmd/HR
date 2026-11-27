@@ -4,7 +4,6 @@ import {
   ALTAR_APPROACH,
   GATE_CODE,
   GATE_RECALL_DELAY,
-  BEHIND_DESK,
   CHURCH_APPROACH,
   HOLY_CIRCLE,
   OFFICE_NOTES,
@@ -61,8 +60,9 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'take', item: 'crucifix' },
   { type: 'crucifix-thought-done' },
   { type: 'stage-table' },
-  { type: 'search-desk', x: -15.5, y: 52.9, level: 0 },
-  { type: 'try-locked-door', id: 'storage' },
+  { type: 'take', item: 'storage-key' },
+  { type: 'door-opened', id: 'storage' },
+  { type: 'search-closet', x: -9.3, y: 61.7, level: 0 },
   { type: 'try-locked-door', id: 'basement' },
   { type: 'search-done' },
   { type: 'search-thought-done' },
@@ -111,11 +111,9 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'clown-dance-done' },
   { type: 'water-idea' },
   { type: 'water-wanted' },
-  // D2-06: the Bible back on its stand, the storage key, the closet, the
-  // bucket and rod.
+  // D2-06: the Bible back on its stand, then the bucket and rod from the
+  // closet the key opened during the search.
   { type: 'return-bible' },
-  { type: 'take', item: 'storage-key' },
-  { type: 'door-opened', id: 'storage' },
   { type: 'pickup-bucket' },
   { type: 'take', item: 'rod' },
   // D2-07: fill it at the fountain and set it down, dip the rod, splash the
@@ -161,6 +159,15 @@ const flashes = (fx: Effect[]) => fx.filter((f) => f.kind === 'flash').map((f) =
 const inCircle = { x: HOLY_CIRCLE.x, y: HOLY_CIRCLE.y, level: 0 as const };
 /** Beside the north end of the east garden bench, inside the garden. */
 const byBench = { x: -24.8, y: 56, level: 0 as const };
+/** In the office, in front of the desk. */
+const inOffice = { x: -12, y: 52.9, level: 0 as const };
+/** Between the office desk and the west wall, where the drawers are. */
+const behindDesk = { x: -15.5, y: 52.9, level: 0 as const };
+/** In the nave by the storage closet door, and inside the closet. */
+const byCloset = { x: -6.8, y: 61.7, level: 0 as const };
+const inCloset = { x: -9.3, y: 61.7, level: 0 as const };
+/** Day 2 played up to the storage key being found in the desk (the search under way). */
+const keyStep = () => DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key');
 
 describe('Day 2 playthrough so far (S3 parts 1 and 2)', () => {
   it('runs from the gate to the clown doll put away', () => {
@@ -299,25 +306,61 @@ describe('the missing chalice (D2-02)', () => {
     expect(resolve('item:crucifix', after, inCircle).prompt).toBe('E  Take crucifix');
   });
 
-  it('searches behind the office desk and both locked doors, in any order', () => {
-    const s = at(step('search-desk'));
-    // In the office but in front of the desk: not yet.
-    expect(applyEvent(s, { type: 'search-desk', x: -12, y: 52.9, level: 0 })).toEqual([]);
-    const desk = applyEvent(s, { type: 'search-desk', x: (BEHIND_DESK.x1 + BEHIND_DESK.x2) / 2, y: 52.9, level: 0 });
-    expect(says(desk)).toEqual(["I don't think the chalice would fit in these drawers."]);
+  it('points to the office while the doors are locked and the key not found', () => {
+    const s = at(keyStep());
+    expect(task(s)).toBe('Search the church for the chalice');
+    for (const id of ['storage', 'basement']) {
+      expect(resolve(`door:${id}`, s, byCloset).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id } });
+      // Every time, like a reminder; it doesn't count as checking.
+      for (let i = 0; i < 2; i++) {
+        expect(applyEvent(s, { type: 'try-locked-door', id })).toEqual([{ kind: 'say', text: "Locked. Maybe there's a key in the office?" }]);
+      }
+    }
+    expect(checklist(s)).toEqual(['- Check the office', '- Check the storage closet', '- Check the basement']);
+  });
+
+  it('finds a key in the desk drawers, from behind the desk only', () => {
+    const s = at(keyStep());
+    expect(resolve('item:office-desk', s, inOffice)).toEqual({ prompt: 'Desk', action: { kind: 'message', text: REMINDERS.drawersOtherSide } });
+    // Either end of the strip behind it counts.
+    for (const p of [behindDesk, { x: -16, y: 51, level: 0 as const }, { x: -15, y: 55.5, level: 0 as const }]) {
+      expect(resolve('item:office-desk', s, p).prompt).toBe('E  Search the desk drawers');
+    }
+    const fx = applyEvent(s, { type: 'take', item: 'storage-key' });
+    expect(says(fx)).toEqual(["No chalice in these drawers, but there's a key. Maybe it opens the storage closet, or the basement?"]);
+    expect(s.inventory.has('storage-key')).toBe(true);
     expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', '- Check the basement']);
+    // Nothing more in the drawers.
+    expect(resolve('item:office-desk', s, behindDesk).prompt).toBe('');
+    expect(applyEvent(s, { type: 'take', item: 'storage-key' })).toEqual([]);
+  });
 
-    // The basement first this time; the door stays locked.
-    expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
-    expect(says(applyEvent(s, { type: 'try-locked-door', id: 'basement' }))).toEqual(["Still locked. I'm kinda glad I don't have to go down there."]);
-    expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', 'x Check the basement']);
+  it('opens the closet with the key, and counts it once the player steps inside', () => {
+    const s = at(step('door-opened', 4));
+    expect(resolve('door:storage', s, byCloset).prompt).toBe('E  Open storage closet');
+    applyEvent(s, { type: 'door-opened', id: 'storage' });
+    expect(s.flags.has('storage-opened')).toBe(true);
+    // Opening the door isn't looking inside.
+    expect(applyEvent(s, { type: 'search-closet', ...byCloset })).toEqual([]);
+    // The bucket and rod are there, but not to be taken yet.
+    expect(resolve('item:bucket', s, inCloset).prompt).toBe('');
+    expect(resolve('item:rod', s, inCloset).prompt).toBe('');
+    expect(applyEvent(s, { type: 'pickup-bucket' })).toEqual([]);
+    expect(applyEvent(s, { type: 'take', item: 'rod' })).toEqual([]);
+    const fx = applyEvent(s, { type: 'search-closet', ...inCloset });
+    expect(says(fx)).toEqual(['Just a bucket and a holy-water rod. No chalice in here.']);
+    expect(checklist(s)).toEqual(['x Check the office', 'x Check the storage closet', '- Check the basement']);
+  });
+
+  it("finds the key won't open the basement, then heads outside", () => {
+    const s = at(step('try-locked-door'));
+    expect(resolve('door:basement', s, byCloset).action).toEqual({ kind: 'story', event: { type: 'try-locked-door', id: 'basement' } });
+    const last = applyEvent(s, { type: 'try-locked-door', id: 'basement' });
+    expect(says(last)).toEqual(["It doesn't fit. It must only be for the closet."]);
+    expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchBasement), event: { type: 'search-done' } });
     expect(s.open_doors.has('basement')).toBe(false);
-    // Once checked, it's just locked.
-    expect(resolve('door:basement', s, inCircle).action).toEqual({ kind: 'message', text: "It's locked." });
-
-    const last = applyEvent(s, { type: 'try-locked-door', id: 'storage' });
-    expect(says(last)).toEqual([THOUGHTS.searchLocked]);
-    expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchLocked), event: { type: 'search-done' } });
+    // Once tried, it's just locked.
+    expect(resolve('door:basement', s, byCloset).action).toEqual({ kind: 'message', text: "It's locked." });
     // All crossed off, and still up through the "outside" thought.
     expect(checklist(s)).toEqual(['x Check the office', 'x Check the storage closet', 'x Check the basement']);
     expect(says(applyEvent(s, { type: 'search-done' }))).toEqual(["I guess it's outside somewhere?"]);
@@ -326,6 +369,15 @@ describe('the missing chalice (D2-02)', () => {
     applyEvent(s, { type: 'search-thought-done' });
     expect(task(s)).toBe('Search the grounds for the chalice');
     expect(checklist(s)).toEqual([]);
+  });
+
+  it('can try the basement with the key before looking in the closet', () => {
+    const s = at(step('door-opened', 4));
+    applyEvent(s, { type: 'try-locked-door', id: 'basement' });
+    expect(checklist(s)).toEqual(['x Check the office', '- Check the storage closet', 'x Check the basement']);
+    applyEvent(s, { type: 'door-opened', id: 'storage' });
+    const last = applyEvent(s, { type: 'search-closet', ...inCloset });
+    expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchCloset), event: { type: 'search-done' } });
   });
 
   it('keeps the church doors shut from inside until the grounds objective shows', () => {
@@ -341,11 +393,11 @@ describe('the missing chalice (D2-02)', () => {
     expect(resolve('door:church', before, inside).prompt).toBe('E  Open church doors');
     expect(checklist(before)).toEqual([]);
 
-    const s = shut(at(step('search-desk')));
+    const s = shut(at(keyStep()));
     const res = resolve('door:church', s, inside);
     expect(res.prompt).toBe('Church doors');
     expect(res.action).toEqual({ kind: 'story', event: { type: 'try-church-doors' } });
-    expect(says(applyEvent(s, { type: 'try-church-doors' }))).toEqual(['I need to find the chalice. Maybe the other doors are unlocked?']);
+    expect(says(applyEvent(s, { type: 'try-church-doors' }))).toEqual(["I need to find the chalice. I haven't checked all the rooms yet."]);
     expect(s.open_doors.has('church')).toBe(false);
     // Someone outside (a debug teleport) can still get in.
     expect(resolve('door:church', s, outside).prompt).toBe('E  Open church doors');
@@ -358,9 +410,11 @@ describe('the missing chalice (D2-02)', () => {
     expect(applyEvent(searched, { type: 'try-church-doors' })).toEqual([]);
   });
 
-  it('only counts the search once the crucifix is on the table', () => {
+  it('only starts the search once the crucifix is on the table', () => {
     const s = at(step('stage-table'));
-    expect(applyEvent(s, { type: 'search-desk', x: -15.5, y: 52.9, level: 0 })).toEqual([]);
+    // No key in the drawers yet, and the doors are just locked.
+    expect(resolve('item:office-desk', s, behindDesk).prompt).toBe('');
+    expect(applyEvent(s, { type: 'take', item: 'storage-key' })).toEqual([]);
     expect(applyEvent(s, { type: 'try-locked-door', id: 'storage' })).toEqual([]);
     expect(resolve('door:storage', s, inCircle).action).toEqual({ kind: 'message', text: "It's locked." });
   });
@@ -457,7 +511,7 @@ describe('search nudges (D2-02)', () => {
     expect(SEARCH_NUDGE_SECONDS).toBe(30);
     expect(SEARCH_NUDGES).toBe(3);
     const one = applyEvent(s, { type: 'search-nudge', at: 0, n: 1 });
-    expect(says(one)).toEqual(['I should check all the rooms. Maybe the other doors are unlocked?']);
+    expect(says(one)).toEqual(["I should look around the office. Maybe there's a key for these doors."]);
     expect(nudgesIn(one)).toEqual([{ kind: 'after', seconds: 30, event: { type: 'search-nudge', at: 0, n: 2 } }]);
     expect(says(applyEvent(s, { type: 'search-nudge', at: 0, n: 2 }))).toEqual([nudge]);
     const three = applyEvent(s, { type: 'search-nudge', at: 0, n: 3 });
@@ -470,13 +524,15 @@ describe('search nudges (D2-02)', () => {
   it('restarts the 30 s on each check and drops a stale nudge', () => {
     const s = at(step('stage-table'));
     applyEvent(s, { type: 'stage-table' });
-    const desk = applyEvent(s, { type: 'search-desk', x: -15.5, y: 52.9, level: 0 });
+    const desk = applyEvent(s, { type: 'take', item: 'storage-key' });
     expect(nudgesIn(desk)).toEqual([{ kind: 'after', seconds: 30, event: { type: 'search-nudge', at: 1, n: 1 } }]);
     // The one scheduled before the desk check no longer applies.
     expect(applyEvent(s, { type: 'search-nudge', at: 0, n: 1 })).toEqual([]);
-    expect(says(applyEvent(s, { type: 'search-nudge', at: 1, n: 1 }))).toEqual([nudge]);
+    // With the key in hand, the nudge says to try it.
+    expect(says(applyEvent(s, { type: 'search-nudge', at: 1, n: 1 }))).toEqual(['I should try this key on the locked doors.']);
     // The last check ends the search: no more nudges.
-    applyEvent(s, { type: 'try-locked-door', id: 'storage' });
+    applyEvent(s, { type: 'door-opened', id: 'storage' });
+    applyEvent(s, { type: 'search-closet', ...inCloset });
     const last = applyEvent(s, { type: 'try-locked-door', id: 'basement' });
     expect(nudgesIn(last)).toEqual([]);
     expect(applyEvent(s, { type: 'search-nudge', at: 2, n: 2 })).toEqual([]);
@@ -731,7 +787,7 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
     // Nothing to do with it while it dances and the thoughts play.
     expect(resolve('item:clown', s, inCircle).prompt).toBe('');
     expect(says(applyEvent(s, { type: 'clown-dance-done' }))).toEqual([THOUGHTS.clownDance]);
-    expect(says(applyEvent(s, { type: 'water-idea' }))).toEqual([THOUGHTS.clownWater]);
+    expect(says(applyEvent(s, { type: 'water-idea' }))).toEqual(['Time for some holy water. There was a bucket and a rod in the storage closet.']);
     applyEvent(s, { type: 'water-wanted' });
     expect(s.objective_id).toBe('D2-06');
     // The Bible goes back before the fetch for holy water.
@@ -739,7 +795,8 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
     expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Put the Bible back');
     applyEvent(s, { type: 'return-bible' });
     expect(s.inventory.has('bible')).toBe(false);
-    expect(task(s)).toBe('Find the storage closet key in the office');
+    // The closet is already open from the search.
+    expect(task(s)).toBe('Take the bucket and holy-water rod from the storage closet');
     // And can't be taken again.
     expect(resolve('item:bible', s, inCircle).prompt).toBe('');
     expect(applyEvent(s, { type: 'take', item: 'bible' })).toEqual([]);
@@ -752,46 +809,17 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
   });
 });
 
-describe('the storage key, closet, bucket and rod (D2-06)', () => {
-  const inOffice = { x: -12, y: 52.9, level: 0 as const };
-  /** Between the desk and the west wall, where the drawers are. */
-  const behind = { x: -15.5, y: 52.9, level: 0 as const };
-
-  it('keeps the key hidden in the desk until holy water is wanted', () => {
-    const before = at(step('water-wanted'));
-    expect(resolve('item:office-desk', before, behind).prompt).toBe('');
-    expect(applyEvent(before, { type: 'take', item: 'storage-key' })).toEqual([]);
-    // Nor while the Bible is still in hand.
-    const bible = at(step('return-bible', 2));
-    expect(resolve('item:office-desk', bible, behind).prompt).toBe('');
-    expect(applyEvent(bible, { type: 'take', item: 'storage-key' })).toEqual([]);
-    const s = at(DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key'));
-    const res = resolve('item:office-desk', s, behind);
-    expect(res.prompt).toBe('E  Search the desk drawers');
-    const fx = applyEvent(s, { type: 'take', item: 'storage-key' });
-    expect(says(fx)).toEqual([THOUGHTS.storageKey]);
-    expect(task(s)).toBe('Unlock the storage closet');
-    // Found: the drawers have nothing more to give.
-    expect(resolve('item:office-desk', s, behind).prompt).toBe('');
-  });
-
-  it('only opens the drawers from behind the desk', () => {
-    const s = at(DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key'));
-    expect(resolve('item:office-desk', s, inOffice)).toEqual({
-      prompt: 'Desk',
-      action: { kind: 'message', text: REMINDERS.drawersOtherSide },
-    });
-    // Either end of the strip behind it counts.
-    expect(resolve('item:office-desk', s, { x: -16, y: 51, level: 0 }).prompt).toBe('E  Search the desk drawers');
-    expect(resolve('item:office-desk', s, { x: -15, y: 55.5, level: 0 }).prompt).toBe('E  Search the desk drawers');
-  });
-
-  it('opens the storage closet with the key', () => {
-    const s = at(step('door-opened', 4));
-    const nave = { x: -6.8, y: 61.7, level: 0 as const };
-    expect(resolve('door:storage', s, nave).prompt).toBe('E  Open storage closet');
-    applyEvent(s, { type: 'door-opened', id: 'storage' });
-    expect(task(s)).toBe('Take the bucket and holy-water rod from the storage closet');
+describe('the bucket and rod from the closet (D2-06)', () => {
+  it('waits for the Bible to go back before handing them out', () => {
+    const s = at(step('return-bible', 2));
+    expect(s.inventory.has('storage-key')).toBe(true);
+    expect(task(s)).toBe('Put the Bible back on the stand');
+    expect(resolve('item:bucket', s, inCloset).prompt).toBe('');
+    expect(resolve('item:rod', s, inCloset).prompt).toBe('');
+    expect(applyEvent(s, { type: 'pickup-bucket' })).toEqual([]);
+    expect(applyEvent(s, { type: 'take', item: 'rod' })).toEqual([]);
+    applyEvent(s, { type: 'return-bible' });
+    expect(resolve('item:bucket', s, inCloset).prompt).toBe('E  Pick up the bucket');
   });
 
   it('takes the bucket and the rod in either order', () => {
@@ -807,11 +835,6 @@ describe('the storage key, closet, bucket and rod (D2-06)', () => {
     expect(task(s)).toBe('Fill the bucket at the fountain in the west garden');
   });
 
-  it("doesn't hand out the rod or bucket through a locked door", () => {
-    const s = at(step('door-opened', 4));
-    expect(applyEvent(s, { type: 'take', item: 'rod' })).toEqual([]);
-    expect(applyEvent(s, { type: 'pickup-bucket' })).toEqual([]);
-  });
 });
 
 describe('holy water for the clown doll (D2-07)', () => {

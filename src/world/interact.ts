@@ -7,6 +7,7 @@ import {
   bibleReturnable,
   bibleWanted,
   blessBlocker,
+  closetFetch,
   churchSealed,
   searchesDoor,
   storageKeyWanted,
@@ -162,7 +163,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     }
     case 'office-desk':
       // Day 2: the storage closet key is in the drawers (D2-06).
-      // Only from behind it, by the west wall (designer, 2026-11-27).
+      // Only from behind it, by the west wall (designer, 2026-11-27), while
+      // the church is searched for the chalice (2026-11-28).
       if (storageKeyWanted(s)) {
         if (!behindDesk(player)) return say('Desk', REMINDERS.drawersOtherSide);
         return story('E  Search the desk drawers', { type: 'take', item: 'storage-key' });
@@ -172,7 +174,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 
     case 'bucket':
       if (s.bucket === 'held') return NONE;
-      if (s.bucket === 'closet' && !s.flags.has('storage-opened')) return NONE;
+      // Seen during the search, but only taken once holy water is wanted.
+      if (s.bucket === 'closet' && (!s.flags.has('storage-opened') || !closetFetch(s))) return NONE;
       if (s.bucket === 'chapel' && s.bucket_filled) {
         // The rod goes in before the doll is splashed (designer, 2026-11-26).
         if (!s.inventory.has('rod') || s.flags.has('rod-wet') || s.flags.has('clown-doused') || !s.flags.has('water-wanted')) return NONE;
@@ -182,7 +185,7 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story('E  Pick up the bucket', { type: 'pickup-bucket' });
 
     case 'rod':
-      if (s.inventory.has('rod') || !s.flags.has('storage-opened')) return NONE;
+      if (s.inventory.has('rod') || !s.flags.has('storage-opened') || !closetFetch(s)) return NONE;
       return story('E  Take the holy-water rod', { type: 'take', item: 'rod' });
 
     case 'fountain':

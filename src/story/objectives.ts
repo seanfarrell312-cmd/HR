@@ -252,13 +252,12 @@ export const DAY2: Objective[] = [
     done: (s) => s.day_index === 2 && s.relic_kind === 'clown' && s.flags.has('water-wanted'),
   },
   {
-    // Holy water: the storage key, the closet, the bucket and rod (D2-06).
+    // Holy water: the Bible back on its stand, then the bucket and rod from
+    // the closet the key opened during the search (D2-06, 2026-11-28).
     id: 'D2-06',
     task: (s) => {
       // Not carried through the fetch for the water (designer, 2026-11-27).
       if (s.inventory.has('bible')) return 'Put the Bible back on the stand';
-      if (!s.inventory.has('storage-key')) return 'Find the storage closet key in the office';
-      if (!s.flags.has('storage-opened')) return 'Unlock the storage closet';
       const bucket = s.bucket === 'closet';
       const rod = !s.inventory.has('rod');
       if (bucket && rod) return 'Take the bucket and holy-water rod from the storage closet';

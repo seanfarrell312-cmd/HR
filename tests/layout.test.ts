@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { DOOR_PRESETS } from '../src/data/doorPresets';
-import { AREAS, DOORS, PLAYER_RADIUS, PROPS, roofRect, TELEPORTS, TRANSITIONS, WALL_THICKNESS, WALLS } from '../src/data/layout';
+import { AREAS, DOORS, PLAYER_RADIUS, PROPS, roofRect, TELEPORTS, TRANSITIONS, WALL_THICKNESS, WALLS, type Rect } from '../src/data/layout';
 import { CANDLES, SPOTS, TREE_PEEK } from '../src/data/story';
 import { buildWorld, poseDoor } from '../src/world/build';
-import { blocked, doorOnWall, staticColliders, wallSegments } from '../src/world/collision';
+import { blocked, doorOnWall, doorSweepRect, staticColliders, wallSegments } from '../src/world/collision';
 import { zoneAt } from '../src/world/zones';
 
 const area = (id: string) => {
@@ -52,6 +52,42 @@ describe('layout data', () => {
     }
     expect(SPOTS.relicRitual.y).toBeCloseTo((circle.y1 + circle.y2) / 2, 5);
     expect((SPOTS.chaliceRitual.y + SPOTS.crucifixRitual.y) / 2).toBeCloseTo(SPOTS.relicRitual.y, 5);
+  });
+
+  it('furnishes the storage closet clear of its door (2026-11-28)', () => {
+    const closet = area('storage').rect;
+    const sweep = doorSweepRect(DOORS.find((d) => d.id === 'storage')!);
+    const inner = { x1: closet.x1 + WALL_THICKNESS / 2, y1: closet.y1 + WALL_THICKNESS / 2, x2: closet.x2 - WALL_THICKNESS / 2, y2: closet.y2 - WALL_THICKNESS / 2 };
+    const overlaps = (a: Rect, b: Rect) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+    const inside = PROPS.filter((p) => p.id.startsWith('closet-'));
+    expect(inside.filter((p) => p.label === 'Shelf')).toHaveLength(6);
+    expect(inside.filter((p) => p.label === 'Placeholder').length).toBeGreaterThan(5);
+    for (const p of inside) {
+      expect(p.rect.x1, p.id).toBeGreaterThanOrEqual(inner.x1 - 1e-9);
+      expect(p.rect.x2, p.id).toBeLessThanOrEqual(inner.x2 + 1e-9);
+      expect(p.rect.y1, p.id).toBeGreaterThanOrEqual(inner.y1 - 1e-9);
+      expect(p.rect.y2, p.id).toBeLessThanOrEqual(inner.y2 + 1e-9);
+      expect(overlaps(p.rect, sweep), p.id).toBe(false);
+    }
+    // The bucket stands on the floor in front of the shelves, out of the door's way.
+    const b = SPOTS.bucketCloset;
+    const bucket = { x1: b.x - 0.15, y1: b.y - 0.15, x2: b.x + 0.15, y2: b.y + 0.15 };
+    expect(overlaps(bucket, sweep)).toBe(false);
+    for (const p of inside.filter((p) => p.solid !== false)) expect(overlaps(bucket, p.rect), p.id).toBe(false);
+    // Just above the floor slab (top at 0.01), not sunk into it.
+    expect(b.z).toBeGreaterThan(0.01);
+    expect(SPOTS.bucketChapel.z).toBeGreaterThan(0.01);
+    // The rod lies on the bottom shelf, its head over the bucket.
+    const shelf = PROPS.find((p) => p.id === 'closet-shelves-west-0')!;
+    const r = SPOTS.rodCloset;
+    expect(r.x).toBeGreaterThan(shelf.rect.x1);
+    expect(r.x).toBeLessThan(shelf.rect.x2);
+    expect(r.z).toBeGreaterThanOrEqual((shelf.base ?? 0) + shelf.height);
+    expect(r.z).toBeLessThan((shelf.base ?? 0) + 0.15);
+    expect(Math.abs(r.y - 0.37 - b.y)).toBeLessThan(0.2);
+    // The debug teleport into the closet lands in open floor.
+    const spawn = TELEPORTS.find((s) => s.label === 'Storage closet')!;
+    expect(blocked(spawn.x, spawn.y, 0, PLAYER_RADIUS, staticColliders())).toBe(false);
   });
 
   it('gives the chapel a single entrance', () => {

@@ -619,7 +619,7 @@ renderer.setAnimationLoop(() => {
     if (state.relic === 'drop-box' && state.relic_kind === 'clown' && !state.flags.has('long-walk')) dispatch({ type: 'leave-church', ...at });
     if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('chalice-missing')) dispatch({ type: 'near-altar', ...at });
-    if (state.chalice === 'garden-bench' && !state.flags.has('searched-desk')) dispatch({ type: 'search-desk', ...at });
+    if (state.chalice === 'garden-bench' && state.flags.has('storage-opened') && !state.flags.has('searched-storage')) dispatch({ type: 'search-closet', ...at });
     if (state.day_index === 2 && !state.flags.has('entered-church')) dispatch({ type: 'enter-church', ...at });
     if (state.flags.has('heading-home')) {
       if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });

@@ -434,8 +434,8 @@ export class StoryProps {
     );
     sleeve.position.y = 0.21;
     this.rod.add(sleeve);
-    // Leaning in the closet's corner.
-    this.rod.rotation.set(0.25, 0, -0.2);
+    // Lying along the bottom shelf, its head over the bucket (2026-11-28).
+    this.rod.rotation.set(Math.PI / 2, 0, 0);
 
     for (const [i, c] of CANDLES.entries()) {
       const stand = new THREE.Group();

@@ -1,7 +1,6 @@
 import {
   afterThought,
   ALTAR_APPROACH,
-  BEHIND_DESK,
   CHURCH_APPROACH,
   CHURCH_APPROACH_LINES,
   COOKING_BEAT,
@@ -34,6 +33,7 @@ import {
   CLOWN_WIGGLE_SECONDS,
   SPLASH_SECONDS,
   CHURCH_LEFT_Y,
+  STORAGE_INSIDE,
 } from '../data/story';
 import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
@@ -56,8 +56,8 @@ export type StoryEvent =
   | { type: 'near-altar'; x: number; y: number; level: number }
   /** Timed, after the missing-chalice thought: the search objective shows. */
   | { type: 'chalice-missing-done' }
-  /** Searching the church for the chalice (D2-02). */
-  | { type: 'search-desk'; x: number; y: number; level: number }
+  /** Searching the church for the chalice (D2-02): the player's position, for stepping into the storage closet. */
+  | { type: 'search-closet'; x: number; y: number; level: number }
   | { type: 'try-locked-door'; id: string }
   | { type: 'search-done' }
   /** Trying the church doors from inside during the search: they stay shut. */
@@ -346,13 +346,16 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (e.item === 'crucifix' && !altarOpen(s)) return [{ kind: 'say', text: THOUGHTS.crucifixEarly }];
       // The Bible comes off its stand once the relic needs scripture.
       if (e.item === 'bible' && !bibleWanted(s)) return [];
-      // The storage key turns up in the desk once holy water is wanted and
-      // the Bible is back on its stand (D2-06).
+      // The key is in the office desk drawers while the church is searched
+      // (D2-02, 2026-11-28).
       if (e.item === 'storage-key' && !storageKeyWanted(s)) return [];
-      if (e.item === 'rod' && !s.flags.has('storage-opened')) return [];
+      if (e.item === 'rod' && (!s.flags.has('storage-opened') || !closetFetch(s))) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
-      if (e.item === 'storage-key') out.push({ kind: 'say', text: THOUGHTS.storageKey });
+      if (e.item === 'storage-key') {
+        s.flags.add('searched-desk');
+        searched(s, out, THOUGHTS.searchDesk);
+      }
       // Day 2: no chalice to go with it yet (D2-02).
       if (e.item === 'crucifix' && s.day_index === 2 && s.chalice === 'garden-bench') {
         out.push(
@@ -443,19 +446,24 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.flags.add('chalice-missing-thought-done');
       break;
 
-    case 'search-desk':
-      if (!searching(s) || s.flags.has('searched-desk')) return [];
-      if (e.level !== 0 || e.x < BEHIND_DESK.x1 || e.x > BEHIND_DESK.x2 || e.y < BEHIND_DESK.y1 || e.y > BEHIND_DESK.y2) return [];
-      s.flags.add('searched-desk');
-      searched(s, out, THOUGHTS.searchDesk);
-      break;
-
-    case 'try-locked-door': {
-      if (!searchesDoor(s, e.id)) return [];
-      s.flags.add(e.id === 'storage' ? 'searched-storage' : 'searched-basement');
-      searched(s, out, e.id === 'basement' ? THOUGHTS.searchBasement : THOUGHTS.searchLocked);
+    case 'search-closet': {
+      // Opened with the key from the desk: a bucket and rod, no chalice.
+      if (!searching(s) || s.flags.has('searched-storage') || !s.flags.has('storage-opened')) return [];
+      const r = STORAGE_INSIDE;
+      if (e.level !== 0 || e.x < r.x1 || e.x > r.x2 || e.y < r.y1 || e.y > r.y2) return [];
+      s.flags.add('searched-storage');
+      searched(s, out, THOUGHTS.searchCloset);
       break;
     }
+
+    case 'try-locked-door':
+      if (!searchesDoor(s, e.id)) return [];
+      // No key yet: a pointer to the office, every time, like a reminder.
+      if (!s.inventory.has('storage-key')) return [{ kind: 'say', text: THOUGHTS.searchLocked }];
+      // The key only fits the closet; the basement stays shut.
+      s.flags.add('searched-basement');
+      searched(s, out, THOUGHTS.searchBasement);
+      break;
 
     case 'try-church-doors':
       // A reminder each time, like the "too early" lines; nothing changes.
@@ -467,7 +475,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       const flag = (['search-nudge-1', 'search-nudge-2', 'search-nudge-3'] as const)[e.n - 1];
       if (!flag || !searching(s) || searchCount(s) !== e.at || s.flags.has(flag)) return [];
       s.flags.add(flag);
-      out.push({ kind: 'say', text: THOUGHTS.searchNudge });
+      out.push({ kind: 'say', text: s.inventory.has('storage-key') ? THOUGHTS.searchNudgeKey : THOUGHTS.searchNudge });
       nudgeLater(s, out);
       break;
     }
@@ -743,7 +751,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'pickup-bucket':
       // From the closet, or an empty one from beside the ritual table.
       if (s.bucket === 'held' || (s.bucket === 'chapel' && s.bucket_filled)) return [];
-      if (s.bucket === 'closet' && !s.flags.has('storage-opened')) return [];
+      // Seen in the closet during the search, but only taken for the clown doll.
+      if (s.bucket === 'closet' && (!s.flags.has('storage-opened') || !closetFetch(s))) return [];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
       s.bucket = 'held';
       s.held_prop_id = 'bucket';
@@ -1018,9 +1027,20 @@ export function bibleReturnable(s: GameState): boolean {
   return s.flags.has('relic-blessed') || (s.relic_kind === 'clown' && s.flags.has('water-wanted'));
 }
 
-/** The storage closet key can be found in the desk drawers (D2-06). */
+/**
+ * The storage closet key can be found in the office desk drawers: while the
+ * church is searched for the chalice, until it's found (D2-02, 2026-11-28).
+ */
 export function storageKeyWanted(s: GameState): boolean {
-  return s.flags.has('water-wanted') && !s.inventory.has('storage-key') && !s.inventory.has('bible');
+  return searching(s) && !s.inventory.has('storage-key');
+}
+
+/**
+ * The bucket and holy-water rod come out of the storage closet once holy water
+ * is wanted for the clown doll and the Bible is back on its stand (D2-06).
+ */
+export function closetFetch(s: GameState): boolean {
+  return s.flags.has('water-wanted') && !s.inventory.has('bible');
 }
 
 /**

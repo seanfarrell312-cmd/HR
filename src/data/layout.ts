@@ -279,6 +279,36 @@ export const STOOL_H = BIBLE_STAND_H / 2;
 const STOOL_X = -4;
 const STOOL_Y1 = 67.6;
 
+/** Shelf heights in the storage closet's shelving units. */
+const CLOSET_SHELVES = [0.45, 0.95, 1.45];
+
+/**
+ * A plain open shelving unit against a wall: an end panel at each end of its
+ * long side and three boards (S3, 2026-11-28).
+ */
+function shelving(id: string, r: Rect): Prop[] {
+  const t = 0.04;
+  const alongY = r.y2 - r.y1 > r.x2 - r.x1;
+  const ends = alongY
+    ? [rect(r.x1, r.y1, r.x2, r.y1 + t), rect(r.x1, r.y2 - t, r.x2, r.y2)]
+    : [rect(r.x1, r.y1, r.x1 + t, r.y2), rect(r.x2 - t, r.y1, r.x2, r.y2)];
+  return [
+    ...ends.map((e, i): Prop => ({ id: `${id}-end-${i}`, label: 'Shelving', rect: e, height: 1.8, level: 0, color: WOOD })),
+    ...CLOSET_SHELVES.map((base, i): Prop => ({ id: `${id}-${i}`, label: 'Shelf', rect: r, height: 0.03, base, level: 0, color: WOOD })),
+  ];
+}
+
+/** A plain block standing in for a closet item still to be made. */
+function placeholder(n: number, r: Rect, height: number, shelf: number | null, color: string): Prop {
+  const base = shelf === null ? 0 : CLOSET_SHELVES[shelf] + 0.03;
+  return { id: `closet-placeholder-${n}`, label: 'Placeholder', rect: r, height, base, level: 0, color, solid: false };
+}
+
+const CARDBOARD = '#9c7a4e';
+const GREY_TIN = '#7f8286';
+const LINEN = '#cfc7b5';
+const OLIVE = '#5f6a4c';
+
 function pews(): Prop[] {
   const out: Prop[] = [];
   for (let i = 0; i < 6; i++) {
@@ -388,6 +418,24 @@ export const PROPS: Prop[] = [
   { id: 'office-desk', label: 'Desk', rect: rect(-14.6, 51.2, -13.6, 54.2), height: 0.8, level: 0, color: DARK_WOOD, interact: 'office-desk' },
   { id: 'office-phone', label: 'Landline phone', rect: rect(-14.35, 53.3, -13.9, 53.7), height: 0.12, level: 0, color: '#1e1e1e', base: 0.8, solid: false },
   { id: 'office-shelf', label: 'Bookshelf', rect: rect(-16.1, 55.3, -8.4, 55.9), height: 2.2, level: 0, color: DARK_WOOD },
+
+  // Storage closet (2026-11-28): shelving on the back (west) and north
+  // walls, clear of the door's swing. The bucket stands on the floor in front
+  // of the back shelves with the holy-water rod on the bottom shelf above it
+  // (story props). Plain blocks stand in for items to come.
+  ...shelving('closet-shelves-west', rect(-10.45, 60.75, -10.0, 62.65)),
+  ...shelving('closet-shelves-north', rect(-9.95, 62.33, -8.6, 62.75)),
+  placeholder(1, rect(-10.42, 62.05, -10.03, 62.55), 0.3, 0, CARDBOARD),
+  placeholder(2, rect(-10.4, 60.85, -10.05, 61.25), 0.25, 1, GREY_TIN),
+  placeholder(3, rect(-10.4, 61.5, -10.05, 61.8), 0.16, 1, LINEN),
+  placeholder(4, rect(-10.42, 62.0, -10.03, 62.55), 0.32, 1, CARDBOARD),
+  placeholder(5, rect(-10.4, 61.0, -10.05, 61.6), 0.22, 2, OLIVE),
+  placeholder(6, rect(-10.4, 62.1, -10.05, 62.5), 0.14, 2, LINEN),
+  placeholder(7, rect(-9.85, 62.37, -9.4, 62.72), 0.3, 0, CARDBOARD),
+  placeholder(8, rect(-9.2, 62.38, -8.7, 62.7), 0.2, 0, GREY_TIN),
+  placeholder(9, rect(-9.8, 62.38, -9.5, 62.7), 0.2, 1, OLIVE),
+  placeholder(10, rect(-9.3, 62.37, -8.72, 62.72), 0.28, 1, CARDBOARD),
+  placeholder(11, rect(-9.6, 62.4, -9.0, 62.7), 0.18, 2, LINEN),
 
   // Chapel.
   { id: 'chapel-supply', label: 'Supply shelf', rect: rect(8.3, 53.4, 8.8, 55.5), height: 1.2, level: 0, color: WOOD },

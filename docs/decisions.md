@@ -818,3 +818,54 @@ Designer rulings:
 - Aiming at the desk from anywhere but behind it, while the key is wanted,
   shows "Desk"; pressing E gives the reminder "The drawers are on the other
   side."
+
+## 2026-11-28 — The chalice search runs through the closet key
+
+Designer ruling. Before this, the player had already found the storage closet
+locked during the search, so there was no reason for them to know about a
+key later on. The search (D2-02) now leads them to it:
+- **Locked doors first.** Trying the storage closet or the basement door
+  before the key is found gives "Locked. Maybe there's a key in the office?"
+  each time. It doesn't tick anything off.
+- **The office** is ticked off by opening the desk drawers from behind the
+  desk, which finds a key: "No chalice in these drawers, but there's a key.
+  Maybe it opens the storage closet, or the basement?" From in front of the
+  desk, the reminder says the drawers are on the other side. The key is only
+  in the drawers during the search, until it's found. Stepping behind the
+  desk no longer counts on its own.
+- **The storage closet** opens with the key. It's ticked off once the player
+  steps inside: "Just a bucket and a holy-water rod. No chalice in here."
+  The bucket and rod can't be taken yet.
+- **The basement** is ticked off by trying it with the key. It stays shut:
+  "It doesn't fit. It must only be for the closet."
+- The checks can be done in any order once the key is found. With all
+  three done, "I guess it's outside somewhere?" plays and the search moves
+  outside as before.
+- **Later, for the clown doll:** after the dance, "Time for some holy water.
+  There was a bucket and a rod in the storage closet." Then the Bible goes
+  back on its stand, then "Take the bucket and holy-water rod from the
+  storage closet". The closet is already unlocked. Filling the bucket and
+  using the water are unchanged. The steps to find the key and unlock the
+  closet are gone from D2-06.
+- **The closet is furnished.** It has open wooden shelving, three shelves
+  high, along the back (west) wall and the north wall, clear of the door's
+  swing. The bucket stands on the floor in front of the back shelves, and
+  the rod lies on the bottom shelf just above it. Plain coloured blocks on
+  the shelves stand in for items to be made later.
+- **The bucket no longer sinks into the floor.** It now sits just above the
+  1 cm floor slab, in the closet and by the ritual table, so its bottom
+  shows.
+
+### PROVISIONAL (not yet ruled on)
+
+- All the search thoughts above are drafts. The nudges are drafts too:
+  "I should look around the office. Maybe there's a key for these doors."
+  before the key is found, and "I should try this key on the locked doors."
+  after. So is the church-doors line, "I need to find the chalice. I haven't
+  checked all the rooms yet."
+- Replaced lines: "I don't think the chalice would fit in these drawers.",
+  "Locked tight. I hope it's not in the closet.", "Still locked. I'm kinda
+  glad I don't have to go down there." and "There it is. I knew these
+  drawers were good for something."
+- The closet counts as checked when the player steps through its doorway.
+  Opening the door from the nave isn't enough.

@@ -60,11 +60,17 @@ export const SPOTS = {
    * end of the east garden bench, out of sight of the main path.
    */
   chaliceBench: { x: -24.0, y: 56.0, z: 0.5 },
-  /** Day 2 (D2-06): the bucket and holy-water rod in the storage closet, on the floor. */
-  bucketCloset: { x: -10.05, y: 62.3, z: 0 },
-  rodCloset: { x: -10.35, y: 60.8, z: 0 },
+  /**
+   * Day 2: in the storage closet, the bucket stands on the floor in front of
+   * the back (west) shelves, and the holy-water rod lies on the bottom shelf
+   * just above it (2026-11-28). Floors are 1 cm thick, so the bucket sits a
+   * touch above 0.
+   */
+  bucketCloset: { x: -9.78, y: 61.3, z: 0.012 },
+  /** The rod's handle end; it lies south along the shelf, its head over the bucket. */
+  rodCloset: { x: -10.15, y: 61.6, z: 0.5 },
   /** Where the bucket of holy water is set down, by the ritual table's south end. */
-  bucketChapel: { x: 13.05, y: 51.35, z: 0 },
+  bucketChapel: { x: 13.05, y: 51.35, z: 0.012 },
   /** Inside the drop box at the gate, where the music box is heard from. */
   dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
@@ -246,14 +252,20 @@ export const THOUGHTS = {
   chaliceMissing: "Here's the crucifix, but no chalice...",
   /** Picking the crucifix up off the altar (Day 2); then it's for the ritual table. */
   crucifixFirst: "I guess I'll drop this off first, then look for the cup.",
-  /** Searching the church: behind the office desk. */
-  searchDesk: "I don't think the chalice would fit in these drawers.",
-  /** Searching the church: trying the locked storage closet and basement doors. */
-  searchLocked: "Locked tight. I hope it's not in the closet.",
-  /** Searching the church: trying the locked basement door. */
-  searchBasement: "Still locked. I'm kinda glad I don't have to go down there.",
-  /** No search progress for a while: up to three nudges (SEARCH_NUDGES). */
-  searchNudge: 'I should check all the rooms. Maybe the other doors are unlocked?',
+  // Searching the church for the chalice, redrafted 2026-11-28 around the key
+  // in the office desk. PROVISIONAL copy.
+  /** Searching the church: the office desk drawers, from behind the desk; a key. */
+  searchDesk: "No chalice in these drawers, but there's a key. Maybe it opens the storage closet, or the basement?",
+  /** Searching the church: trying the storage closet or basement door before finding the key. */
+  searchLocked: "Locked. Maybe there's a key in the office?",
+  /** Searching the church: stepping into the storage closet, opened with the key. */
+  searchCloset: 'Just a bucket and a holy-water rod. No chalice in here.',
+  /** Searching the church: trying the basement door with the key. */
+  searchBasement: "It doesn't fit. It must only be for the closet.",
+  /** No search progress for a while: up to three nudges (SEARCH_NUDGES), before the key is found. */
+  searchNudge: "I should look around the office. Maybe there's a key for these doors.",
+  /** The same, once the key is found. */
+  searchNudgeKey: 'I should try this key on the locked doors.',
   /** Closing the first Day 2 delivery text; then the drop-box objective. */
   alertRead: 'Christ-LERTS? Nice.',
   /** Once all three places have been checked. */
@@ -272,12 +284,10 @@ export const THOUGHTS = {
   // Day 2, the clown doll. PROVISIONAL copy (S3 part 2, decisions 2026-11-22).
   /** Once the second cross (after scripture) has made the clown doll dance instead of settling. */
   clownDance: "It's... dancing? Okay, that definitely didn't work.",
-  /** Straight after; then the storage key is wanted. */
-  clownWater: 'Time for some holy water. There should be a bucket in the storage closet.',
-  /** Finding the storage closet key in the office desk drawers. */
-  storageKey: 'There it is. I knew these drawers were good for something.',
+  /** Straight after: remembering the closet from the search. Then the Bible goes back. */
+  clownWater: 'Time for some holy water. There was a bucket and a rod in the storage closet.',
   /** Trying the church doors from inside while searching it for the chalice. */
-  searchStayInside: 'I need to find the chalice. Maybe the other doors are unlocked?',
+  searchStayInside: "I need to find the chalice. I haven't checked all the rooms yet.",
   // Designer copy, 2026-11-22 (part 2 playtest).
   /** The teacup is on the cleaned-relic table; then the second delivery text. */
   homeEarly: "If they're all like this today, I might get to go home early.",
@@ -374,11 +384,14 @@ export const PRANK_SECONDS = 2.8;
 export const ALTAR_APPROACH = { x: 0, y: 64, r: 4 };
 
 /**
- * Searching the church for the chalice (D2-02): behind the office desk (the
- * strip between the desk and the office's west wall), and the two locked
- * doors.
+ * Searching the church for the chalice (D2-02, reworked 2026-11-28): the
+ * office desk drawers, opened from behind the desk (the strip between the
+ * desk and the office's west wall), hold a key. It opens the storage closet,
+ * which counts once the player steps inside, but not the basement.
  */
 export const BEHIND_DESK = { x1: -16.4, y1: 50.6, x2: -14.6, y2: 56.2 };
+/** Inside the storage closet, past its doorway. */
+export const STORAGE_INSIDE = { x1: -10.6, y1: 60.5, x2: -8.5, y2: 62.9 };
 export const SEARCH_DOORS = ['storage', 'basement'] as const;
 export const SEARCH_SPOTS = 3;
 /** The search checklist shown while the church is searched, in order. */
