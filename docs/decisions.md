@@ -1029,3 +1029,12 @@ Designer rulings:
   Because of the second dip, the first splash on the bell no longer empties
   the bucket. The four strikes use up the water.
 
+## 2026-11-27 — Day 2 copy fixes
+
+Designer rulings:
+- **Wrong gate code from Day 2 on** now just flashes "Wrong code." The
+  "I should check my messages." part stays on Day 1 only, where the code
+  came by text. On Day 2 it comes to mind as a thought.
+- **The teacup's carry line:** "outta" becomes "out of".
+- **After the hand bell's first cross:** "I don't think it liked that."
+

@@ -62,7 +62,7 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-26 | After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside. | Is that the clown out there? Guess he's in no rush to move on. | |
 | D2-27 | The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain. | Better fill that bucket before I start. Just in case. | |
 | D2-28 | On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second. | ...Where'd it go? | |
-| D2-29 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
+| D2-29 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | I don't think it liked that. | |
 | D2-30 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
 | D2-31 | Straight after; then "Move the Bible stand into the holy circle", then the rod dipped again. | Maybe it needs everything at once. The Bible, the cross, and the water. | |
 | D2-32 | The hand bell's two-handed blessing: as the rod and cross strike at it in turn, four times. Then its ghost. | The power of Christ compels you! | |
@@ -96,7 +96,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 |---|---|---|---|
 | TC-01 | Nearing the drop box once it has been delivered. | Sounds like... rattling china? | |
 | TC-02 | Taking it out of the drop box. | A bouncing teacup? It's a wonder it hasn't shattered. | |
-| TC-03 | Carrying it up the path, 17 m from the church doors. | I should hurry, this thing's about to bounce outta my hands. | |
+| TC-03 | Carrying it up the path, 17 m from the church doors. | I should hurry, this thing's about to bounce out of my hands. | |
 | TC-04 | Its ghost, once it has gone. | I guess he must have really liked tea. | |
 
 #### Clown doll (Day 2, second delivery)
@@ -200,22 +200,23 @@ Proposed changes to B:
 
 | ID | When it shows | Text | Proposed |
 |---|---|---|---|
-| R-01 | Entering the wrong gate code. | Wrong code. I should check my messages. | |
-| R-02 | The sticker above the gate keypad. | Caution: gate is automatic and closes after 10 seconds | |
-| R-03 | Day 2 church search: the checklist under the objective. | Check the office / Check the storage closet / Check the basement | |
-| R-04 | Trying to pick something up while carrying something else. | My hands are full. | |
-| R-05 | Trying the drop box from the road side of the gate. | The hatch is on the inside of the gate. | |
-| R-06 | Trying the drop box before anything has been delivered. | Nothing's been delivered yet. | |
-| R-07 | Putting a relic on the ritual table before the chalice and crucifix are set out. | The chalice and crucifix need setting out on the table first. | |
-| R-08 | Trying to bless a relic without the cross. | I need the cross from the shelf. | |
-| R-09 | Trying to bless a relic that needs scripture before it has been read some. | I should read it some scripture first. | |
-| R-10 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
-| R-11 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
-| R-12 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
-| R-13 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
-| R-14 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
-| R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
-| R-16 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
-| R-17 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
-| R-18 | Trying the drop box before reading the delivery text and putting the phone away. | My phone just buzzed. I should check it first. | |
-| R-19 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-01 | Day 1: entering the wrong gate code. | Wrong code. I should check my messages. | |
+| R-02 | Day 2 on: entering the wrong gate code (the code came as a thought, not a text). | Wrong code. | |
+| R-03 | The sticker above the gate keypad. | Caution: gate is automatic and closes after 10 seconds | |
+| R-04 | Day 2 church search: the checklist under the objective. | Check the office / Check the storage closet / Check the basement | |
+| R-05 | Trying to pick something up while carrying something else. | My hands are full. | |
+| R-06 | Trying the drop box from the road side of the gate. | The hatch is on the inside of the gate. | |
+| R-07 | Trying the drop box before anything has been delivered. | Nothing's been delivered yet. | |
+| R-08 | Putting a relic on the ritual table before the chalice and crucifix are set out. | The chalice and crucifix need setting out on the table first. | |
+| R-09 | Trying to bless a relic without the cross. | I need the cross from the shelf. | |
+| R-10 | Trying to bless a relic that needs scripture before it has been read some. | I should read it some scripture first. | |
+| R-11 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
+| R-12 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
+| R-13 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
+| R-14 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
+| R-15 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
+| R-16 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
+| R-17 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
+| R-18 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
+| R-19 | Trying the drop box before reading the delivery text and putting the phone away. | My phone just buzzed. I should check it first. | |
+| R-20 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

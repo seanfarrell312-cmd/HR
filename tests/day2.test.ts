@@ -639,7 +639,7 @@ describe('the first delivery (D2-03)', () => {
     // Not yet near the doors; then its own line on the way up, once.
     expect(applyEvent(s, { type: 'relic-near-church', x: 0, y: 20, level: 0 })).toEqual([]);
     expect(says(applyEvent(s, { type: 'relic-near-church', x: 0, y: 36, level: 0 }))).toEqual([
-      "I should hurry, this thing's about to bounce outta my hands.",
+      "I should hurry, this thing's about to bounce out of my hands.",
     ]);
     expect(applyEvent(s, { type: 'relic-near-church', x: 0, y: 40, level: 0 })).toEqual([]);
     expect(RELIC_LINES.teacup.carry).not.toBe(RELIC_LINES['music-box'].carry);
@@ -1154,7 +1154,7 @@ describe('the cross and holy water fail on the hand bell (D2-10)', () => {
     expect(RATTLE_VIOLENT.strength).toBeGreaterThan(1);
     expect(task(s)).toBe('');
     expect(resolve('item:bell', s, inCircle).prompt).toBe('');
-    expect(says(applyEvent(s, { type: 'bell-settled' }))).toEqual(["Whoa! Okay, it really didn't like that."]);
+    expect(says(applyEvent(s, { type: 'bell-settled' }))).toEqual(["I don't think it liked that."]);
     applyEvent(s, { type: 'bell-water-wanted' });
     expect(task(s)).toBe('Dip the holy-water rod in the bucket');
     expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.rodDry });
@@ -1285,6 +1285,19 @@ describe('the end of the shift (D2-12)', () => {
     expect(next.bucket).toBe('closet');
     expect(next.environment_preset).toBe('BASE_DAY');
     expect(bibleStandRect(next)).toEqual(PROPS.find((p) => p.id === 'bible-stand')!.rect);
+  });
+});
+
+describe('the gate keypad on Day 2 (2026-11-27)', () => {
+  it("doesn't point to the messages on a wrong code: the code came as a thought", () => {
+    const s = day2Start();
+    expect(applyEvent(s, { type: 'keypad-submit', code: '0000' })).toEqual([
+      { kind: 'sfx', id: 'error' },
+      { kind: 'flash', text: 'Wrong code.' },
+    ]);
+    // Day 1 still does: the code came by text.
+    const d1 = createInitialState();
+    expect(flashes(applyEvent(d1, { type: 'keypad-submit', code: '0000' }))).toEqual(['Wrong code. I should check my messages.']);
   });
 });
 

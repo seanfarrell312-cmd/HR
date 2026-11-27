@@ -318,7 +318,8 @@ export const THOUGHTS = {
   /** Looking back at the old priest's grave once the concerned ghost has gone (designer approved, 2026-12-01). */
   worriedGone: "...Where'd it go?",
   /** The cross set the hand bell rattling; then holy water. */
-  bellCross: "Whoa! Okay, it really didn't like that.",
+  /** Designer copy, 2026-11-27. */
+  bellCross: "I don't think it liked that.",
   /** The splash set it rattling worse; then the idea. */
   bellSplash: "It's only getting angrier!",
   /** Straight after; then the Bible stand and the two-handed blessing. */
@@ -376,7 +377,7 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
   teacup: {
     approach: 'Sounds like... rattling china?',
     pickup: "A bouncing teacup? It's a wonder it hasn't shattered.",
-    carry: "I should hurry, this thing's about to bounce outta my hands.",
+    carry: "I should hurry, this thing's about to bounce out of my hands.",
     ghost: 'I guess he must have really liked tea.',
   },
   // Designer copy, 2026-11-26 and 2026-11-27.
@@ -541,6 +542,11 @@ export const TREE_PEEK = { x: 12, y: 18, trunk: 0.35, trigger: 9 };
 
 /** Feedback lines that aren't thoughts. */
 export const WRONG_CODE = 'Wrong code. I should check my messages.';
+/**
+ * From Day 2 the code comes to mind as a thought, not a text, so there's no
+ * pointer to the messages (designer, 2026-11-27).
+ */
+export const WRONG_CODE_LATER = 'Wrong code.';
 
 /**
  * The church-approach thought fires the first time the player comes within

@@ -25,6 +25,7 @@ import {
   THOUGHTS,
   TREE_PEEK,
   WRONG_CODE,
+  WRONG_CODE_LATER,
   CHURCH_INSIDE,
   LOITER_LINES,
   SEARCH_NUDGE_SECONDS,
@@ -336,7 +337,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'keypad-submit':
       if (s.flags.has('gate-unlocked')) return [];
       if (e.code !== GATE_CODE) {
-        out.push({ kind: 'sfx', id: 'error' }, { kind: 'flash', text: WRONG_CODE });
+        out.push({ kind: 'sfx', id: 'error' }, { kind: 'flash', text: s.day_index === 1 ? WRONG_CODE : WRONG_CODE_LATER });
         return out;
       }
       s.flags.add('gate-unlocked');

@@ -18,6 +18,7 @@ import {
   STOOL_NOTE,
   THOUGHTS,
   WRONG_CODE,
+  WRONG_CODE_LATER,
   GATE_CAUTION,
 } from '../src/data/story.ts';
 
@@ -210,7 +211,8 @@ export function scriptReview(): string {
 
   out.push('## Short messages', '', '| ID | When it shows | Text | Proposed |', '|---|---|---|---|');
   const short: [string, string][] = [
-    ['Entering the wrong gate code.', WRONG_CODE],
+    ['Day 1: entering the wrong gate code.', WRONG_CODE],
+    ['Day 2 on: entering the wrong gate code (the code came as a thought, not a text).', WRONG_CODE_LATER],
     ['The sticker above the gate keypad.', GATE_CAUTION],
     ['Day 2 church search: the checklist under the objective.', SEARCH_CHECKLIST.join(' / ')],
     ...Object.entries(REMINDERS).map(([k, v]): [string, string] => [REMINDER_WHEN[k as keyof typeof REMINDERS], v]),
