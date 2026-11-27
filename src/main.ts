@@ -28,7 +28,7 @@ import { buildWorld, poseDoor } from './world/build';
 import { AutoClose } from './world/autoClose';
 import { circleHitsRect, closedDoorColliders, doorSweepRect, staticColliders, type Collider } from './world/collision';
 import { lockState, resolve, type Action } from './world/interact';
-import { StoryProps } from './world/storyProps';
+import { bibleStandRect, StoryProps } from './world/storyProps';
 import { zoneAt } from './world/zones';
 
 /** Interaction reach (m); enough to reach the set-back ritual table from the circle. */
@@ -94,17 +94,31 @@ props.onTune = (volume) => sfx.tune(volume);
 props.onClink = (volume) => sfx.clink(volume);
 props.onGiggle = (volume) => sfx.giggle(volume);
 props.onDipSplash = () => sfx.play('dip');
+props.onBell = (volume) => sfx.bell(volume);
+props.onSqueak = (volume) => sfx.squeak(volume);
+props.onSpotted = (who) => dispatch({ type: 'spotted', who });
+props.onWorriedVanished = () => dispatch({ type: 'worried-vanished' });
 props.onCue = (cue, relic) => {
   if (cue === 'ghost') {
     sfx.play('release');
-    // The clown's ghost laughs as it goes.
+    // The clown's ghost laughs as it goes; the hand bell's squeaks crossly.
     if (relic === 'clown') sfx.play('clown-laugh');
+    if (relic === 'bell') sfx.play('angry-squeak');
   }
   // The thought waits until the ghost has risen and gone; it goes through the
   // story because the next objective waits for it in turn.
   else if (cue === 'ghost-gone') dispatch({ type: relic === 'clock' ? 'clock-ghost-gone' : 'relic-ghost-gone' });
   else if (cue === 'wind-down') {
-    const id = relic === 'clock' ? 'wind-down' : relic === 'teacup' ? 'cup-wind-down' : relic === 'clown' ? 'clown-wind-down' : 'box-wind-down';
+    const id =
+      relic === 'clock'
+        ? 'wind-down'
+        : relic === 'teacup'
+          ? 'cup-wind-down'
+          : relic === 'clown'
+            ? 'clown-wind-down'
+            : relic === 'bell'
+              ? 'bell-wind-down'
+              : 'box-wind-down';
     sfx.play(id);
   }
   else sfx.play(cue);
@@ -128,7 +142,9 @@ let dayFade = -1;
 let primaryDown = false;
 
 function refreshColliders(): void {
-  colliders = [...fixed, ...closedDoorColliders(state.open_doors)];
+  // The Bible stand moves in front of the ritual table for the hand bell (D2-11).
+  const stand = { id: 'bible-stand', rect: bibleStandRect(state), level: 0 as const };
+  colliders = [...fixed, stand, ...closedDoorColliders(state.open_doors)];
 }
 
 /** The front gate and church doors shut themselves a few seconds after they open. */
@@ -153,7 +169,9 @@ function setDoor(id: string, open: boolean): void {
 // --- Story ------------------------------------------------------------------
 
 function dispatch(event: StoryEvent): void {
+  const moved = state.flags.has('bible-stand-moved');
   for (const effect of applyEvent(state, event)) handleEffect(effect);
+  if (state.flags.has('bible-stand-moved') !== moved) refreshColliders();
 }
 
 function handleEffect(e: Effect): void {
@@ -626,7 +644,7 @@ renderer.setAnimationLoop(() => {
     if (state.chalice === 'garden-bench' && state.flags.has('storage-opened') && !state.flags.has('searched-storage')) dispatch({ type: 'search-closet', ...at });
     if (state.day_index === 2 && !state.flags.has('entered-church')) dispatch({ type: 'enter-church', ...at });
     if (state.flags.has('heading-home')) {
-      if (!state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
+      if (state.day_index === 1 && !state.fired_scares.includes('d1-tree-peek')) dispatch({ type: 'near-peek', ...at });
       dispatch({ type: 'reach-gate', ...at });
     }
   }
@@ -641,9 +659,9 @@ renderer.setAnimationLoop(() => {
   target = player.active && !panel ? findTarget() : null;
   // The clock can't be picked up until it has finished settling.
   // Nor the music box.
-  if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:clown', 'item:ritual-table'].includes(target ?? '')) target = null;
+  if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:clown', 'item:bell', 'item:ritual-table'].includes(target ?? '')) target = null;
   // Nor the doll splashed while the rod is still going into the bucket.
-  if (props.dipping && ['item:clown', 'item:ritual-table', 'item:bucket'].includes(target ?? '')) target = null;
+  if (props.dipping && ['item:clown', 'item:bell', 'item:ritual-table', 'item:bucket'].includes(target ?? '')) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);
@@ -666,8 +684,10 @@ renderer.setAnimationLoop(() => {
   const hold = {
     active: !!res.hold && primaryDown,
     progress: blessMeter.progress,
-    cross: holdType !== 'begin-scripture' && holdType !== 'splash-doll',
-    rod: holdType === 'splash-doll',
+    cross: holdType !== 'begin-scripture' && holdType !== 'splash-relic',
+    rod: holdType === 'splash-relic',
+    // The hand bell's last blessing: the rod in the left hand as well (D2-11).
+    twoHanded: holdType === 'bless-relic' && state.relic_kind === 'bell' && state.flags.has('two-handed-wanted'),
   };
   props.sync(state, dt, hold, camera.position, worldPaused);
   renderer.render(scene, camera);

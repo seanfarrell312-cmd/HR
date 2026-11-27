@@ -24,7 +24,8 @@ export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible
  * the music box. Day 2 (S3): the teacup is a PLACEHOLDER for relic 1 until
  * the designer names it (decisions 2026-11-13).
  */
-export type RelicKind = 'music-box' | 'teacup' | 'clown';
+/** Day 2's third relic, the hand bell, is a PLACEHOLDER (S3 part 3). */
+export type RelicKind = 'music-box' | 'teacup' | 'clown' | 'bell';
 
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
 export type HeldProp = 'clock' | 'chalice' | 'bucket' | RelicKind;
@@ -117,6 +118,26 @@ export type Flag =
   | 'clown-doused'
   | 'clown-cooled'
   | 'clown-cool-thought-done'
+  // Day 2's third relic, the hand bell (S3 part 3, D2-09 to D2-11).
+  /** Put on the ritual table: the refill thought has played, so the bucket is wanted. */
+  | 'bell-refill-wanted'
+  /** The cross set it rattling; its thought; then holy water is wanted. */
+  | 'bell-crossed'
+  | 'bell-cross-settled'
+  | 'bell-water-wanted'
+  /** The splash set it rattling worse; two thoughts; then the two-handed blessing. */
+  | 'bell-splashed'
+  | 'bell-splash-settled'
+  | 'bell-idea'
+  | 'two-handed-wanted'
+  /** The Bible stand has been moved in front of the ritual table (D2-11). */
+  | 'bible-stand-moved'
+  /** Day 2's lingering ghosts: each thought once (D2-08, D2-09, D2-12). */
+  | 'clown-roaming-spotted'
+  | 'worried-spotted'
+  | 'worried-vanished'
+  | 'worried-looked-back'
+  | 'chase-spotted'
   /** The storage closet has been opened with its key. */
   | 'storage-opened'
   /** Leaving the church for the second delivery: the long-walk thought. */
@@ -156,6 +177,14 @@ export const RELIC_FLAGS: readonly Flag[] = [
   'clown-doused',
   'clown-cooled',
   'clown-cool-thought-done',
+  'bell-refill-wanted',
+  'bell-crossed',
+  'bell-cross-settled',
+  'bell-water-wanted',
+  'bell-splashed',
+  'bell-splash-settled',
+  'bell-idea',
+  'two-handed-wanted',
 ];
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';

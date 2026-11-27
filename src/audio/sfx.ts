@@ -179,6 +179,26 @@ export class Sfx {
           for (let j = 0; j < 3; j++) this.tone('sine', 1800 + Math.random() * 1600, i * 0.3 + 0.03 + j * 0.03, 0.05, 0.05);
         }
         break;
+      case 'bell-rattle':
+        // The hand bell shaken hard (D2-10): fast, ragged rings that die away.
+        for (let i = 0; i < 18; i++) {
+          const t = 2.2 * (1 - Math.sqrt(1 - i / 18));
+          this.ring(t, 0.9 * (1 - i / 20));
+          this.hiss(t, 0.03, 3600, 0.12 * (1 - i / 18));
+        }
+        break;
+      case 'bell-wind-down':
+        // One last ring, left to hum away.
+        this.ring(0, 0.8, 1.6);
+        break;
+      case 'angry-squeak':
+        // Cross little squeaks, up then sharply down (D2-10, D2-11).
+        for (let i = 0; i < 3; i++) {
+          const f = 900 + Math.random() * 160;
+          this.glide('square', f, f * 1.5, i * 0.17, 0.06, 0.045);
+          this.glide('square', f * 1.5, f * 0.8, i * 0.17 + 0.06, 0.07, 0.045);
+        }
+        break;
       case 'paper':
         this.hiss(0, 0.08, 4000, 0.25);
         this.hiss(0.12, 0.08, 3500, 0.2);
@@ -214,6 +234,28 @@ export class Sfx {
       const t = i * (0.05 + Math.random() * 0.03);
       this.tone('sine', 2500 + Math.random() * 1100, t, 0.1, 0.14 * volume);
       this.hiss(t, 0.02, 5200, 0.18 * volume);
+    }
+  }
+
+  /** The possessed hand bell's ring, at volume 0..1 (by distance). */
+  bell(volume: number): void {
+    if (volume <= 0.01) return;
+    this.ring(0, volume);
+    this.ring(0.14, volume * 0.6);
+  }
+
+  /** The angry ghost's squeak as it's chased, at volume 0..1 (by distance). */
+  squeak(volume: number): void {
+    if (volume <= 0.01) return;
+    const f = 950 + Math.random() * 150;
+    this.glide('square', f, f * 1.45, 0, 0.06, 0.05 * volume);
+    this.glide('square', f * 1.45, f * 0.85, 0.06, 0.07, 0.05 * volume);
+  }
+
+  /** One strike of a small brass bell: a few inharmonic partials decaying. */
+  private ring(delay: number, level: number, length = 0.5): void {
+    for (const [ratio, amp] of [[1, 1], [2.4, 0.5], [3.9, 0.3], [5.4, 0.15]] as const) {
+      this.tone('sine', 1180 * ratio * (0.99 + Math.random() * 0.02), delay, length / ratio ** 0.3, 0.07 * amp * level);
     }
   }
 

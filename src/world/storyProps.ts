@@ -1,21 +1,26 @@
 import * as THREE from 'three';
-import { AREAS, DOORS, toWorld } from '../data/layout';
+import { AREAS, DOORS, PROPS, toWorld } from '../data/layout';
 import {
   CANDLES,
   CLOWN_DANCE_SECONDS,
   CLOWN_WIGGLE_SECONDS,
+  GRAVES_LOOP,
   HOLY_CIRCLE,
   PRANK_SECONDS,
   PURIFY,
   RATTLE_SECONDS,
   RELIC_TABLE_SLOTS,
   SPLASH_STRIKE,
+  SPOT_RANGE,
   SPOTS,
+  STAND_IN_FRONT,
   TREE_PEEK,
+  WORRIED_SPOT,
   type ItemSpot,
 } from '../data/story';
 import type { GameState, RelicKind } from '../state/store';
-import type { PurifiedRelic } from '../story/events';
+import { clownRoaming, ghostsChasing, worriedShown, type PurifiedRelic, type Spotted } from '../story/events';
+import { zoneAt } from './zones';
 import { siteReady } from '../story/table';
 import { clownModel, danceStand, heldClownQuaternion, HELD_CLOWN, poseClown, type ClownView } from './clown';
 import { ghostModel, type GhostModel } from './ghost';
@@ -158,6 +163,56 @@ function musicBoxModel(): MusicBoxView {
   return { group: g, lid };
 }
 
+/**
+ * An old brass hand bell, mouth down, with a turned wooden handle (Day 2's
+ * third relic, a PLACEHOLDER). `userData.bell` is the part that shakes;
+ * `userData.clapper` swings inside it.
+ */
+function bellModel(): THREE.Group {
+  const g = new THREE.Group();
+  const bell = new THREE.Group();
+  const brass = new THREE.MeshLambertMaterial({ color: '#c59a3a', emissive: '#3a2a08', flatShading: true, side: THREE.DoubleSide });
+  const pts = [[0.001, 0.095], [0.022, 0.095], [0.03, 0.085], [0.036, 0.06], [0.042, 0.03], [0.055, 0.008], [0.062, 0], [0.058, 0]].map(
+    ([x, y]) => new THREE.Vector2(x, y),
+  );
+  bell.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 12), brass));
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.005, 4, 14), brass);
+  lip.rotation.x = Math.PI / 2;
+  lip.position.y = 0.003;
+  const wood = lambert('#5a3a22');
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, 0.016, 8), wood);
+  collar.position.y = 0.103;
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.014, 0.09, 8), wood);
+  handle.position.y = 0.155;
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), wood);
+  knob.position.y = 0.205;
+  const clapper = new THREE.Group();
+  clapper.position.y = 0.085;
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.06, 4), lambert('#3b3b3b'));
+  rod.position.y = -0.03;
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.011, 6, 5), lambert('#3b3b3b'));
+  ball.position.y = -0.062;
+  clapper.add(rod, ball);
+  bell.add(lip, collar, handle, knob, clapper);
+  g.add(bell);
+  g.userData.bell = bell;
+  g.userData.clapper = clapper;
+  return g;
+}
+
+/** The Bible stand as a story prop, so it can move in front of the ritual table (D2-11). */
+const STAND_PROP = PROPS.find((p) => p.id === 'bible-stand')!;
+/** Where the stand is, on the plan, and its footprint there. */
+export function bibleStandRect(s: GameState): { x1: number; y1: number; x2: number; y2: number } {
+  const r = STAND_PROP.rect;
+  if (!s.flags.has('bible-stand-moved')) return r;
+  const hw = (r.x2 - r.x1) / 2;
+  const hd = (r.y2 - r.y1) / 2;
+  return { x1: STAND_IN_FRONT.x - hw, y1: STAND_IN_FRONT.y - hd, x2: STAND_IN_FRONT.x + hw, y2: STAND_IN_FRONT.y + hd };
+}
+/** The Bible, open on top of the stand, turned to face the middle of the holy circle. */
+const bibleFacing = (x: number, y: number): number => Math.atan2(HOLY_CIRCLE.x - x, -(HOLY_CIRCLE.y - y));
+
 /** A china teacup on its saucer (Day 2's first relic, a PLACEHOLDER). */
 function teacupModel(): THREE.Group {
   const g = new THREE.Group();
@@ -276,11 +331,18 @@ export function rodStrike(t: number): { swing: number; lower: number; strike: nu
  * the splash is held; `swing` 0..1 brings its head down and forward at the
  * doll (the crosshair) like a hammer; `lower` 0..1 drops it out of view.
  */
-export function poseHeldRod(rod: THREE.Object3D, raise: number, swing: number, lower: number): void {
+export function poseHeldRod(rod: THREE.Object3D, raise: number, swing: number, lower: number, side: 1 | -1 = 1): void {
   // Raised, its head leans back towards the player and in towards the
-  // middle; struck, it points forward at the doll.
-  rod.position.set(0.26 - 0.08 * swing, -0.78 + 0.33 * raise + 0.08 * swing - 0.35 * lower, -0.5 - 0.14 * swing);
-  rod.rotation.set(-0.2 + 0.5 * raise - 1.4 * swing + 0.5 * lower, 0, 0.3 * raise - 0.15 * swing);
+  // middle; struck, it points forward at the doll. In the left hand (the
+  // two-handed blessing, D2-11) it's the mirror image.
+  rod.position.set(side * (0.26 - 0.08 * swing), -0.78 + 0.33 * raise + 0.08 * swing - 0.35 * lower, -0.5 - 0.14 * swing);
+  rod.rotation.set(-0.2 + 0.5 * raise - 1.4 * swing + 0.5 * lower, 0, side * (0.3 * raise - 0.15 * swing));
+}
+
+/** A lingering ghost on its loop among the east graves, `t` seconds in (plan x, y). */
+export function gravesLoop(t: number): { x: number; y: number } {
+  const L = GRAVES_LOOP;
+  return { x: L.x + L.rx * Math.sin(t * 0.5), y: L.y + L.ry * Math.sin(t * 0.25) };
 }
 
 /**
@@ -392,6 +454,21 @@ export class StoryProps {
   private ripple: THREE.Mesh;
   private rippleMat: THREE.MeshBasicMaterial;
   private giggleTimer = 2;
+  /** Day 2's third relic, the hand bell (D2-08 to D2-11). */
+  private bell: THREE.Group;
+  private heldBell: THREE.Group;
+  private bellTimer = 1.5;
+  /** The Bible stand, drawn here so it can move in front of the ritual table (D2-11). */
+  private bibleStand: THREE.Mesh;
+  /** Day 2's lingering ghosts: the clown's among the graves, the angry one it chases, the worried one. */
+  private roamer: GhostModel;
+  private grump: GhostModel;
+  private worrier: GhostModel;
+  private roamT = 0;
+  private ghostSoundTimer = 3;
+  /** Seconds each lingering ghost (or the empty grave) has been in view, and out of view. */
+  private seenFor: Record<Spotted, number> = { 'clown-roaming': 0, worried: 0, 'worried-gone': 0, chase: 0 };
+  private worriedAwayFor = 0;
   private bucket: THREE.Group;
   private heldBucket: THREE.Group;
   private rod: THREE.Group;
@@ -438,6 +515,18 @@ export class StoryProps {
   /** Called as the rod's head goes into the bucket's water. */
   onDipSplash: () => void = () => {};
 
+  /** Called when the possessed hand bell rings, with volume 0..1. */
+  onBell: (volume: number) => void = () => {};
+
+  /** Called when the angry ghost squeaks, with volume 0..1. */
+  onSqueak: (volume: number) => void = () => {};
+
+  /** A lingering ghost, or the grave where the worried one stood, has been in view for a moment. */
+  onSpotted: (who: Spotted) => void = () => {};
+
+  /** The worried ghost has been out of view long enough to vanish. */
+  onWorriedVanished: () => void = () => {};
+
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
 
@@ -462,6 +551,14 @@ export class StoryProps {
     tagged(this.clown.group, 'clown');
     // A little larger than life, like the teacup, so it reads on the tables.
     this.clown.group.scale.setScalar(1.15);
+    this.bell = tagged(bellModel(), 'bell') as THREE.Group;
+    // Larger than life, like the teacup, so it reads on the tables.
+    this.bell.scale.setScalar(1.4);
+    const sr = STAND_PROP.rect;
+    this.bibleStand = tagged(
+      new THREE.Mesh(new THREE.BoxGeometry(sr.x2 - sr.x1, STAND_PROP.height, sr.y2 - sr.y1), lambert(STAND_PROP.color)),
+      'bible',
+    ) as THREE.Mesh;
     this.bucket = tagged(bucketModel(), 'bucket') as THREE.Group;
     this.rod = tagged(at(rodModel(), SPOTS.rodCloset), 'rod') as THREE.Group;
     // The handle is thin: an invisible sleeve round it makes it easy to aim at.
@@ -526,6 +623,10 @@ export class StoryProps {
     this.heldClown.group.position.copy(HELD_CLOWN.position);
     this.heldClown.group.quaternion.copy(heldClownQuaternion());
     this.heldClown.group.scale.setScalar(HELD_CLOWN.scale);
+    this.heldBell = bellModel();
+    this.heldBell.position.set(0.12, -0.27, -0.5);
+    this.heldBell.rotation.set(0.35, 0, 0);
+    this.heldBell.scale.setScalar(1.1);
     this.heldBucket = bucketModel();
     this.heldBucket.position.set(0.2, -0.62, -0.62);
     this.heldBucket.rotation.set(0.3, 0, 0);
@@ -544,6 +645,7 @@ export class StoryProps {
       this.heldClown.group,
       this.heldBucket,
       this.heldRod,
+      this.heldBell,
     );
 
     // Lights stay in the scene at zero intensity: adding one later would make
@@ -555,6 +657,16 @@ export class StoryProps {
     this.prankster = ghostModel(false);
     this.prankster.group.visible = false;
     this.root.add(this.relicGhost.group, this.peeker.group, this.prankster.group);
+    this.roamer = ghostModel(false);
+    this.roamer.setClown(true);
+    this.grump = ghostModel(false);
+    this.grump.setMood('angry');
+    this.worrier = ghostModel(false);
+    this.worrier.setMood('worried');
+    for (const g of [this.roamer, this.grump, this.worrier]) {
+      g.group.visible = false;
+      this.root.add(g.group);
+    }
 
     // The rod dipping into the bucket by the ritual table: a pivot at its
     // head, the handle pointing up and leaning a little towards the circle.
@@ -589,6 +701,7 @@ export class StoryProps {
 
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
     this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup, this.clown.group, this.bucket, this.rod);
+    this.root.add(this.bell, this.bibleStand);
     this.raycastTargets.push(
       this.note,
       this.key,
@@ -603,6 +716,8 @@ export class StoryProps {
       this.clown.group,
       this.bucket,
       this.rod,
+      this.bell,
+      this.bibleStand,
     );
   }
 
@@ -700,7 +815,7 @@ export class StoryProps {
   startPurification(relic: PurifiedRelic): void {
     this.endPurification();
     const spot = relic === 'clock' ? SPOTS.clockRitual : SPOTS.relicRitual;
-    const lift = relic === 'clock' ? 0.22 : relic === 'teacup' ? 0.08 : relic === 'clown' ? 0.22 : 0.12;
+    const lift = relic === 'clock' ? 0.22 : relic === 'teacup' ? 0.08 : relic === 'clown' ? 0.22 : relic === 'bell' ? 0.16 : 0.12;
     const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + lift));
     const sparkles: Sparkle[] = [];
     for (let i = 0; i < SPARKLE_COUNT; i++) {
@@ -763,6 +878,8 @@ export class StoryProps {
     this.relicGhost.setDapper(relic === 'teacup');
     // The clown's wears a rainbow wig.
     this.relicGhost.setClown(relic === 'clown');
+    // The hand bell's is cross: a frown and furrowed brows (D2-11).
+    this.relicGhost.setMood(relic === 'bell' ? 'angry' : 'happy');
     this.relicGhost.group.visible = true;
   }
 
@@ -773,7 +890,7 @@ export class StoryProps {
   sync(
     s: GameState,
     dt: number,
-    hold: { active: boolean; progress: number; cross: boolean; rod: boolean },
+    hold: { active: boolean; progress: number; cross: boolean; rod: boolean; twoHanded?: boolean },
     listener: THREE.Vector3,
     paused = false,
   ): void {
@@ -829,6 +946,8 @@ export class StoryProps {
     this.syncMusicBox(s, dt, fxDt, listener);
     this.syncTeacup(s, dt, listener);
     this.syncClown(s, dt, fxDt, listener);
+    this.syncBell(s, dt, listener);
+    this.syncBibleStand(s);
     this.syncBucket(s);
     this.updateDip(fxDt);
 
@@ -842,6 +961,11 @@ export class StoryProps {
       const { swing, lower } = rodStrike(this.splashT);
       this.heldRod.visible = true;
       poseHeldRod(this.heldRod, 1, swing, lower);
+    } else if (hold.twoHanded) {
+      // The two-handed blessing (D2-11, M05): cross in the right hand, rod
+      // in the left, rising together.
+      this.heldRod.visible = hold.active && hold.progress > 0;
+      poseHeldRod(this.heldRod, hold.progress, 0, 0, -1);
     } else {
       this.heldRod.visible = hold.rod && hold.active && hold.progress > 0;
       poseHeldRod(this.heldRod, hold.progress, 0, 0);
@@ -852,6 +976,7 @@ export class StoryProps {
     this.updateRelicGhost(fxDt, cam);
     this.updatePeeker(s, fxDt, cam);
     this.updatePrank(fxDt, cam);
+    this.updateLingering(s, fxDt, cam);
     this.updateBus(fxDt);
   }
 
@@ -988,7 +1113,7 @@ export class StoryProps {
       this.splashT += fxDt;
       const hit = (t: number) => (t < SPLASH_STILL ? Math.floor(t / SPLASH_STRIKE - STRIKE_HIT) : SPLASH_STRIKES - 1);
       if (hit(this.splashT) > hit(before)) this.splashDroplets();
-      if (before < SPLASH_STILL && this.splashT >= SPLASH_STILL) this.onCue('wind-down', 'clown');
+      if (before < SPLASH_STILL && this.splashT >= SPLASH_STILL && s.relic_kind === 'clown') this.onCue('wind-down', 'clown');
       if (this.splashT > SPLASH_STILL + ROD_LOWER) this.splashT = -1;
     }
     this.updateDroplets(fxDt);
@@ -1123,6 +1248,133 @@ export class StoryProps {
     }
   }
 
+  /**
+   * Day 2's hand bell: in the drop box, carried, on the ritual table, then on
+   * the cleaned-relic table. While possessed it jitters and rings in short
+   * fits; the cross and the splash set it rattling hard (D2-10); once
+   * blessed it settles and sits still.
+   */
+  private syncBell(s: GameState, dt: number, listener: THREE.Vector3): void {
+    const current = s.relic_kind === 'bell';
+    const stored = storedSpot(s, 'bell');
+    this.bell.visible = (current && s.relic === 'ritual-table') || !!stored;
+    this.heldBell.visible = current && s.relic === 'held';
+    at(this.bell, stored ?? SPOTS.relicRitual);
+    this.bell.rotation.set(0, -Math.PI / 2, 0);
+
+    const possessed = current && (s.relic === 'drop-box' || s.relic === 'held' || s.relic === 'ritual-table') && !s.flags.has('relic-blessed');
+    const now = performance.now() / 1000;
+    const fit = possessed ? Math.max(0, Math.sin(now * 1.4)) ** 3 : 0;
+    let shake = fit * 0.5;
+    // The cross and the splash: a hard rattle that dies away (the shared
+    // rattle timer, which the music box's sync advances).
+    if (current && s.relic === 'ritual-table' && this.rattleT >= 0) {
+      shake = Math.max(shake, Math.max(0, 1 - this.rattleT / this.rattle.seconds) * this.rattle.strength);
+    }
+    const p = this.purification;
+    if (p && p.relic === 'bell') shake = Math.max(shake, Math.max(0, 1 - p.t / PURIFY.windDown) * 0.5);
+    for (const g of [this.bell, this.heldBell]) {
+      const bell = g.userData.bell as THREE.Group;
+      const clapper = g.userData.clapper as THREE.Group;
+      bell.position.set(Math.sin(now * 41) * 0.006 * shake, Math.abs(Math.sin(now * 29)) * 0.012 * shake, Math.sin(now * 37) * 0.006 * shake);
+      bell.rotation.set(Math.sin(now * 23) * 0.18 * shake, 0, Math.sin(now * 19) * 0.22 * shake);
+      clapper.rotation.z = Math.sin(now * 31) * 0.5 * Math.min(1, shake);
+    }
+
+    if (possessed) {
+      this.bellTimer -= dt;
+      if (this.bellTimer <= 0 && fit > 0.5) {
+        this.bellTimer = 1.6;
+        const src = s.relic === 'drop-box' ? SPOTS.dropBox : SPOTS.relicRitual;
+        const d = s.relic === 'held' ? 0 : Math.hypot(listener.x - src.x, -listener.z - src.y);
+        this.onBell(listener.y < -3 ? 0 : tuneVolume(d));
+      }
+    }
+  }
+
+  /** The Bible stand and the Bible on it: by the circle's corner, or in front of the ritual table (D2-11). */
+  private syncBibleStand(s: GameState): void {
+    const r = bibleStandRect(s);
+    const x = (r.x1 + r.x2) / 2;
+    const y = (r.y1 + r.y2) / 2;
+    this.bibleStand.position.set(...toWorld(x, y, 0, STAND_PROP.height / 2));
+    this.bible.position.set(...toWorld(x, y, 0, SPOTS.bible.z));
+    this.bible.rotation.set(0.3, bibleFacing(x, y), 0);
+  }
+
+  /**
+   * Day 2's lingering ghosts. From the third text the clown's ghost drifts
+   * on a loop among the nearest east graves, giggling (D2-08); at the end of
+   * the shift it chases the angry ghost round the same loop (D2-12). On the
+   * hand bell's refill trip a worried ghost stares at the old priest's grave,
+   * and vanishes once the player has seen it and looked away (D2-09).
+   */
+  private updateLingering(s: GameState, dt: number, cam: THREE.Vector3): void {
+    this.roamT += dt;
+    const roaming = clownRoaming(s);
+    const chasing = ghostsChasing(s);
+    this.roamer.group.visible = roaming || chasing;
+    this.grump.group.visible = chasing;
+    // Faster round the loop while chasing.
+    const speed = chasing ? 2.2 : 1;
+    const t = this.roamT * speed;
+    const place = (g: GhostModel, at: number, bob: number) => {
+      const a = gravesLoop(at);
+      const b = gravesLoop(at + 0.05);
+      g.group.position.set(...toWorld(a.x, a.y, 0, GRAVES_LOOP.height + Math.sin(this.roamT * 3 + bob) * 0.08));
+      g.group.rotation.set(0, Math.atan2(b.x - a.x, -(b.y - a.y)), 0);
+    };
+    if (this.roamer.group.visible) place(this.roamer, chasing ? t - 1.1 : t, 0);
+    if (this.grump.group.visible) place(this.grump, t, 1.7);
+
+    // Giggles from the clown, squeaks from the angry one, by distance.
+    if (this.roamer.group.visible) {
+      this.ghostSoundTimer -= dt;
+      if (this.ghostSoundTimer <= 0) {
+        this.ghostSoundTimer = chasing ? 1.3 : 3.2;
+        const d = cam.distanceTo(this.roamer.group.position);
+        const v = cam.y < -3 ? 0 : 0.5 / (1 + (d / 12) ** 2);
+        if (chasing && Math.random() < 0.5) this.onSqueak(v);
+        else this.onGiggle(v);
+      }
+    }
+
+    // The worried ghost, staring down at the plot.
+    const w = WORRIED_SPOT;
+    this.worrier.group.visible = worriedShown(s);
+    if (this.worrier.group.visible) {
+      this.worrier.group.position.set(...toWorld(w.x, w.y, 0, 0.35 + Math.sin(this.roamT * 1.5) * 0.03));
+      this.worrier.group.rotation.set(0, Math.atan2(w.lookX - w.x, -(w.lookY - w.y)), 0);
+    }
+
+    // What has been seen. Not from indoors, where walls are in the way.
+    const indoors = !!zoneAt(cam.x, -cam.z, 0)?.roof || cam.y < -3;
+    const watch = (who: Spotted, shown: boolean, pos: THREE.Vector3, range: number) => {
+      const seen = shown && !indoors && this.inView(pos, cam, range);
+      this.seenFor[who] = seen ? this.seenFor[who] + dt : 0;
+      if (this.seenFor[who] >= 0.7) this.onSpotted(who);
+      return seen;
+    };
+    watch(chasing ? 'chase' : 'clown-roaming', this.roamer.group.visible, this.roamer.group.position, SPOT_RANGE.clown);
+    const worriedPos = new THREE.Vector3(...toWorld(w.x, w.y, 0, 0.6));
+    const sees = watch('worried', this.worrier.group.visible, worriedPos, SPOT_RANGE.worried);
+    // Once seen, looking away long enough makes it vanish.
+    if (this.worrier.group.visible && s.flags.has('worried-spotted')) {
+      this.worriedAwayFor = sees ? 0 : this.worriedAwayFor + dt;
+      if (this.worriedAwayFor >= 1) this.onWorriedVanished();
+    } else {
+      this.worriedAwayFor = 0;
+    }
+    watch('worried-gone', s.flags.has('worried-vanished') && !s.flags.has('worried-looked-back'), worriedPos, SPOT_RANGE.worried);
+  }
+
+  /** True when `pos` is on screen (with a margin) and within `range` metres. */
+  private inView(pos: THREE.Vector3, cam: THREE.Vector3, range: number): boolean {
+    if (cam.distanceTo(pos) > range) return false;
+    const p = pos.clone().project(this.camera);
+    return p.z < 1 && Math.abs(p.x) < 0.8 && Math.abs(p.y) < 0.8;
+  }
+
   /** The bucket: in the closet, carried, or by the ritual table; and the rod until it's taken. */
   private syncBucket(s: GameState): void {
     this.bucket.visible = s.bucket !== 'held';
@@ -1192,7 +1444,7 @@ export class StoryProps {
     const fired = s.fired_scares.includes('d1-tree-peek');
     if (fired) this.peekHideT += dt;
     // Only on the walk home at the end of the day.
-    g.group.visible = s.flags.has('heading-home') && (!fired || this.peekHideT < PEEK_HIDE);
+    g.group.visible = s.day_index === 1 && s.flags.has('heading-home') && (!fired || this.peekHideT < PEEK_HIDE);
     if (!g.group.visible) return;
 
     const [tx, , tz] = toWorld(TREE_PEEK.x, TREE_PEEK.y, 0);

@@ -885,3 +885,72 @@ doll, the table or the bucket shows nothing. The splash itself is unchanged.
 
 PROVISIONAL: the timing and the look (a plain ring and a few blue drops) are
 placeholders, like the splash's droplets.
+
+## 2026-11-30 — S3 part 3: the rest of Day 2 (D2-08 to D2-12)
+
+The designer approved part 2 and asked for part 3 (2026-11-30). Day 2 now
+runs from the gate to the end of the shift. At the gate the objective reads
+"End of Day 2. Day 3 comes in S4." Day 3 isn't started.
+
+What happens, in order:
+1. **D2-08.** The clown doll goes on the cleaned-relic table, then "Two down.
+   Please let that be the last one.", then a third Christ-LERTS text. From
+   then on the clown's ghost, wig and all, drifts and giggles on a loop among
+   the nearest east graves. The first time it's in view from outdoors
+   (within 45 m) the thought is "Is that the clown out there? Guess he's in
+   no rush to move on."
+2. **D2-09.** The delivery is a hand bell that jitters and rings in fits in
+   the drop box, in hand and on the table. Put on the ritual table: "Better
+   fill that bucket before I start. Just in case." The empty bucket from the
+   clown is picked up by the table, filled at the fountain and set back
+   down. On this trip a worried ghost stands on the far side of the old
+   priest's plot, staring down at it. When it's first in view: "That one
+   looks worried. What's it staring at?" Once seen, a second spent looking
+   away and it vanishes. Looking back at the grave: "...Where'd it go?"
+   None of this is needed to carry on.
+3. **D2-10.** The cross (once the bucket is back, full) sets the bell
+   rattling hard for 2.4 s, harder than the music box, with clanging rings
+   and angry squeaks. Then "Whoa! Okay, it really didn't like that." Then
+   dip the rod and splash it, as with the doll. It rattles and squeaks
+   again, and the splash empties the bucket. Then "It's only getting
+   angrier!" and "Maybe it needs everything at once. The Bible, the cross
+   and the water."
+4. **D2-11 (M05).** "Move the Bible stand in front of the ritual table": E on
+   the Bible moves the stand from the circle's north-east corner to just
+   east of the circle, between the player and the table. Then the
+   two-handed blessing, held in the circle: the cross rises in the right
+   hand and the rod in the left. The bell's ghost has the green sheet with
+   furrowed brows in a V and a frown. It squeaks crossly as it rises, then
+   "Well, somebody's in a mood." The bell goes in the third place on the
+   cleaned-relic table.
+5. **D2-12.** Dusk falls (the Day 1 evening sky): "Three in one shift. I
+   think I've earned the walk home." Then "Head back to the front gate". The
+   clown's ghost chases the angry one round the graves loop, faster, with
+   giggles and squeaks. The first time they're in view: "Ha. Looks like
+   those two are getting along." Reaching the gate ends Day 2.
+
+Other changes:
+- The Bible stand is now drawn and collided by the story layer, so it can
+  move. It's back in its corner each morning.
+- The tree ghost by the gate only peeks on Day 1.
+- The hand bell's splash and the doll's share one event, `splash-relic`.
+
+### PROVISIONAL (not yet ruled on)
+
+- **Relic 3 is a brass hand bell**, a placeholder like the teacup.
+- **All part 3 copy is draft**, including the third text, which repeats the
+  Christ-LERTS alert.
+- **The ghosts' expressions** are for approval at the S3 gate (doc 9). The
+  worried ghost has inner brow ends raised and a small frown. The angry
+  ghost has brows down in a V, a frown and slightly narrowed eyes.
+- **Water.** The refill happens before any attempt (doc D2-09), and the
+  splash empties the bucket as with the doll. The two-handed blessing needs
+  no fresh dip: the rod is held as the second prop (doc 5.3), so no second
+  refill is ever needed.
+- **The lingering ghosts** count as seen only from outdoors, on screen,
+  within range (45 m for the clown's loop, 22 m for the worried ghost),
+  for 0.7 s. The graves loop is centred 20 m east of the main path, so from
+  the path they're small.
+- **No fade at the gate.** Day 2 ends on the placeholder objective rather
+  than a fade to Day 3.
+

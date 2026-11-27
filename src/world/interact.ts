@@ -9,6 +9,8 @@ import {
   blessBlocker,
   closetFetch,
   churchSealed,
+  rodDipWanted,
+  standMoveWanted,
   searchesDoor,
   storageKeyWanted,
   tableReady,
@@ -177,8 +179,9 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       // Seen during the search, but only taken once holy water is wanted.
       if (s.bucket === 'closet' && (!s.flags.has('storage-opened') || !closetFetch(s))) return NONE;
       if (s.bucket === 'chapel' && s.bucket_filled) {
-        // The rod goes in before the doll is splashed (designer, 2026-11-26).
-        if (!s.inventory.has('rod') || s.flags.has('rod-wet') || s.flags.has('clown-doused') || !s.flags.has('water-wanted')) return NONE;
+        // The rod goes in before the doll, or the hand bell, is splashed
+        // (designer, 2026-11-26).
+        if (!s.inventory.has('rod') || !rodDipWanted(s)) return NONE;
         return story('E  Dip the rod in the holy water', { type: 'wet-rod' });
       }
       if (s.held_prop_id) return say('Bucket', REMINDERS.handsFull);
@@ -194,6 +197,9 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
 
     case 'clown':
       return resolveClown(s, player);
+
+    case 'bell':
+      return resolveBell(s, player);
 
     case 'chalice':
       // Day 2: left on the garden bench by a prankster ghost (D2-02).
@@ -267,6 +273,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         if (!bibleReturnable(s)) return NONE;
         return story('E  Put the Bible back', { type: 'return-bible' });
       }
+      // The hand bell's two-handed blessing: the stand goes in front (D2-11).
+      if (standMoveWanted(s)) return story('E  Move the Bible stand in front of the table', { type: 'move-bible-stand' });
       if (!bibleWanted(s)) return NONE;
       return story('E  Pick up the Bible', { type: 'take', item: 'bible' });
 
@@ -329,7 +337,7 @@ function resolveClown(s: GameState, player: Player): Resolution {
     return {
       prompt: 'Hold click  Splash the clown doll with holy water',
       action: { kind: 'message', text: 'Hold the left mouse button to splash it.' },
-      hold: { type: 'splash-doll' },
+      hold: { type: 'splash-relic' },
     };
   }
   // Going still, then "Looks like that cooled him off."
@@ -337,6 +345,55 @@ function resolveClown(s: GameState, player: Player): Resolution {
   if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
   if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
   return bless;
+}
+
+/**
+ * Day 2's third relic, the hand bell, on the ritual table (D2-09 to D2-11):
+ * the bucket is refilled first; the cross and then holy water only set it
+ * rattling harder; with the Bible on its stand in front, the cross and rod
+ * together release it.
+ */
+function resolveBell(s: GameState, player: Player): Resolution {
+  if (s.relic_kind !== 'bell' || s.relic !== 'ritual-table') return NONE;
+  // Aiming at it with the bucket in hand still sets the bucket down.
+  if (s.bucket === 'held') return story('E  Put the bucket down', { type: 'place-bucket' });
+  const label = 'Hand bell';
+  if (s.flags.has('relic-blessed')) {
+    if (s.held_prop_id) return say(label, REMINDERS.handsFull);
+    return story('E  Pick up the hand bell', { type: 'pickup-relic' });
+  }
+  if (!tableReady(s)) return say(label, REMINDERS.tableNotReady);
+  // "Better fill that bucket..." first.
+  if (!s.flags.has('bell-refill-wanted')) return NONE;
+  const bless = (prompt: string): Resolution => ({
+    prompt,
+    action: { kind: 'message', text: 'Hold the left mouse button to bless it.' },
+    hold: { type: 'bless-relic' },
+  });
+  if (!s.flags.has('bell-crossed')) {
+    if (s.bucket !== 'chapel' || !s.bucket_filled) return say(label, REMINDERS.holyWaterFirst);
+    if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return bless('Hold click  Bless the hand bell');
+  }
+  // Rattling, then its thought.
+  if (!s.flags.has('bell-water-wanted')) return NONE;
+  if (!s.flags.has('bell-splashed')) {
+    if (!s.inventory.has('rod')) return say(label, REMINDERS.needRod);
+    if (!s.flags.has('rod-wet')) return say(label, s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+    if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+    return {
+      prompt: 'Hold click  Splash the hand bell with holy water',
+      action: { kind: 'message', text: 'Hold the left mouse button to splash it.' },
+      hold: { type: 'splash-relic' },
+    };
+  }
+  // Rattling, then two thoughts.
+  if (!s.flags.has('two-handed-wanted')) return NONE;
+  if (!s.flags.has('bible-stand-moved')) return say(label, REMINDERS.standFirst);
+  if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+  if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
+  return bless('Hold click  Bless the hand bell with the cross and rod');
 }
 
 /**

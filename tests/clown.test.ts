@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
-import { DIP, DIP_SECONDS, dipPose, rodStrike } from '../src/world/storyProps';
-import { SPLASH_STRIKE } from '../src/data/story';
+import { DIP, DIP_SECONDS, dipPose, gravesLoop, rodStrike } from '../src/world/storyProps';
+import { GRAVES_LOOP, SPLASH_STRIKE, WORRIED_SPOT } from '../src/data/story';
+import { AREAS, PROPS } from '../src/data/layout';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
 
@@ -133,3 +134,53 @@ describe('dipping the rod in the bucket (2026-11-29)', () => {
     expect(DIP_SECONDS).toBeLessThan(2);
   });
 });
+
+describe("Day 2's lingering ghosts (S3 part 3)", () => {
+  const faceParts = (g: ReturnType<typeof ghostModel>) =>
+    g.group.children.filter((c) => c.visible && c.type === 'Mesh' && (c as THREE.Mesh).geometry.type !== 'IcosahedronGeometry');
+
+  it('gives the worried and angry ghosts brows and a frown in place of the smile', () => {
+    const happy = ghostModel(false);
+    const worried = ghostModel(false);
+    worried.setMood('worried');
+    const angry = ghostModel(false);
+    angry.setMood('angry');
+    // Two brows and a frown come in; the smile goes: one more part each.
+    expect(faceParts(worried).length).toBe(faceParts(happy).length + 2);
+    expect(faceParts(angry).length).toBe(faceParts(happy).length + 2);
+    const brows = (g: ReturnType<typeof ghostModel>) =>
+      g.group.children.filter((c) => c.visible && (c as THREE.Mesh).geometry?.type === 'BoxGeometry').sort((a, b) => a.position.x - b.position.x);
+    const [wl, wr] = brows(worried);
+    const [al, ar] = brows(angry);
+    // Worried: inner ends up (the left brow tilts up towards the middle). Angry: down.
+    expect(wl.rotation.z).toBeGreaterThan(0);
+    expect(wr.rotation.z).toBeLessThan(0);
+    expect(al.rotation.z).toBeLessThan(0);
+    expect(ar.rotation.z).toBeGreaterThan(0);
+    // And back to the usual face.
+    angry.setMood('happy');
+    expect(faceParts(angry).length).toBe(faceParts(happy).length);
+  });
+
+  it('keeps the clown ghost among the east graves, in sight of the path', () => {
+    const graves = AREAS.find((a) => a.id === 'east-graves')!.rect;
+    for (let t = 0; t < 60; t += 0.25) {
+      const p = gravesLoop(t);
+      expect(p.x).toBeGreaterThan(graves.x1);
+      expect(p.x).toBeLessThan(graves.x2);
+      expect(p.y).toBeGreaterThan(graves.y1);
+      expect(p.y).toBeLessThan(graves.y2);
+    }
+    expect(GRAVES_LOOP.x - GRAVES_LOOP.rx).toBeLessThan(25);
+  });
+
+  it("puts the worried ghost beside the old priest's grave, looking at it", () => {
+    const plot = PROPS.find((p) => p.id === 'old-priest-plot')!.rect;
+    expect(Math.hypot(WORRIED_SPOT.x - (plot.x1 + plot.x2) / 2, WORRIED_SPOT.y - (plot.y1 + plot.y2) / 2)).toBeLessThan(2);
+    expect(WORRIED_SPOT.lookX).toBeGreaterThanOrEqual(plot.x1);
+    expect(WORRIED_SPOT.lookX).toBeLessThanOrEqual(plot.x2);
+    expect(WORRIED_SPOT.lookY).toBeGreaterThanOrEqual(plot.y1);
+    expect(WORRIED_SPOT.lookY).toBeLessThanOrEqual(plot.y2);
+  });
+});
+

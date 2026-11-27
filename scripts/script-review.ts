@@ -75,6 +75,16 @@ export const DAY2: Cue[] = [
   { key: 'clownDance', when: 'Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing.' },
   { key: 'clownWater', when: 'Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet.' },
   { key: 'cooledOff', when: 'Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again.' },
+  { key: 'lastOne', when: 'The clown doll goes on the cleaned-relic table; then the third delivery text.' },
+  { key: 'clownRoaming', when: "After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside." },
+  { key: 'bellRefill', when: 'The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain.' },
+  { key: 'worriedSpotted', when: "On the hand bell's refill trip: the worried ghost at the old priest's grave first comes into view." },
+  { key: 'worriedGone', when: 'Looking back at the grave once the worried ghost has vanished (it goes once the player has looked away for a second).' },
+  { key: 'bellCross', when: 'Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket.' },
+  { key: 'bellSplash', when: 'Splashing the hand bell with holy water: once its rattle has died away.' },
+  { key: 'bellIdea', when: 'Straight after; then "Move the Bible stand in front of the ritual table".' },
+  { key: 'shiftDone', when: 'The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate".' },
+  { key: 'chaseSpotted', when: "On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view." },
 ];
 
 /** Thoughts that sit with the relics instead (RELIC_LINES), so they're listed by relic. */
@@ -87,6 +97,7 @@ const RELIC_CUES: { kind: keyof typeof RELIC_LINES; day: string; title: string }
   { kind: 'music-box', day: 'Day 1', title: 'Music box (Day 1, second delivery)' },
   { kind: 'teacup', day: 'Day 2', title: 'Teacup (Day 2, first delivery)' },
   { kind: 'clown', day: 'Day 2', title: 'Clown doll (Day 2, second delivery)' },
+  { kind: 'bell', day: 'Day 2', title: 'Hand bell (Day 2, third delivery; placeholder relic)' },
 ];
 const RELIC_WHEN: Record<keyof RelicLines, string> = {
   approach: 'Nearing the drop box once it has been delivered.',
@@ -113,6 +124,7 @@ export const SMS_WHEN: Record<string, string> = {
   delivery1: "Day 1, 5 s after the clock is put on the supervisor's desk.",
   d2delivery1: 'Day 2, after "There. All set."',
   d2delivery2: "Day 2, once the teacup is put away, after 'If they're all like this today…'.",
+  d2delivery3: "Day 2, once the clown doll is put away, after 'Two down…'.",
 };
 
 /** Escape a table cell. */
@@ -166,7 +178,7 @@ export function scriptReview(): string {
   ];
   for (const r of RELIC_CUES) {
     const lines = RELIC_LINES[r.kind];
-    const id = r.kind === 'music-box' ? 'MB' : r.kind === 'teacup' ? 'TC' : 'CD';
+    const id = { 'music-box': 'MB', teacup: 'TC', clown: 'CD', bell: 'HB' }[r.kind];
     out.push(`#### ${r.title}`, '', '| ID | When it plays | Text | Proposed |', '|---|---|---|---|');
     for (const [k, n] of RELIC_IDS) {
       const line = lines[k];
@@ -221,5 +233,6 @@ const REMINDER_WHEN: Record<keyof typeof REMINDERS, string> = {
   needRod: 'Trying to splash the clown doll, or dip the rod, without the holy-water rod.',
   rodDry: 'Trying to splash the clown doll before dipping the rod in the bucket.',
   drawersOtherSide: 'Searching the church: trying the office desk drawers from anywhere but behind the desk.',
+  standFirst: "Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table.",
   bucketEmpty: 'Putting the bucket down by the ritual table before filling it.',
 };

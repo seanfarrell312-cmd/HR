@@ -1,4 +1,4 @@
-import { RELIC_NAMES, S3_PART2_END, SEARCH_CHECKLIST } from '../data/story';
+import { RELIC_NAMES, S3_END, SEARCH_CHECKLIST } from '../data/story';
 import type { GameState } from '../state/store';
 import { churchSealed } from './search';
 import { tableReady } from './table';
@@ -292,9 +292,74 @@ export const DAY2: Objective[] = [
     done: (s) => s.day_index === 2 && s.relics_stored.includes('clown'),
   },
   {
-    // The rest of Day 2 comes in part 3 of S3.
+    // The third text, and the hand bell from the drop box (D2-08). The
+    // clown's ghost drifts among the east graves from here on.
     id: 'D2-08',
-    task: () => S3_PART2_END,
+    task: (s) => {
+      // "Two down..." first.
+      if (!s.inbox.includes('d2delivery3')) return '';
+      if (!s.sms_read.has('d2delivery3')) return 'Check your phone (Q)';
+      return 'Collect the delivery from the drop box by the gate';
+    },
+    done: (s) => s.day_index === 2 && s.relic_kind === 'bell' && (s.relic === 'held' || s.relic === 'ritual-table'),
+  },
+  {
+    // Onto the ritual table, then refill the bucket at the fountain; the
+    // worried ghost is at the old priest's grave on the way (D2-09).
+    id: 'D2-09',
+    task: (s) => {
+      if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the hand bell on the ritual table' : '';
+      // "Better fill that bucket..." first.
+      if (!s.flags.has('bell-refill-wanted')) return '';
+      if (s.bucket === 'held' && s.bucket_filled) return 'Put the bucket down by the ritual table';
+      return 'Fill the bucket at the fountain in the west garden';
+    },
+    done: (s) =>
+      s.day_index === 2 && s.relic_kind === 'bell' && s.flags.has('bell-refill-wanted') && s.bucket === 'chapel' && s.bucket_filled,
+  },
+  {
+    // The cross, then holy water: it only rattles harder (D2-10).
+    id: 'D2-10',
+    task: (s) => {
+      if (!s.flags.has('bell-crossed')) {
+        return s.inventory.has('cross') ? 'Stand in the holy circle and bless the hand bell' : 'Take the cross from the chapel shelf';
+      }
+      // Rattling, then its thought.
+      if (!s.flags.has('bell-water-wanted')) return '';
+      if (!s.flags.has('bell-splashed')) {
+        return s.flags.has('rod-wet') ? 'Stand in the holy circle and splash the hand bell with holy water' : 'Dip the holy-water rod in the bucket';
+      }
+      return '';
+    },
+    done: (s) => s.day_index === 2 && s.relic_kind === 'bell' && s.flags.has('two-handed-wanted'),
+  },
+  {
+    // The Bible on its stand in front, and the two-handed blessing: cross in
+    // the right hand, rod in the left (D2-11, M05). Then put the bell away.
+    id: 'D2-11',
+    task: (s) => {
+      if (!s.flags.has('relic-blessed')) {
+        if (!s.flags.has('bible-stand-moved')) return 'Move the Bible stand in front of the ritual table';
+        return 'Stand in the holy circle and bless the hand bell with the cross and rod together';
+      }
+      // Waits until the ghost has gone and its thought has played.
+      if (!s.flags.has('relic-thought-done')) return '';
+      if (s.relic === 'held') return 'Put the hand bell on the table outside the chapel';
+      return 'Pick up the hand bell';
+    },
+    done: (s) => s.day_index === 2 && s.relics_stored.includes('bell'),
+  },
+  {
+    // The shift is over: out through the gate, past the two ghosts chasing
+    // each other among the graves (D2-12).
+    id: 'D2-12',
+    task: (s) => (s.flags.has('gate-prompted') ? 'Head back to the front gate' : ''),
+    done: (s) => s.day_index === 2 && s.flags.has('returned-to-gate'),
+  },
+  {
+    // Day 3 comes in S4.
+    id: 'S3-END',
+    task: () => S3_END,
     done: () => false,
   },
 ];

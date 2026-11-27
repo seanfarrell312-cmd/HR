@@ -124,6 +124,12 @@ export const SMS: Record<string, Sms> = {
     from: 'Supervisor',
     text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
   },
+  // The third, the same again (S3 part 3, PROVISIONAL).
+  d2delivery3: {
+    id: 'd2delivery3',
+    from: 'Supervisor',
+    text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
+  },
 };
 
 /** Which relic each delivery text brings to the drop box. */
@@ -131,6 +137,7 @@ export const DELIVERIES: Record<string, RelicKind> = {
   delivery1: 'music-box',
   d2delivery1: 'teacup',
   d2delivery2: 'clown',
+  d2delivery3: 'bell',
 };
 
 /** What each relic is called in prompts and objectives. */
@@ -138,6 +145,7 @@ export const RELIC_NAMES: Record<RelicKind, string> = {
   'music-box': 'music box',
   teacup: 'teacup',
   clown: 'clown doll',
+  bell: 'hand bell',
 };
 
 /** The front gate shuts itself this long after it opens (decisions 2026-11-10). */
@@ -296,6 +304,27 @@ export const THOUGHTS = {
   // Designer copy, 2026-11-26.
   /** The holy water has stilled the clown doll; then the cross again. */
   cooledOff: 'Looks like that cooled him off.',
+  // Day 2, the rest of the shift (S3 part 3, D2-08 to D2-12). PROVISIONAL copy.
+  /** The clown doll is on the cleaned-relic table; then the third delivery text. */
+  lastOne: 'Two down. Please let that be the last one.',
+  /** Spotting the clown's ghost drifting among the east graves after the third text. */
+  clownRoaming: "Is that the clown out there? Guess he's in no rush to move on.",
+  /** The hand bell is on the ritual table; then the refill. */
+  bellRefill: 'Better fill that bucket before I start. Just in case.',
+  /** Spotting the worried ghost at the old priest's grave on the refill trip. */
+  worriedSpotted: "That one looks worried. What's it staring at?",
+  /** Looking back at the grave once the worried ghost has gone. */
+  worriedGone: "...Where'd it go?",
+  /** The cross set the hand bell rattling; then holy water. */
+  bellCross: "Whoa! Okay, it really didn't like that.",
+  /** The splash set it rattling worse; then the idea. */
+  bellSplash: "It's only getting angrier!",
+  /** Straight after; then the Bible stand and the two-handed blessing. */
+  bellIdea: 'Maybe it needs everything at once. The Bible, the cross and the water.',
+  /** The hand bell is on the cleaned-relic table; then the walk to the gate. */
+  shiftDone: "Three in one shift. I think I've earned the walk home.",
+  /** Spotting the clown's ghost chasing the angry one among the graves on the way out. */
+  chaseSpotted: "Ha. Looks like those two are getting along.",
 };
 
 /**
@@ -345,6 +374,13 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
     ghost: 'I guess he must have really liked tea.',
   },
   // Designer copy, 2026-11-26 and 2026-11-27.
+  // PROVISIONAL copy (S3 part 3).
+  bell: {
+    approach: 'Is that... a bell ringing?',
+    pickup: "An old hand bell. It won't stop shaking.",
+    carry: 'Alright, alright! I hear you.',
+    ghost: "Well, somebody's in a mood.",
+  },
   clown: {
     approach: "Quiet one this time. That's a nice change.",
     pickup: 'A doll?',
@@ -413,6 +449,7 @@ export const REMINDERS = {
   needRod: 'I need the holy-water rod.',
   rodDry: 'I should dip the rod in the holy water first.',
   drawersOtherSide: 'The drawers are on the other side.',
+  standFirst: 'I need both hands. The Bible should go on its stand in front of me.',
   bucketEmpty: "It's empty. I should fill it at the fountain first.",
 };
 
@@ -511,8 +548,33 @@ export const CHURCH_APPROACH_LINES: Record<number, string> = {
   2: THOUGHTS.churchApproachDay2,
 };
 
-/** Shown once Day 2's second relic is put away, until the rest of S3 is built. */
-export const S3_PART2_END = 'End of S3 part 2. The third delivery comes next.';
+/** Shown once Day 2's shift is over, at the gate, until Day 3 is built in S4. */
+export const S3_END = 'End of Day 2. Day 3 comes in S4.';
+
+/** The hand bell's rattles (D2-10): harder and longer than the music box's. */
+export const RATTLE_VIOLENT = { seconds: 2.4, strength: 1.6 };
+
+/**
+ * Where the Bible stand goes for the two-handed blessing (D2-11, M05): just
+ * east of the holy circle, between the player and the ritual table, low
+ * enough to see the relic over the Bible.
+ */
+export const STAND_IN_FRONT = { x: 12.6, y: HOLY_CIRCLE.y };
+
+/**
+ * Day 2's lingering ghosts. The clown's ghost drifts on a loop among the
+ * nearest east graves from the third text on (D2-08); at the end of the
+ * shift it chases the angry ghost round the same loop (D2-12).
+ */
+export const GRAVES_LOOP = { x: 19.8, y: 41, rx: 2.3, ry: 5.5, height: 0.45 };
+/**
+ * The worried ghost (D2-09): on the far (west) side of the old priest's plot,
+ * staring down at it, so its face is towards the player coming from the
+ * church.
+ */
+export const WORRIED_SPOT = { x: -20.2, y: 51.7, lookX: -19, lookY: 51.7 };
+/** How close a lingering ghost must be, in metres, to count as seen. */
+export const SPOT_RANGE = { clown: 45, worried: 22 };
 
 /**
  * First-day control guide (designer copy, 2026-11-09), shown once the day card

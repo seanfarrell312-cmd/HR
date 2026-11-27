@@ -243,6 +243,8 @@ export function buildWorld(): WorldView {
   }
 
   for (const p of PROPS) {
+    // Moving props are drawn by the story layer (storyProps.ts).
+    if (p.story) continue;
     const mesh = propMesh(p);
     if (p.interact) mesh.userData.interactId = `item:${p.interact}`;
     root.add(mesh);

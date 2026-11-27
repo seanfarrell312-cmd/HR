@@ -57,6 +57,16 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-21 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
 | D2-22 | Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet. | Time for some holy water. There was a bucket and a rod in the storage closet. | |
 | D2-23 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
+| D2-24 | The clown doll goes on the cleaned-relic table; then the third delivery text. | Two down. Please let that be the last one. | |
+| D2-25 | After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside. | Is that the clown out there? Guess he's in no rush to move on. | |
+| D2-26 | The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain. | Better fill that bucket before I start. Just in case. | |
+| D2-27 | On the hand bell's refill trip: the worried ghost at the old priest's grave first comes into view. | That one looks worried. What's it staring at? | |
+| D2-28 | Looking back at the grave once the worried ghost has vanished (it goes once the player has looked away for a second). | ...Where'd it go? | |
+| D2-29 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
+| D2-30 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
+| D2-31 | Straight after; then "Move the Bible stand in front of the ritual table". | Maybe it needs everything at once. The Bible, the cross and the water. | |
+| D2-32 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | Three in one shift. I think I've earned the walk home. | |
+| D2-33 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
 
 ### Day 2: dawdling outside
 
@@ -100,6 +110,15 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | CD-04 | Its ghost, once it has gone. | I suppose a toy makes more sense than a teacup. | |
 | CD-04b | Straight after; then the next objective. | The things these spirits will get into these days. | |
 
+#### Hand bell (Day 2, third delivery; placeholder relic)
+
+| ID | When it plays | Text | Proposed |
+|---|---|---|---|
+| HB-01 | Nearing the drop box once it has been delivered. | Is that... a bell ringing? | |
+| HB-02 | Taking it out of the drop box. | An old hand bell. It won't stop shaking. | |
+| HB-03 | Carrying it up the path, 17 m from the church doors. | Alright, alright! I hear you. | |
+| HB-04 | Its ghost, once it has gone. | Well, somebody's in a mood. | |
+
 ## Texts
 
 | ID | When it arrives | From | Text | Proposed |
@@ -108,6 +127,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | S-02 | Day 1, 5 s after the clock is put on the supervisor's desk. | Supervisor | Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel. | |
 | S-03 | Day 2, after "There. All set." | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
 | S-04 | Day 2, once the teacup is put away, after 'If they're all like this today…'. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
+| S-05 | Day 2, once the clown doll is put away, after 'Two down…'. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
 
 ## Notes
 
@@ -195,4 +215,5 @@ Proposed changes to B:
 | R-14 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
 | R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
 | R-16 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
-| R-17 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-17 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
+| R-18 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

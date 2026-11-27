@@ -81,6 +81,11 @@ export interface Prop {
   base?: number;
   /** Story interaction id; the prop answers to `item:<interact>`. */
   interact?: string;
+  /**
+   * Drawn and collided by the story layer instead, because it can move (the
+   * Bible stand, D2-11). The rect here is where it starts each day.
+   */
+  story?: boolean;
 }
 
 export interface Transition {
@@ -445,7 +450,7 @@ export const PROPS: Prop[] = [
   { id: 'ritual-table', label: 'Ritual table', rect: rect(13.45, 52.1, 14.2, 54.1), height: 0.9, level: 0, color: DARK_WOOD, interact: 'ritual-table' },
   { id: 'holy-circle', label: 'Holy circle', rect: rect(10.5, 52.2, 12.3, 54.0), height: 0.03, level: 0, color: '#3aa0e0', shape: 'ring', solid: false },
   // Just outside the circle's north-east corner. It moves into the circle on later days.
-  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: BIBLE_STAND_H, level: 0, color: DARK_WOOD, interact: 'bible' },
+  { id: 'bible-stand', label: 'Bible stand', rect: rect(11.8, 54.4, 12.3, 54.9), height: BIBLE_STAND_H, level: 0, color: DARK_WOOD, interact: 'bible', story: true },
 
   // Behind the church: an Easter-egg note on a stool, readable any day.
   {

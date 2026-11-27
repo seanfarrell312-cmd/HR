@@ -15,7 +15,10 @@ import {
   SEARCH_NUDGE_SECONDS,
   SEARCH_NUDGES,
   SEARCH_SPOTS,
-  S3_PART2_END,
+  S3_END,
+  RATTLE_VIOLENT,
+  STAND_IN_FRONT,
+  THOUGHT_BEAT,
   CLOWN_DANCE_SECONDS,
   CLOWN_WIGGLE_SECONDS,
   SPLASH_SECONDS,
@@ -25,7 +28,9 @@ import {
 } from '../src/data/story';
 import { createInitialState, type GameState } from '../src/state/store';
 import { startDay } from '../src/story/day';
-import { applyEvent, type Effect, type StoryEvent } from '../src/story/events';
+import { applyEvent, clownRoaming, ghostsChasing, worriedShown, type Effect, type StoryEvent } from '../src/story/events';
+import { bibleStandRect } from '../src/world/storyProps';
+import { PROPS } from '../src/data/layout';
 import { currentObjective } from '../src/story/objectives';
 import { OBJECTIVE_SECONDS } from '../src/ui/hud';
 import { resolve } from '../src/world/interact';
@@ -121,7 +126,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'fill-bucket' },
   { type: 'place-bucket' },
   { type: 'wet-rod' },
-  { type: 'splash-doll' },
+  { type: 'splash-relic' },
   { type: 'clown-cooled' },
   { type: 'clown-cool-thought-done' },
   { type: 'bless-relic' },
@@ -130,6 +135,45 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'relic-thought-done' },
   { type: 'pickup-relic' },
   { type: 'store-relic' },
+  // D2-08 (S3 part 3): the third text and the hand bell. The clown's ghost
+  // drifts among the east graves.
+  { type: 'receive-sms', id: 'd2delivery3' },
+  { type: 'read-sms' },
+  { type: 'spotted', who: 'clown-roaming' },
+  { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
+  { type: 'take-relic' },
+  { type: 'relic-pickup-thought-done' },
+  { type: 'relic-near-church', x: 0, y: 40, level: 0 },
+  // D2-09: onto the table, then the refill; the worried ghost at the old
+  // priest's grave, gone when looked for again.
+  { type: 'place-relic' },
+  { type: 'bell-refill-wanted' },
+  { type: 'pickup-bucket' },
+  { type: 'spotted', who: 'worried' },
+  { type: 'fill-bucket' },
+  { type: 'worried-vanished' },
+  { type: 'spotted', who: 'worried-gone' },
+  { type: 'place-bucket' },
+  // D2-10: the cross, then holy water; it only rattles harder.
+  { type: 'bless-relic' },
+  { type: 'bell-settled' },
+  { type: 'bell-water-wanted' },
+  { type: 'wet-rod' },
+  { type: 'splash-relic' },
+  { type: 'bell-splash-settled' },
+  { type: 'bell-idea' },
+  { type: 'two-handed-wanted' },
+  // D2-11: the Bible stand in front, the two-handed blessing, put it away.
+  { type: 'move-bible-stand' },
+  { type: 'bless-relic' },
+  { type: 'relic-ghost-gone' },
+  { type: 'relic-thought-done' },
+  { type: 'pickup-relic' },
+  { type: 'store-relic' },
+  // D2-12: out through the gate past the two ghosts chasing each other.
+  { type: 'head-home' },
+  { type: 'spotted', who: 'chase' },
+  { type: 'reach-gate', x: 0, y: 2, level: 0 },
 ];
 
 function day2Start(): GameState {
@@ -169,17 +213,19 @@ const inCloset = { x: -9.3, y: 61.7, level: 0 as const };
 /** Day 2 played up to the storage key being found in the desk (the search under way). */
 const keyStep = () => DAY2_PLAYTHROUGH.findIndex((e) => e.type === 'take' && e.item === 'storage-key');
 
-describe('Day 2 playthrough so far (S3 parts 1 and 2)', () => {
-  it('runs from the gate to the clown doll put away', () => {
+describe('Day 2 playthrough (S3)', () => {
+  it('runs from the gate to the end of the shift', () => {
     const s = day2Start();
     const seen = [s.objective_id];
     for (const e of DAY2_PLAYTHROUGH) {
       play(s, [e]);
       if (seen[seen.length - 1] !== s.objective_id) seen.push(s.objective_id);
     }
-    expect(seen).toEqual(['D2-01', 'D2-02', 'D2-03', 'D2-04', 'D2-05', 'D2-06', 'D2-07', 'D2-08']);
-    expect(s.relics_stored).toEqual(['teacup', 'clown']);
-    expect(task(s)).toBe(S3_PART2_END);
+    expect(seen).toEqual(['D2-01', 'D2-02', 'D2-03', 'D2-04', 'D2-05', 'D2-06', 'D2-07', 'D2-08', 'D2-09', 'D2-10', 'D2-11', 'D2-12', 'S3-END']);
+    // Three deliveries, in order (doc 9, S3 tests).
+    expect(s.relics_stored).toEqual(['teacup', 'clown', 'bell']);
+    expect(task(s)).toBe(S3_END);
+    expect(s.environment_preset).toBe('D1_EVENING');
   });
 
   it('never fires anything twice when every event is repeated', () => {
@@ -196,6 +242,7 @@ describe('Day 2 playthrough so far (S3 parts 1 and 2)', () => {
     expect(s.fired_scares.filter((f) => f === 'd2-prank')).toHaveLength(1);
     expect(s.fired_scares.filter((f) => f === 'd2-teacup-ghost')).toHaveLength(1);
     expect(s.fired_scares.filter((f) => f === 'd2-clown-ghost')).toHaveLength(1);
+    expect(s.fired_scares.filter((f) => f === 'd2-bell-ghost')).toHaveLength(1);
   });
 
   it('leaves Day 1 untouched: finishing it does not tick off Day 2', () => {
@@ -859,7 +906,7 @@ describe('holy water for the clown doll (D2-07)', () => {
     const s = at(step('wet-rod'));
     // Not splashed with a dry rod.
     expect(resolve('item:clown', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.rodDry });
-    expect(flashes(applyEvent(s, { type: 'splash-doll' }))).toEqual([REMINDERS.rodDry]);
+    expect(flashes(applyEvent(s, { type: 'splash-relic' }))).toEqual([REMINDERS.rodDry]);
     expect(resolve('item:bucket', s, inCircle).prompt).toBe('E  Dip the rod in the holy water');
     expect(applyEvent(s, { type: 'wet-rod' })).toEqual([{ kind: 'dip' }]);
     expect(s.bucket_filled).toBe(true);
@@ -879,10 +926,10 @@ describe('holy water for the clown doll (D2-07)', () => {
   });
 
   it('splashes the doll still with the rod, then the thought', () => {
-    const s = at(step('splash-doll'));
-    expect(resolve('item:ritual-table', s, inCircle).hold).toEqual({ type: 'splash-doll' });
+    const s = at(step('splash-relic'));
+    expect(resolve('item:ritual-table', s, inCircle).hold).toEqual({ type: 'splash-relic' });
     expect(resolve('item:clown', s, { x: 9, y: 53, level: 0 }).action).toEqual({ kind: 'message', text: REMINDERS.standInCircle });
-    const fx = applyEvent(s, { type: 'splash-doll' });
+    const fx = applyEvent(s, { type: 'splash-relic' });
     expect(fx).toEqual([
       { kind: 'splash' },
       { kind: 'sfx', id: 'sprinkle' },
@@ -924,9 +971,9 @@ describe('holy water for the clown doll (D2-07)', () => {
   });
 
   it('can pick the empty bucket up again for a refill, but not a full one', () => {
-    const full = at(step('splash-doll'));
+    const full = at(step('splash-relic'));
     expect(resolve('item:bucket', full, inCircle).prompt).toBe('');
-    applyEvent(full, { type: 'splash-doll' });
+    applyEvent(full, { type: 'splash-relic' });
     expect(resolve('item:bucket', full, inCircle).prompt).toBe('E  Pick up the bucket');
   });
 
@@ -965,3 +1012,229 @@ describe('setting the bucket down', () => {
     expect(resolve('item:clown', s, { x: 11.4, y: 53.1, level: 0 }).prompt).toBe('E  Put the bucket down');
   });
 });
+
+// ---------------------------------------------------------------------------
+// S3 part 3 (doc 6.2 D2-08 to D2-12): the third delivery, a placeholder hand
+// bell; the clown's ghost among the graves; the worried ghost at the old
+// priest's grave; the cross and holy water failing; the two-handed blessing;
+// the end of the shift.
+
+describe('the third delivery (D2-08)', () => {
+  it('follows the clown doll onto the cleaned-relic table, after a thought', () => {
+    const s = at(step('store-relic', 2));
+    const fx = applyEvent(s, { type: 'store-relic' });
+    expect(says(fx)).toEqual(['Two down. Please let that be the last one.']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.lastOne), event: { type: 'receive-sms', id: 'd2delivery3' } });
+    expect(s.objective_id).toBe('D2-08');
+    expect(task(s)).toBe('');
+    applyEvent(s, { type: 'receive-sms', id: 'd2delivery3' });
+    expect(s.relic).toBe('drop-box');
+    expect(s.relic_kind).toBe('bell');
+    // The clown doll's steps are cleared for the new relic.
+    expect(s.flags.has('relic-blessed')).toBe(false);
+    expect(s.flags.has('rod-wet')).toBe(false);
+    expect(task(s)).toBe('Check your phone (Q)');
+    applyEvent(s, { type: 'read-sms' });
+    expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
+  });
+
+  it("notices the clown's ghost among the graves once, only after the text", () => {
+    const before = at(step('receive-sms', 3));
+    expect(applyEvent(before, { type: 'spotted', who: 'clown-roaming' })).toEqual([]);
+    const s = at(step('spotted'));
+    expect(says(applyEvent(s, { type: 'spotted', who: 'clown-roaming' }))).toEqual(["Is that the clown out there? Guess he's in no rush to move on."]);
+    expect(applyEvent(s, { type: 'spotted', who: 'clown-roaming' })).toEqual([]);
+  });
+
+  it('has its own lines', () => {
+    const s = at(step('approach-drop-box', 3));
+    expect(says(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 }))).toEqual(['Is that... a bell ringing?']);
+    expect(says(applyEvent(s, { type: 'take-relic' }))).toEqual(["An old hand bell. It won't stop shaking."]);
+    expect(s.held_prop_id).toBe('bell');
+    expect(s.objective_id).toBe('D2-09');
+    applyEvent(s, { type: 'relic-pickup-thought-done' });
+    expect(task(s)).toBe('Put the hand bell on the ritual table');
+    expect(says(applyEvent(s, { type: 'relic-near-church', x: 0, y: 40, level: 0 }))).toEqual(['Alright, alright! I hear you.']);
+  });
+});
+
+describe('the hand bell on the table, and the refill (D2-09)', () => {
+  it('wants the bucket refilled before anything else', () => {
+    const s = at(step('place-relic', 3));
+    const fx = applyEvent(s, { type: 'place-relic' });
+    expect(says(fx)).toEqual(['Better fill that bucket before I start. Just in case.']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.bellRefill), event: { type: 'bell-refill-wanted' } });
+    expect(task(s)).toBe('');
+    expect(resolve('item:bell', s, inCircle).prompt).toBe('');
+    applyEvent(s, { type: 'bell-refill-wanted' });
+    expect(task(s)).toBe('Fill the bucket at the fountain in the west garden');
+    // No blessing yet: the water isn't there.
+    expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.holyWaterFirst });
+    expect(flashes(applyEvent(s, { type: 'bless-relic' }))).toEqual([REMINDERS.holyWaterFirst]);
+    // The empty bucket by the table can be picked up again (refills never strand).
+    expect(s.bucket).toBe('chapel');
+    expect(s.bucket_filled).toBe(false);
+    expect(resolve('item:bucket', s, inCircle).prompt).toBe('E  Pick up the bucket');
+    applyEvent(s, { type: 'pickup-bucket' });
+    applyEvent(s, { type: 'fill-bucket' });
+    expect(task(s)).toBe('Put the bucket down by the ritual table');
+    applyEvent(s, { type: 'place-bucket' });
+    expect(s.objective_id).toBe('D2-10');
+    expect(task(s)).toBe('Stand in the holy circle and bless the hand bell');
+  });
+
+  it("shows the worried ghost on the refill trip, and it's gone when looked for again", () => {
+    const early = at(step('bell-refill-wanted'));
+    expect(worriedShown(early)).toBe(false);
+    expect(applyEvent(early, { type: 'spotted', who: 'worried' })).toEqual([]);
+    const s = at(step('spotted', 2));
+    expect(worriedShown(s)).toBe(true);
+    // It can't vanish before it's been seen.
+    expect(applyEvent(s, { type: 'worried-vanished' })).toEqual([]);
+    expect(applyEvent(s, { type: 'spotted', who: 'worried-gone' })).toEqual([]);
+    expect(says(applyEvent(s, { type: 'spotted', who: 'worried' }))).toEqual(["That one looks worried. What's it staring at?"]);
+    applyEvent(s, { type: 'worried-vanished' });
+    expect(worriedShown(s)).toBe(false);
+    expect(says(applyEvent(s, { type: 'spotted', who: 'worried-gone' }))).toEqual(["...Where'd it go?"]);
+    expect(applyEvent(s, { type: 'spotted', who: 'worried-gone' })).toEqual([]);
+  });
+
+  it("doesn't need the worried ghost seen to carry on", () => {
+    const s = at(step('place-bucket', 2));
+    s.flags.delete('worried-spotted');
+    s.flags.delete('worried-vanished');
+    s.flags.delete('worried-looked-back');
+    applyEvent(s, { type: 'place-bucket' });
+    expect(s.objective_id).toBe('D2-10');
+  });
+});
+
+describe('the cross and holy water fail on the hand bell (D2-10)', () => {
+  it('rattles hard at the cross, then wants holy water', () => {
+    const s = at(step('bless-relic', 5));
+    expect(resolve('item:ritual-table', s, inCircle).hold).toEqual({ type: 'bless-relic' });
+    expect(resolve('item:bell', s, { x: 9, y: 53, level: 0 }).action).toEqual({ kind: 'message', text: REMINDERS.standInCircle });
+    const fx = applyEvent(s, { type: 'bless-relic' });
+    expect(fx).toContainEqual({ kind: 'rattle', ...RATTLE_VIOLENT });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'bell-rattle' });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'angry-squeak' });
+    expect(fx).toContainEqual({ kind: 'after', seconds: RATTLE_VIOLENT.seconds + THOUGHT_BEAT, event: { type: 'bell-settled' } });
+    expect(fx.some((f) => f.kind === 'purify')).toBe(false);
+    // Harder than the music box's first rattle.
+    expect(RATTLE_VIOLENT.strength).toBeGreaterThan(1);
+    expect(task(s)).toBe('');
+    expect(resolve('item:bell', s, inCircle).prompt).toBe('');
+    expect(says(applyEvent(s, { type: 'bell-settled' }))).toEqual(["Whoa! Okay, it really didn't like that."]);
+    applyEvent(s, { type: 'bell-water-wanted' });
+    expect(task(s)).toBe('Dip the holy-water rod in the bucket');
+    expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.rodDry });
+    expect(resolve('item:bucket', s, inCircle).prompt).toBe('E  Dip the rod in the holy water');
+    expect(applyEvent(s, { type: 'wet-rod' })).toEqual([{ kind: 'dip' }]);
+    expect(task(s)).toBe('Stand in the holy circle and splash the hand bell with holy water');
+  });
+
+  it('rattles harder at the splash, empties the bucket, then the idea', () => {
+    const s = at(step('splash-relic', 2));
+    expect(resolve('item:bell', s, inCircle).hold).toEqual({ type: 'splash-relic' });
+    const fx = applyEvent(s, { type: 'splash-relic' });
+    expect(fx).toContainEqual({ kind: 'splash' });
+    expect(fx).toContainEqual({ kind: 'rattle', ...RATTLE_VIOLENT });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'angry-squeak' });
+    expect(s.bucket_filled).toBe(false);
+    expect(s.flags.has('relic-blessed')).toBe(false);
+    expect(task(s)).toBe('');
+    const worse = applyEvent(s, { type: 'bell-splash-settled' });
+    expect(says(worse)).toEqual(["It's only getting angrier!"]);
+    expect(worse).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.bellSplash), event: { type: 'bell-idea' } });
+    expect(says(applyEvent(s, { type: 'bell-idea' }))).toEqual(['Maybe it needs everything at once. The Bible, the cross and the water.']);
+    applyEvent(s, { type: 'two-handed-wanted' });
+    expect(s.objective_id).toBe('D2-11');
+    expect(task(s)).toBe('Move the Bible stand in front of the ritual table');
+  });
+});
+
+describe('the two-handed blessing (D2-11)', () => {
+  it('moves the Bible stand in front of the ritual table first', () => {
+    const s = at(step('move-bible-stand'));
+    expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.standFirst });
+    expect(flashes(applyEvent(s, { type: 'bless-relic' }))).toEqual([REMINDERS.standFirst]);
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Move the Bible stand in front of the table');
+    const home = bibleStandRect(s);
+    applyEvent(s, { type: 'move-bible-stand' });
+    const moved = bibleStandRect(s);
+    expect((moved.x1 + moved.x2) / 2).toBeCloseTo(STAND_IN_FRONT.x);
+    expect((moved.y1 + moved.y2) / 2).toBeCloseTo(STAND_IN_FRONT.y);
+    expect(moved.x2 - moved.x1).toBeCloseTo(home.x2 - home.x1);
+    // In front: east of the circle, short of the table, not in the circle.
+    const table = PROPS.find((p) => p.id === 'ritual-table')!.rect;
+    expect(moved.x1).toBeGreaterThan(HOLY_CIRCLE.x + HOLY_CIRCLE.r);
+    expect(moved.x2).toBeLessThan(table.x1);
+    // Nothing more to do with the Bible.
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    expect(task(s)).toBe('Stand in the holy circle and bless the hand bell with the cross and rod together');
+    expect(resolve('item:bell', s, inCircle).prompt).toBe('Hold click  Bless the hand bell with the cross and rod');
+  });
+
+  it("doesn't move the stand before it's wanted", () => {
+    const s = at(step('two-handed-wanted'));
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    expect(applyEvent(s, { type: 'move-bible-stand' })).toEqual([]);
+  });
+
+  it('releases the angry ghost, then the bell is put away', () => {
+    const s = at(step('bless-relic', 6));
+    const fx = applyEvent(s, { type: 'bless-relic' });
+    expect(fx).toEqual([{ kind: 'purify', relic: 'bell' }]);
+    expect(task(s)).toBe('');
+    expect(says(applyEvent(s, { type: 'relic-ghost-gone' }))).toEqual(["Well, somebody's in a mood."]);
+    applyEvent(s, { type: 'relic-thought-done' });
+    expect(task(s)).toBe('Pick up the hand bell');
+    expect(resolve('item:bell', s, inCircle).prompt).toBe('E  Pick up the hand bell');
+    applyEvent(s, { type: 'pickup-relic' });
+    expect(task(s)).toBe('Put the hand bell on the table outside the chapel');
+    expect(resolve('item:relic-table', s, inCircle).prompt).toBe('E  Put the hand bell on the table');
+  });
+});
+
+describe('the end of the shift (D2-12)', () => {
+  it('falls dusk once the hand bell is away, then the gate', () => {
+    const s = at(step('store-relic', 3));
+    const fx = applyEvent(s, { type: 'store-relic' });
+    expect(says(fx)).toEqual(["Three in one shift. I think I've earned the walk home."]);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.shiftDone), event: { type: 'head-home' } });
+    expect(s.environment_preset).toBe('D1_EVENING');
+    expect(s.relics_stored).toEqual(['teacup', 'clown', 'bell']);
+    expect(task(s)).toBe('');
+    // No second thought on Day 2: straight to the gate.
+    expect(applyEvent(s, { type: 'head-home' })).toEqual([]);
+    expect(task(s)).toBe('Head back to the front gate');
+    expect(ghostsChasing(s)).toBe(true);
+    expect(clownRoaming(s)).toBe(false);
+  });
+
+  it('sees the two ghosts chasing, once', () => {
+    const s = at(step('spotted', 4));
+    expect(says(applyEvent(s, { type: 'spotted', who: 'chase' }))).toEqual(['Ha. Looks like those two are getting along.']);
+    expect(applyEvent(s, { type: 'spotted', who: 'chase' })).toEqual([]);
+  });
+
+  it("ends at the gate without starting Day 3, and the tree ghost stays on Day 1", () => {
+    const s = at(step('reach-gate'));
+    expect(applyEvent(s, { type: 'near-peek', x: 12, y: 18, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'reach-gate', x: 0, y: 30, level: 0 })).toEqual([]);
+    const fx = applyEvent(s, { type: 'reach-gate', x: 0, y: 2, level: 0 });
+    expect(fx).toEqual([{ kind: 'objective', id: 'D2-12' }]);
+    expect(task(s)).toBe(S3_END);
+  });
+
+  it('resets cleanly for the next day', () => {
+    const s = at(DAY2_PLAYTHROUGH.length);
+    const next = startDay(s, 3);
+    expect(next.flags.size).toBe(0);
+    expect(next.relic).toBe('removed');
+    expect(next.bucket).toBe('closet');
+    expect(next.environment_preset).toBe('BASE_DAY');
+    expect(bibleStandRect(next)).toEqual(PROPS.find((p) => p.id === 'bible-stand')!.rect);
+  });
+});
+

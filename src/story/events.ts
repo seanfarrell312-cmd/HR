@@ -32,10 +32,11 @@ import {
   CLOWN_DANCE_SECONDS,
   CLOWN_WIGGLE_SECONDS,
   SPLASH_SECONDS,
+  RATTLE_VIOLENT,
   CHURCH_LEFT_Y,
   STORAGE_INSIDE,
 } from '../data/story';
-import { RELIC_FLAGS, type GameState, type QuestItem, type RelicKind } from '../state/store';
+import { RELIC_FLAGS, type Flag, type GameState, type QuestItem, type RelicKind } from '../state/store';
 import { advanceObjectives } from './objectives';
 import { churchSealed, searchCount, searching, searchesDoor } from './search';
 import { tableReady } from './table';
@@ -83,8 +84,24 @@ export type StoryEvent =
   | { type: 'place-bucket' }
   /** Dip the holy-water rod in the bucket by the ritual table. */
   | { type: 'wet-rod' }
-  /** Splash the doll with the wet rod: it stops and lies still. */
-  | { type: 'splash-doll' }
+  /** Splash the relic with the wet rod: the clown doll stops and lies still; the hand bell rattles worse. */
+  | { type: 'splash-relic' }
+  /**
+   * Day 2's third relic, the hand bell (D2-09 to D2-11): timed steps after
+   * the refill thought, the cross's rattle and the splash's rattle.
+   */
+  | { type: 'bell-refill-wanted' }
+  | { type: 'bell-settled' }
+  | { type: 'bell-water-wanted' }
+  | { type: 'bell-splash-settled' }
+  | { type: 'bell-idea' }
+  | { type: 'two-handed-wanted' }
+  /** Move the Bible stand in front of the ritual table for the two-handed blessing. */
+  | { type: 'move-bible-stand' }
+  /** A lingering ghost (or where it was) has come into view; its thought, once (D2-08, D2-09, D2-12). */
+  | { type: 'spotted'; who: Spotted }
+  /** The worried ghost has gone while the player looked away (D2-09). */
+  | { type: 'worried-vanished' }
   /** Timed: the doll has slumped; its thought plays. */
   | { type: 'clown-cooled' }
   /** Timed, after that thought: the last blessing is asked for. */
@@ -195,9 +212,15 @@ export type SfxId =
   | 'clown-wind-down'
   | 'fill'
   | 'dip'
-  | 'sprinkle';
+  | 'sprinkle'
+  | 'bell-rattle'
+  | 'bell-wind-down'
+  | 'angry-squeak';
 
 export type PurifiedRelic = 'clock' | RelicKind;
+
+/** Day 2's lingering ghosts, or the empty grave where the worried one stood. */
+export type Spotted = 'clown-roaming' | 'worried' | 'worried-gone' | 'chase';
 
 export type Effect =
   | { kind: 'sfx'; id: SfxId }
@@ -661,6 +684,13 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.relic = 'ritual-table';
       s.held_prop_id = null;
       out.push({ kind: 'sfx', id: 'place' });
+      // The hand bell (D2-09): fill the bucket before starting.
+      if (s.relic_kind === 'bell' && !s.flags.has('bell-refill-wanted')) {
+        out.push(
+          { kind: 'say', text: THOUGHTS.bellRefill },
+          { kind: 'after', seconds: afterThought(THOUGHTS.bellRefill), event: { type: 'bell-refill-wanted' } },
+        );
+      }
       break;
 
     case 'bless-relic': {
@@ -670,6 +700,30 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       // The clown doll (designer, 2026-11-26): the first cross gets a small
       // giggle and wiggle; after scripture the second sets it dancing; once
       // holy water has stilled it, the third releases it.
+      // The hand bell (D2-10, D2-11): the cross sets it rattling; after the
+      // holy water fails too, the two-handed blessing with the Bible on its
+      // stand in front releases it.
+      if (s.relic_kind === 'bell') {
+        if (!s.flags.has('bell-refill-wanted')) return [];
+        if (!s.flags.has('bell-crossed')) {
+          if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
+          s.flags.add('bell-crossed');
+          out.push(
+            { kind: 'rattle', ...RATTLE_VIOLENT },
+            { kind: 'sfx', id: 'bell-rattle' },
+            { kind: 'sfx', id: 'angry-squeak' },
+            { kind: 'after', seconds: RATTLE_VIOLENT.seconds + THOUGHT_BEAT, event: { type: 'bell-settled' } },
+          );
+          break;
+        }
+        if (!s.flags.has('two-handed-wanted')) return [];
+        if (!s.flags.has('bible-stand-moved')) return flash(REMINDERS.standFirst);
+        if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
+        s.flags.add('relic-blessed');
+        s.fired_scares.push('d2-bell-ghost');
+        out.push({ kind: 'purify', relic: 'bell' });
+        break;
+      }
       if (s.relic_kind === 'clown') {
         if (!s.flags.has('clown-wiggled')) {
           s.flags.add('clown-wiggled');
@@ -777,7 +831,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
 
     case 'wet-rod':
       // The rod goes into the bucket by the ritual table (designer, 2026-11-26).
-      if (s.relic_kind !== 'clown' || !s.flags.has('water-wanted') || s.flags.has('clown-doused') || s.flags.has('rod-wet')) return [];
+      if (!rodDipWanted(s)) return [];
       if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
       if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
       s.flags.add('rod-wet');
@@ -786,7 +840,25 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       out.push({ kind: 'dip' });
       break;
 
-    case 'splash-doll':
+    case 'splash-relic':
+      // The hand bell (D2-10): it only rattles worse. The splash uses up the
+      // water, as with the doll.
+      if (s.relic === 'ritual-table' && s.relic_kind === 'bell') {
+        if (!s.flags.has('bell-water-wanted') || s.flags.has('bell-splashed')) return [];
+        if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
+        if (!s.flags.has('rod-wet')) return flash(s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+        s.flags.add('bell-splashed');
+        s.bucket_filled = false;
+        out.push(
+          { kind: 'splash' },
+          { kind: 'sfx', id: 'sprinkle' },
+          { kind: 'rattle', ...RATTLE_VIOLENT },
+          { kind: 'sfx', id: 'bell-rattle' },
+          { kind: 'sfx', id: 'angry-squeak' },
+          { kind: 'after', seconds: RATTLE_VIOLENT.seconds + THOUGHT_BEAT, event: { type: 'bell-splash-settled' } },
+        );
+        break;
+      }
       // Splashed with holy water, the doll stops and lies still (D2-07). The
       // splash uses up the water in the bucket.
       if (s.relic !== 'ritual-table' || s.relic_kind !== 'clown' || s.flags.has('clown-doused')) return [];
@@ -796,6 +868,67 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.flags.add('clown-doused');
       s.bucket_filled = false;
       out.push({ kind: 'splash' }, { kind: 'sfx', id: 'sprinkle' }, { kind: 'after', seconds: SPLASH_SECONDS, event: { type: 'clown-cooled' } });
+      break;
+
+    case 'bell-refill-wanted':
+      if (s.relic_kind !== 'bell' || s.relic !== 'ritual-table' || s.flags.has('bell-refill-wanted')) return [];
+      s.flags.add('bell-refill-wanted');
+      break;
+
+    case 'bell-settled':
+      if (!s.flags.has('bell-crossed') || s.flags.has('bell-cross-settled')) return [];
+      s.flags.add('bell-cross-settled');
+      out.push(
+        { kind: 'say', text: THOUGHTS.bellCross },
+        { kind: 'after', seconds: afterThought(THOUGHTS.bellCross), event: { type: 'bell-water-wanted' } },
+      );
+      break;
+
+    case 'bell-water-wanted':
+      if (!s.flags.has('bell-cross-settled') || s.flags.has('bell-water-wanted')) return [];
+      s.flags.add('bell-water-wanted');
+      break;
+
+    case 'bell-splash-settled':
+      if (!s.flags.has('bell-splashed') || s.flags.has('bell-splash-settled')) return [];
+      s.flags.add('bell-splash-settled');
+      out.push(
+        { kind: 'say', text: THOUGHTS.bellSplash },
+        { kind: 'after', seconds: afterThought(THOUGHTS.bellSplash), event: { type: 'bell-idea' } },
+      );
+      break;
+
+    case 'bell-idea':
+      if (!s.flags.has('bell-splash-settled') || s.flags.has('bell-idea')) return [];
+      s.flags.add('bell-idea');
+      out.push(
+        { kind: 'say', text: THOUGHTS.bellIdea },
+        { kind: 'after', seconds: afterThought(THOUGHTS.bellIdea), event: { type: 'two-handed-wanted' } },
+      );
+      break;
+
+    case 'two-handed-wanted':
+      if (!s.flags.has('bell-idea') || s.flags.has('two-handed-wanted')) return [];
+      s.flags.add('two-handed-wanted');
+      break;
+
+    case 'move-bible-stand':
+      if (!standMoveWanted(s)) return [];
+      s.flags.add('bible-stand-moved');
+      out.push({ kind: 'sfx', id: 'place' });
+      break;
+
+    case 'spotted': {
+      const line = spottedLine(s, e.who);
+      if (!line) return [];
+      s.flags.add(line.flag);
+      out.push({ kind: 'say', text: line.text });
+      break;
+    }
+
+    case 'worried-vanished':
+      if (!s.flags.has('worried-spotted') || s.flags.has('worried-vanished')) return [];
+      s.flags.add('worried-vanished');
       break;
 
     case 'clown-cooled':
@@ -916,6 +1049,21 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
             { kind: 'after', seconds: afterThought(THOUGHTS.homeEarly), event: { type: 'receive-sms', id: 'd2delivery2' } },
           );
         }
+        // The clown doll is away; the third delivery (D2-08).
+        if (s.relic_kind === 'clown' && !s.inbox.includes('d2delivery3')) {
+          out.push(
+            { kind: 'say', text: THOUGHTS.lastOne },
+            { kind: 'after', seconds: afterThought(THOUGHTS.lastOne), event: { type: 'receive-sms', id: 'd2delivery3' } },
+          );
+        }
+        // The hand bell is away: dusk, and the shift is over (D2-12).
+        if (s.relic_kind === 'bell') {
+          s.environment_preset = 'D1_EVENING';
+          out.push(
+            { kind: 'say', text: THOUGHTS.shiftDone },
+            { kind: 'after', seconds: afterThought(THOUGHTS.shiftDone), event: { type: 'head-home' } },
+          );
+        }
         break;
       }
       // Day 1's second relic is done: dusk falls (doc 7.1 D1_EVENING).
@@ -931,6 +1079,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (s.relic !== 'relic-table' || s.flags.has('heading-home')) return [];
       // The tree ghost starts peeking now; the gate objective waits for the thought.
       s.flags.add('heading-home');
+      // Day 2: "Three in one shift" has already played; straight to the gate.
+      if (s.day_index === 2) {
+        s.flags.add('gate-prompted');
+        break;
+      }
       out.push(
         { kind: 'say', text: THOUGHTS.headHome },
         { kind: 'after', seconds: afterThought(THOUGHTS.headHome), event: { type: 'gate-prompt' } },
@@ -951,7 +1104,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     }
 
     case 'near-peek':
-      if (s.fired_scares.includes('d1-tree-peek') || !s.flags.has('heading-home')) return [];
+      if (s.day_index !== 1 || s.fired_scares.includes('d1-tree-peek') || !s.flags.has('heading-home')) return [];
       if (e.level !== 0 || Math.hypot(e.x - TREE_PEEK.x, e.y - TREE_PEEK.y) > TREE_PEEK.trigger) return [];
       s.fired_scares.push('d1-tree-peek');
       out.push({ kind: 'sfx', id: 'giggle' });
@@ -1029,6 +1182,55 @@ export function altarOpen(s: GameState): boolean {
 export function bibleReturnable(s: GameState): boolean {
   if (!s.inventory.has('bible')) return false;
   return s.flags.has('relic-blessed') || (s.relic_kind === 'clown' && s.flags.has('water-wanted'));
+}
+
+/** The rod can go into the bucket now: for the clown doll, or the hand bell. */
+export function rodDipWanted(s: GameState): boolean {
+  if (s.flags.has('rod-wet')) return false;
+  if (s.relic_kind === 'clown') return s.flags.has('water-wanted') && !s.flags.has('clown-doused');
+  if (s.relic_kind === 'bell') return s.flags.has('bell-water-wanted') && !s.flags.has('bell-splashed');
+  return false;
+}
+
+/** The Bible stand can be moved in front of the ritual table (D2-11). */
+export function standMoveWanted(s: GameState): boolean {
+  return (
+    s.relic_kind === 'bell' &&
+    s.relic === 'ritual-table' &&
+    s.flags.has('two-handed-wanted') &&
+    !s.flags.has('bible-stand-moved') &&
+    !s.inventory.has('bible')
+  );
+}
+
+/** The clown's ghost drifts among the east graves from the third text until the shift ends (D2-08). */
+export function clownRoaming(s: GameState): boolean {
+  return s.day_index === 2 && s.inbox.includes('d2delivery3') && !s.relics_stored.includes('bell');
+}
+
+/** The worried ghost stares at the old priest's grave on the hand bell's refill trip, until it vanishes (D2-09). */
+export function worriedShown(s: GameState): boolean {
+  return s.day_index === 2 && s.relic_kind === 'bell' && s.flags.has('bell-refill-wanted') && !s.flags.has('worried-vanished') && !s.relics_stored.includes('bell');
+}
+
+/** The clown's ghost chases the angry one among the east graves at the end of the shift (D2-12). */
+export function ghostsChasing(s: GameState): boolean {
+  return s.day_index === 2 && s.relics_stored.includes('bell');
+}
+
+/** The thought for a lingering ghost coming into view, and the flag it sets, or null if it's done or out of turn. */
+function spottedLine(s: GameState, who: Spotted): { flag: Flag; text: string } | null {
+  const pick = (ok: boolean, flag: Flag, text: string) => (ok && !s.flags.has(flag) ? { flag, text } : null);
+  switch (who) {
+    case 'clown-roaming':
+      return pick(clownRoaming(s), 'clown-roaming-spotted', THOUGHTS.clownRoaming);
+    case 'worried':
+      return pick(worriedShown(s), 'worried-spotted', THOUGHTS.worriedSpotted);
+    case 'worried-gone':
+      return pick(s.flags.has('worried-vanished'), 'worried-looked-back', THOUGHTS.worriedGone);
+    case 'chase':
+      return pick(ghostsChasing(s), 'chase-spotted', THOUGHTS.chaseSpotted);
+  }
 }
 
 /**
