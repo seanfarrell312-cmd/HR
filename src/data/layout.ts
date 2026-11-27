@@ -291,15 +291,15 @@ const CLOSET_SHELVES = [0.45, 0.95, 1.45];
  * A plain open shelving unit against a wall: an end panel at each end of its
  * long side and three boards (S3, 2026-11-28).
  */
-function shelving(id: string, r: Rect): Prop[] {
+function shelving(id: string, r: Rect, level: Level = 0): Prop[] {
   const t = 0.04;
   const alongY = r.y2 - r.y1 > r.x2 - r.x1;
   const ends = alongY
     ? [rect(r.x1, r.y1, r.x2, r.y1 + t), rect(r.x1, r.y2 - t, r.x2, r.y2)]
     : [rect(r.x1, r.y1, r.x1 + t, r.y2), rect(r.x2 - t, r.y1, r.x2, r.y2)];
   return [
-    ...ends.map((e, i): Prop => ({ id: `${id}-end-${i}`, label: 'Shelving', rect: e, height: 1.8, level: 0, color: WOOD })),
-    ...CLOSET_SHELVES.map((base, i): Prop => ({ id: `${id}-${i}`, label: 'Shelf', rect: r, height: 0.03, base, level: 0, color: WOOD })),
+    ...ends.map((e, i): Prop => ({ id: `${id}-end-${i}`, label: 'Shelving', rect: e, height: 1.8, level, color: WOOD })),
+    ...CLOSET_SHELVES.map((base, i): Prop => ({ id: `${id}-${i}`, label: 'Shelf', rect: r, height: 0.03, base, level, color: WOOD })),
   ];
 }
 
@@ -491,7 +491,8 @@ export const PROPS: Prop[] = [
   { id: 'shelf-b2', label: 'Shelf', rect: rect(1, 55.5, 6, 56.1), height: 2.4, level: -1, color: '#6d5a44' },
   { id: 'shelf-b3', label: 'Shelf', rect: rect(-6, 59.5, -1, 60.1), height: 2.4, level: -1, color: '#6d5a44' },
   { id: 'shelf-b4', label: 'Shelf', rect: rect(1, 59.5, 6, 60.1), height: 2.4, level: -1, color: '#6d5a44' },
-  { id: 'shelf-far', label: 'Far shelf', rect: rect(-7.6, 52.6, -5, 53.2), height: 2.4, level: -1, color: '#6d5a44' },
+  // Open shelving, so the chalice can sit on it on Day 3 (D3-02).
+  ...shelving('shelf-far', rect(-7.6, 52.6, -5, 53.2), -1),
   { id: 'basement-table', label: 'Reading table', rect: rect(-6, 63, -4, 64.2), height: 0.8, level: -1, color: DARK_WOOD },
   { id: 'stairs-foot', label: 'Stairs', rect: rect(7, 64.6, 7.9, 66), height: 0.4, level: -1, color: '#5d5853', solid: false },
   { id: 'stairs-head', label: 'Stairs down', rect: rect(13.2, 67.6, 14.2, 69.2), height: 0.05, level: 0, color: '#2a2724', shape: 'flat', solid: false },

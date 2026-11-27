@@ -42,6 +42,7 @@ import { RELIC_FLAGS, type Flag, type GameState, type QuestItem, type RelicKind 
 import { advanceObjectives } from './objectives';
 import { churchSealed, searchCount, searching, searchesDoor } from './search';
 import { tableReady } from './table';
+import { zoneAt } from '../world/zones';
 
 export { churchSealed, searchCount, searching, searchesDoor } from './search';
 export { siteReady, tableReady } from './table';
@@ -148,6 +149,10 @@ export type StoryEvent =
   | { type: 'place-clock' }
   /** The player's position; the drop-box thought once the music box is in it. */
   | { type: 'approach-drop-box'; x: number; y: number; level: number }
+  /** The player's position; Day 3's thought on first seeing the grey sky outside (D3-03). */
+  | { type: 'outside-overcast'; x: number; y: number; level: number }
+  /** Day 3, timed: after the table-set thought, the bucket is wanted. */
+  | { type: 'd3-fill-wanted' }
   /** The player's position; Day 2's long-walk thought on leaving for the second delivery. */
   | { type: 'leave-church'; x: number; y: number; level: number }
   /** Take the delivered relic out of the drop box. */
@@ -222,7 +227,8 @@ export type SfxId =
   | 'bell-rattle'
   | 'bell-wind-down'
   | 'angry-squeak'
-  | 'exorcise';
+  | 'exorcise'
+  | 'thunder';
 
 export type PurifiedRelic = 'clock' | RelicKind;
 
@@ -253,6 +259,8 @@ export type Effect =
   | { kind: 'dip' }
   /** The two-handed blessing: rod splash, then cross, four times (D2-11). */
   | { kind: 'exorcise' }
+  /** The basement lights flicker and fail (D3-02). */
+  | { kind: 'lights-out' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -320,6 +328,20 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
     }
 
+    case 'd3-fill-wanted':
+      if (!s.flags.has('d3-table-set') || s.flags.has('d3-fill-wanted')) return [];
+      s.flags.add('d3-fill-wanted');
+      break;
+
+    case 'outside-overcast': {
+      // The first time outside under the grey sky (D3-03).
+      if (s.day_index !== 3 || s.flags.has('overcast-seen') || s.environment_preset === 'BASE_DAY') return [];
+      if (e.level !== 0 || zoneAt(e.x, e.y, 0)?.roof) return [];
+      s.flags.add('overcast-seen');
+      out.push({ kind: 'say', text: THOUGHTS.skyGrey });
+      break;
+    }
+
     case 'leave-church':
       // Day 2: heading out for the second delivery (designer copy, 2026-11-22).
       if (s.flags.has('long-walk') || !s.inbox.includes('d2delivery2') || s.relic_kind !== 'clown' || s.relic !== 'drop-box') return [];
@@ -383,9 +405,12 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       // The key is in the office desk drawers while the church is searched
       // (D2-02, 2026-11-28).
       if (e.item === 'storage-key' && !storageKeyWanted(s)) return [];
-      if (e.item === 'rod' && (!s.flags.has('storage-opened') || !closetFetch(s))) return [];
+      // Day 3: by the ritual table, where it was left (D3-01 note).
+      if (e.item === 'rod' && s.day_index !== 3 && (!s.flags.has('storage-opened') || !closetFetch(s))) return [];
       s.inventory.add(e.item);
       out.push({ kind: 'sfx', id: 'pickup' });
+      // Day 3: the basement key hangs with the chapel key (D3-01).
+      if (e.item === 'chapel-key' && s.day_index === 3) s.inventory.add('basement-key');
       if (e.item === 'storage-key') {
         s.flags.add('searched-desk');
         searched(s, out, THOUGHTS.searchDesk);
@@ -406,6 +431,23 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'pickup-chalice':
+      // Day 3: on the basement's far shelf. Taking it, the lights fail and
+      // distant thunder begins; outside the sky turns grey (D3-02, 7.1
+      // D3_OVERCAST).
+      if (s.chalice === 'basement') {
+        if (s.held_prop_id) return flash(REMINDERS.handsFull);
+        s.chalice = 'held';
+        s.held_prop_id = 'chalice';
+        s.flags.add('basement-dark');
+        s.environment_preset = 'D3_OVERCAST';
+        out.push(
+          { kind: 'sfx', id: 'pickup' },
+          { kind: 'lights-out' },
+          { kind: 'sfx', id: 'thunder' },
+          { kind: 'say', text: THOUGHTS.basementDark },
+        );
+        break;
+      }
       // Day 2: on the garden bench, where the prankster left it (D2-02).
       // Not there to find until the church has been searched.
       if (s.chalice === 'garden-bench') {
@@ -453,6 +495,14 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (crucifix && searching(s)) nudgeLater(s, out);
       // Both down on Day 1: the clock chimes harder, then the thought.
       if (tableReady(s) && s.day_index === 1) out.push({ kind: 'after', seconds: COOKING_BEAT, event: { type: 'now-cooking' } });
+      // Day 3: the table is set, then the bucket (D3-03).
+      if (tableReady(s) && s.day_index === 3 && !s.flags.has('d3-table-set')) {
+        s.flags.add('d3-table-set');
+        out.push(
+          { kind: 'say', text: THOUGHTS.tableSetDay3 },
+          { kind: 'after', seconds: afterThought(THOUGHTS.tableSetDay3), event: { type: 'd3-fill-wanted' } },
+        );
+      }
       // Day 2: the table is set, then the first delivery's alert (D2-03).
       if (tableReady(s) && s.day_index === 2 && !s.flags.has('table-set')) {
         s.flags.add('table-set');
@@ -646,6 +696,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       {
         const lines = RELIC_LINES[s.relic_kind];
         const next: StoryEvent = { type: lines.pickup2 ? 'relic-pickup-2' : 'relic-pickup-thought-done' };
+        if (s.relic_kind === 'box') s.environment_preset = 'D3_SILENCE';
         out.push(
           { kind: 'sfx', id: 'pickup' },
           { kind: 'say', text: lines.pickup },
@@ -857,6 +908,14 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       s.bucket = 'chapel';
       s.held_prop_id = null;
       out.push({ kind: 'sfx', id: 'place' });
+      // Day 3: ready for the delivery (D3-04).
+      if (s.day_index === 3 && s.flags.has('d3-fill-wanted') && !s.flags.has('d3-water-ready')) {
+        s.flags.add('d3-water-ready');
+        out.push(
+          { kind: 'say', text: THOUGHTS.waterReady },
+          { kind: 'after', seconds: afterThought(THOUGHTS.waterReady), event: { type: 'receive-sms', id: 'd3delivery' } },
+        );
+      }
       break;
 
     case 'wet-rod':
@@ -1174,7 +1233,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     // The clock is on the desk: the first delivery is on its way (D1-08).
     if (id === 'D1-07') out.push({ kind: 'after', seconds: DELIVERY_DELAY, event: { type: 'receive-sms', id: 'delivery1' } });
     // Out through the gate: the shift is over.
-    if (id === 'D1-10') out.push({ kind: 'end-day' });
+    if (id === 'D1-10' || id === 'D2-12') out.push({ kind: 'end-day' });
   }
   return out;
 }
@@ -1208,8 +1267,8 @@ function nudgeLater(s: GameState, out: Effect[]): void {
  * own rules in S3.
  */
 export function altarOpen(s: GameState): boolean {
-  // Day 2: once the candles are lit (D2-02), whatever is left on the altar.
-  if (s.day_index === 2) return s.candles_lit.size === 4;
+  // Day 2 on: once the candles are lit (D2-02), whatever is left on the altar.
+  if (s.day_index >= 2) return s.candles_lit.size === 4;
   return s.objective_id === 'D1-05' && s.flags.has('candles-thought-done');
 }
 

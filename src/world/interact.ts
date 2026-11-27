@@ -47,6 +47,7 @@ export function lockState(state: GameState, doorId: string): LockState {
   if (doorId === 'gate' && state.flags.has('gate-unlocked')) return 'unlocked';
   if (doorId === 'chapel' && state.inventory.has('chapel-key')) return 'unlocked';
   if (doorId === 'storage' && state.inventory.has('storage-key')) return 'unlocked';
+  if (doorId === 'basement' && state.inventory.has('basement-key')) return 'unlocked';
   const preset = DOOR_PRESETS.find((p) => p.id === state.door_preset);
   return preset?.locks[doorId] ?? 'unlocked';
 }
@@ -136,6 +137,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return { prompt: 'E  Read note', action: { kind: 'read-note', note: 'stool' } };
     case 'chapel-key':
       if (s.inventory.has('chapel-key')) return NONE;
+      // Day 3: the basement key hangs with it (D3-01).
+      if (s.day_index === 3) return story('E  Take the keys', { type: 'take', item: 'chapel-key' });
       return story('E  Take chapel key', { type: 'take', item: 'chapel-key' });
     case 'matches':
       if (s.inventory.has('matches')) return NONE;
@@ -190,7 +193,10 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return story('E  Pick up the bucket', { type: 'pickup-bucket' });
 
     case 'rod':
-      if (s.inventory.has('rod') || !s.flags.has('storage-opened') || !closetFetch(s)) return NONE;
+      if (s.inventory.has('rod')) return NONE;
+      // Day 3: lying by the bucket at the ritual table.
+      if (s.day_index === 3) return story('E  Take the holy-water rod', { type: 'take', item: 'rod' });
+      if (!s.flags.has('storage-opened') || !closetFetch(s)) return NONE;
       return story('E  Take the holy-water rod', { type: 'take', item: 'rod' });
 
     case 'fountain':
@@ -204,6 +210,11 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
       return resolveBell(s, player);
 
     case 'chalice':
+      // Day 3: on the basement's far shelf (D3-02).
+      if (s.chalice === 'basement') {
+        if (s.held_prop_id) return say('Chalice', REMINDERS.handsFull);
+        return story('E  Take the chalice', { type: 'pickup-chalice' });
+      }
       // Day 2: left on the garden bench by a prankster ghost (D2-02).
       if (s.chalice === 'garden-bench') {
         // Hidden until the church has been searched.

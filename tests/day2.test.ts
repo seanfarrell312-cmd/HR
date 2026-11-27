@@ -15,7 +15,6 @@ import {
   SEARCH_NUDGE_SECONDS,
   SEARCH_NUDGES,
   SEARCH_SPOTS,
-  S3_END,
   RATTLE_VIOLENT,
   STAND_IN_CIRCLE,
   EXORCISE_SECONDS,
@@ -226,10 +225,10 @@ describe('Day 2 playthrough (S3)', () => {
       play(s, [e]);
       if (seen[seen.length - 1] !== s.objective_id) seen.push(s.objective_id);
     }
-    expect(seen).toEqual(['D2-01', 'D2-02', 'D2-03', 'D2-04', 'D2-05', 'D2-06', 'D2-07', 'D2-08', 'D2-09', 'D2-10', 'D2-11', 'D2-12', 'S3-END']);
+    // Day 2's last objective done, the next is Day 3's first (the fade takes over).
+    expect(seen).toEqual(['D2-01', 'D2-02', 'D2-03', 'D2-04', 'D2-05', 'D2-06', 'D2-07', 'D2-08', 'D2-09', 'D2-10', 'D2-11', 'D2-12', 'D3-01']);
     // Three deliveries, in order (doc 9, S3 tests).
     expect(s.relics_stored).toEqual(['teacup', 'clown', 'bell']);
-    expect(task(s)).toBe(S3_END);
     expect(s.environment_preset).toBe('D1_EVENING');
   });
 
@@ -1268,13 +1267,12 @@ describe('the end of the shift (D2-12)', () => {
     expect(applyEvent(s, { type: 'spotted', who: 'chase' })).toEqual([]);
   });
 
-  it("ends at the gate without starting Day 3, and the tree ghost stays on Day 1", () => {
+  it('ends at the gate with the fade to Day 3, and the tree ghost stays on Day 1', () => {
     const s = at(step('reach-gate'));
     expect(applyEvent(s, { type: 'near-peek', x: 12, y: 18, level: 0 })).toEqual([]);
     expect(applyEvent(s, { type: 'reach-gate', x: 0, y: 30, level: 0 })).toEqual([]);
     const fx = applyEvent(s, { type: 'reach-gate', x: 0, y: 2, level: 0 });
-    expect(fx).toEqual([{ kind: 'objective', id: 'D2-12' }]);
-    expect(task(s)).toBe(S3_END);
+    expect(fx).toEqual([{ kind: 'objective', id: 'D2-12' }, { kind: 'end-day' }]);
   });
 
   it('resets cleanly for the next day', () => {
@@ -1282,7 +1280,10 @@ describe('the end of the shift (D2-12)', () => {
     const next = startDay(s, 3);
     expect(next.flags.size).toBe(0);
     expect(next.relic).toBe('removed');
-    expect(next.bucket).toBe('closet');
+    // Day 3: the bucket is left by the ritual table, empty (D3-01 note).
+    expect(next.bucket).toBe('chapel');
+    expect(next.bucket_filled).toBe(false);
+    expect(next.chalice).toBe('basement');
     expect(next.environment_preset).toBe('BASE_DAY');
     expect(bibleStandRect(next)).toEqual(PROPS.find((p) => p.id === 'bible-stand')!.rect);
   });

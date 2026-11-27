@@ -1038,3 +1038,59 @@ Designer rulings:
 - **The teacup's carry line:** "outta" becomes "out of".
 - **After the hand bell's first cross:** "I don't think it liked that."
 
+## 2026-11-27 — S3 approved; S4 begins
+
+The designer approved S3 (Day 2) on 2026-11-27. S4 (Day 3: routine breaks,
+D3-01 to D3-09) is built in two playable parts with a playtest after each,
+as Day 2 was. Part 1 covers D3-01 to D3-04; part 2 covers D3-05 to D3-09.
+Day 2 now ends with the usual fade at the gate and Day 3 begins.
+
+## 2026-11-27 — S4 part 1: Day 3 start, basement chalice, the brown box (D3-01 to D3-04)
+
+What happens, in order:
+1. **D3-01.** The "Third Day, 4PM" card, the bus, the gate-code thought, then
+   the gate. The office note says only one delivery is expected, warns of
+   odd goings-on, and says the chalice has been moved to the basement. The
+   hooks hold the chapel and basement keys together ("E  Take the keys"),
+   and the basement key opens the basement door. Then the chapel and
+   candles.
+2. **D3-02.** The crucifix from the altar to the ritual table, then the
+   chalice from the basement's far shelf. The far shelf is now open
+   shelving like the closet's, and the chalice sits on its middle board.
+   Taking it, the basement lights flicker for a second and fail, leaving
+   the basement dark but navigable (20% light). Thunder rolls, and the sky
+   turns grey (7.1 D3_OVERCAST): "...Of course. Of course the lights go
+   now." Outside: "Was that thunder? It was sunny a minute ago."
+3. **D3-03.** With the chalice set out: "There. Now to fill the bucket
+   before the delivery comes." The bucket, empty, and the rod are by the
+   ritual table where they were left on Day 2. The rod lies on the floor
+   and can be taken any time on Day 3. The bucket is filled at the fountain
+   under the grey sky while the birds still sing.
+4. **D3-04.** With the bucket back: "All set. Now I just wait." Then the
+   Christ-LERTS text. The box is a plain brown cardboard box with a strip of
+   tape, quiet and still. Taking it out of the drop box, the birds stop
+   and the sky darkens a shade (7.1 D3_SILENCE). On the walk up: "It's gone
+   really quiet. Where did all the birds go?" From then on the serious
+   ghost (the neutral face) hovers at the near edge of the east graves,
+   turning to watch the player, silently. Set on the ritual table, part 1
+   ends: "End of S4 part 1. The failed rituals come next."
+
+Also added:
+- **Birdsong** (7.1): short bird calls outside every few seconds on Days 1
+  and 2 and on Day 3 until the box. Faint indoors, none in the basement.
+  They didn't exist before, and the silence on Day 3 needs them.
+- **Distant thunder** every 25 to 45 s from the basement chalice on.
+
+### PROVISIONAL (not yet ruled on)
+
+- All Day 3 copy is draft: the "Third Day" card, the note, the thoughts, the
+  brown box's lines, and the text (the same alert again).
+- Why the chalice is in the basement (the note says it was moved there
+  after Day 2's pranks), and that the bucket and rod are left by the table
+  on Day 3.
+- The grey skies' colours, the basement's darkness level and flicker, and
+  the birdsong and thunder sounds (placeholders). The full audio cue table
+  (H05) is still to come; birds and thunder follow the presets in 7.1.
+- The serious ghost's spot, about 17 m east of the path at the graves'
+  edge. From the path it's small.
+

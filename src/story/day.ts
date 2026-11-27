@@ -26,5 +26,12 @@ export function startDay(prev: GameState, day: 2 | 3): GameState {
   if (prev.relic === 'relic-table' || prev.relic === 'removed') s.relic = 'removed';
   s.relic_kind = prev.relic_kind;
   if (day === 2) s.chalice = 'garden-bench';
+  // Day 3 (D3-01 note): the chalice has been put away in the basement, and
+  // the bucket, empty, and the rod are by the ritual table where they were
+  // left yesterday.
+  if (day === 3) {
+    s.chalice = 'basement';
+    s.bucket = 'chapel';
+  }
   return s;
 }

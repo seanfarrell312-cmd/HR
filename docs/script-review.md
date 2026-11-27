@@ -69,6 +69,15 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-33 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | That one really took it out of me. I'm ready to call it a day. | |
 | D2-34 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
 
+### Day 3: Third Day
+
+| ID | When it plays | Text | Proposed |
+|---|---|---|---|
+| D3-01 | Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder rolls. | ...Of course. Of course the lights go now. | |
+| D3-02 | The first time outside after that, under the grey sky. | Was that thunder? It was sunny a minute ago. | |
+| D3-03 | The chalice and crucifix are both on the ritual table; then the bucket is to be filled. | There. Now to fill the bucket before the delivery comes. | |
+| D3-04 | The filled bucket is put down by the ritual table; then the delivery text. | All set. Now I just wait. | |
+
 ### Day 2: dawdling outside
 
 Timed from the gate opening, if the player still hasn't been inside the church.
@@ -120,6 +129,14 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | HB-03 | Carrying it up the path, 17 m from the church doors. | Alright, alright! I hear you. | |
 | HB-04 | Its ghost, once it has gone. | Well, somebody's in a mood. | |
 
+#### Brown box (Day 3's only delivery)
+
+| ID | When it plays | Text | Proposed |
+|---|---|---|---|
+| BB-01 | Nearing the drop box once it has been delivered. | Huh. Nothing rattling this time. | |
+| BB-02 | Taking it out of the drop box. | A plain brown box. No label, no address... nothing. | |
+| BB-03 | Carrying it up the path, 17 m from the church doors. | It's gone really quiet. Where did all the birds go? | |
+
 ## Texts
 
 | ID | When it arrives | From | Text | Proposed |
@@ -128,7 +145,8 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | S-02 | Day 1, 5 s after the clock is put on the supervisor's desk. | Supervisor | Heads up. I just got an alert that someone just dropped something off. It should be in the drop box out by the front gate. Head over there and grab it. Once you're done with it, leave it on the table outside the chapel. | |
 | S-03 | Day 2, after "There. All set." | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
 | S-04 | Day 2, once the teacup is put away, after 'If they're all like this today…'. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
-| S-05 | Day 2, once the clown doll is put away, after 'Two down…'. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
+| S-05 | Day 3, once the filled bucket is by the ritual table, after 'All set. Now I just wait.' | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
+| S-06 | Day 2, once the clown doll is put away, after 'Two down…'. | Supervisor | FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS. | |
 
 ## Notes
 
@@ -183,6 +201,16 @@ Proposed changes to N2:
 **N3-4.** Even though I've never met you and probably never will, even though I don't know what you look like or how old you are, and even though it may be kind of lame to say this, I bet you're a pretty cool person. I'm eternally grateful that you gave this game a chance and hope you play through to the end.
 
 Proposed changes to N3:
+
+### Office note, Day 3
+
+**N4-1.** Only one delivery expected today, so this should be an easy shift. The alert will come through like yesterday.
+
+**N4-2.** A heads-up, though. The other staff have mentioned some odd goings-on around the grounds since yesterday. Probably just our lingering friends, but keep your wits about you.
+
+**N4-3.** After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them. Give it a fresh fill at the fountain before the delivery arrives.
+
+Proposed changes to N4:
 
 ### Bible page (reading scripture to a relic)
 

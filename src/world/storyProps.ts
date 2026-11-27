@@ -19,6 +19,7 @@ import {
   EXORCISE_SECONDS,
   TREE_PEEK,
   WORRIED_SPOT,
+  WATCHER_SPOT,
   type ItemSpot,
 } from '../data/story';
 import type { GameState, RelicKind } from '../state/store';
@@ -200,6 +201,17 @@ function bellModel(): THREE.Group {
   g.add(bell);
   g.userData.bell = bell;
   g.userData.clapper = clapper;
+  return g;
+}
+
+/** A plain brown cardboard box with a strip of tape across the top (Day 3, D3-04). */
+function boxModel(): THREE.Group {
+  const g = new THREE.Group();
+  const card = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.26), lambert('#a5814f'));
+  card.position.y = 0.12;
+  const tape = new THREE.Mesh(new THREE.BoxGeometry(0.345, 0.004, 0.06), lambert('#c7ad78'));
+  tape.position.y = 0.242;
+  g.add(card, tape);
   return g;
 }
 
@@ -500,6 +512,11 @@ export class StoryProps {
   private ripple: THREE.Mesh;
   private rippleMat: THREE.MeshBasicMaterial;
   private giggleTimer = 2;
+  /** Day 3's brown box (D3-04). */
+  private box: THREE.Group;
+  private heldBox: THREE.Group;
+  /** Day 3's serious ghost, watching from the graves once the box is collected. */
+  private watcher: GhostModel;
   /** Day 2's third relic, the hand bell (D2-08 to D2-11). */
   private bell: THREE.Group;
   private heldBell: THREE.Group;
@@ -669,6 +686,9 @@ export class StoryProps {
     this.heldClown.group.position.copy(HELD_CLOWN.position);
     this.heldClown.group.quaternion.copy(heldClownQuaternion());
     this.heldClown.group.scale.setScalar(HELD_CLOWN.scale);
+    this.heldBox = boxModel();
+    this.heldBox.position.set(0.1, -0.4, -0.55);
+    this.heldBox.rotation.set(0.25, 0.3, 0);
     this.heldBell = bellModel();
     this.heldBell.position.set(0.12, -0.27, -0.5);
     this.heldBell.rotation.set(0.35, 0, 0);
@@ -692,6 +712,7 @@ export class StoryProps {
       this.heldBucket,
       this.heldRod,
       this.heldBell,
+      this.heldBox,
     );
 
     // Lights stay in the scene at zero intensity: adding one later would make
@@ -753,7 +774,11 @@ export class StoryProps {
 
     this.root.add(this.note, this.key, this.matches, this.cross, this.clock, this.deskMarker);
     this.root.add(this.chalice, this.crucifix, this.bible, this.musicBox.group, this.teacup, this.clown.group, this.bucket, this.rod);
-    this.root.add(this.bell, this.bibleStand);
+    this.box = tagged(boxModel(), 'box') as THREE.Group;
+    this.watcher = ghostModel(false);
+    this.watcher.setMood('neutral');
+    this.watcher.group.visible = false;
+    this.root.add(this.bell, this.bibleStand, this.box, this.watcher.group);
     this.raycastTargets.push(
       this.note,
       this.key,
@@ -770,6 +795,7 @@ export class StoryProps {
       this.rod,
       this.bell,
       this.bibleStand,
+      this.box,
     );
   }
 
@@ -1010,6 +1036,7 @@ export class StoryProps {
     this.syncTeacup(s, dt, listener);
     this.syncClown(s, dt, fxDt, listener);
     this.syncBell(s, dt, listener);
+    this.syncBox(s);
     this.syncBibleStand(s);
     this.syncBucket(s);
     this.updateDip(fxDt);
@@ -1051,6 +1078,7 @@ export class StoryProps {
     this.updatePeeker(s, fxDt, cam);
     this.updatePrank(fxDt, cam);
     this.updateLingering(s, fxDt, cam);
+    this.updateWatcher(s, cam);
     this.updateBus(fxDt);
   }
 
@@ -1063,6 +1091,11 @@ export class StoryProps {
       this.chalice,
       s.chalice === 'ritual-table' ? SPOTS.chaliceRitual : s.chalice === 'garden-bench' ? SPOTS.chaliceBench : SPOTS.chaliceAltar,
     );
+    // Day 3: down in the basement, on the far shelving (D3-02).
+    if (s.chalice === 'basement') {
+      const b = SPOTS.chaliceBasement;
+      this.chalice.position.set(...toWorld(b.x, b.y, -1, b.z));
+    }
     const staged = s.flags.has('crucifix-staged');
     const carried = s.inventory.has('crucifix') && !staged;
     this.crucifix.visible = !carried;
@@ -1494,6 +1527,32 @@ export class StoryProps {
     (this.bucket.userData.water as THREE.Object3D).visible = s.bucket_filled;
     (this.heldBucket.userData.water as THREE.Object3D).visible = s.bucket_filled;
     this.rod.visible = !s.inventory.has('rod');
+    // Day 3: lying on the floor by the bucket, where it was left yesterday.
+    at(this.rod, s.day_index === 3 ? SPOTS.rodChapel : SPOTS.rodCloset);
+  }
+
+  /** Day 3's brown box: hidden in the drop box, carried, then on the ritual table. Quiet and still throughout. */
+  private syncBox(s: GameState): void {
+    const current = s.relic_kind === 'box';
+    const stored = storedSpot(s, 'box');
+    this.box.visible = (current && s.relic === 'ritual-table') || !!stored;
+    this.heldBox.visible = current && s.relic === 'held';
+    at(this.box, stored ?? SPOTS.relicRitual);
+    this.box.rotation.set(0, -Math.PI / 2 + 0.15, 0);
+  }
+
+  /**
+   * Day 3 (D3-04): once the brown box is out of the drop box, the serious
+   * ghost hovers at the edge of the east graves and turns to watch the
+   * player, silently.
+   */
+  private updateWatcher(s: GameState, cam: THREE.Vector3): void {
+    const g = this.watcher;
+    g.group.visible = s.day_index === 3 && s.relic_kind === 'box' && s.relic !== 'drop-box' && s.relic !== 'none';
+    if (!g.group.visible) return;
+    const w = WATCHER_SPOT;
+    g.group.position.set(...toWorld(w.x, w.y, 0, w.height + Math.sin(this.roamT * 1.1) * 0.03));
+    g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), 0);
   }
 
   /**

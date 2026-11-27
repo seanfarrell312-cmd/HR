@@ -17,7 +17,7 @@ export type EnvironmentPreset =
  * is the larger standing one from the altar, set out on the ritual table
  * (decisions 2026-11-09, S2 playtest).
  */
-export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible' | 'storage-key' | 'rod';
+export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible' | 'storage-key' | 'rod' | 'basement-key';
 
 /**
  * The delivered relics, one at a time through the drop box (doc 3.2). Day 1:
@@ -25,7 +25,7 @@ export type QuestItem = 'chapel-key' | 'matches' | 'cross' | 'crucifix' | 'bible
  * the designer names it (decisions 2026-11-13).
  */
 /** Day 2's third relic, the hand bell, is a PLACEHOLDER (S3 part 3). */
-export type RelicKind = 'music-box' | 'teacup' | 'clown' | 'bell';
+export type RelicKind = 'music-box' | 'teacup' | 'clown' | 'bell' | 'box';
 
 /** Large props carried one at a time, shown in the player's hands (doc 5.2). */
 export type HeldProp = 'clock' | 'chalice' | 'bucket' | RelicKind;
@@ -142,6 +142,16 @@ export type Flag =
   | 'worried-vanished'
   | 'worried-looked-back'
   | 'chase-spotted'
+  // Day 3 (S4 part 1, D3-01 to D3-04).
+  /** The basement lights failed as the chalice was taken from the far shelf. */
+  | 'basement-dark'
+  /** The grey sky has been noticed from outside. */
+  | 'overcast-seen'
+  /** The table is set on Day 3: its thought, then the bucket is wanted. */
+  | 'd3-table-set'
+  | 'd3-fill-wanted'
+  /** The bucket is filled and by the table: its thought, then the delivery text. */
+  | 'd3-water-ready'
   /** The storage closet has been opened with its key. */
   | 'storage-opened'
   /** Leaving the church for the second delivery: the long-walk thought. */
@@ -195,7 +205,8 @@ export const RELIC_FLAGS: readonly Flag[] = [
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';
 /** On Day 2 a prankster ghost has left it on the west garden bench (D2-02). */
-export type ChaliceLocation = 'altar' | 'garden-bench' | 'held' | 'ritual-table';
+/** On Day 3 it starts on the far shelf in the basement (D3-02). */
+export type ChaliceLocation = 'altar' | 'garden-bench' | 'held' | 'ritual-table' | 'basement';
 /**
  * Where the current delivery (`relic_kind`) is: not yet delivered, waiting in
  * the drop box, carried, on the ritual table, on the cleaned-relic table

@@ -69,6 +69,10 @@ export const SPOTS = {
   bucketCloset: { x: -9.78, y: 61.3, z: 0.012 },
   /** The rod's handle end; it lies south along the shelf, its head over the bucket. */
   rodCloset: { x: -10.15, y: 61.6, z: 0.5 },
+  /** Day 3: the chalice on the middle shelf of the basement's far shelving (level -1, D3-02). */
+  chaliceBasement: { x: -6.3, y: 52.9, z: 0.98 },
+  /** Day 3: the holy-water rod lying on the floor by the bucket at the ritual table, its head to the south. */
+  rodChapel: { x: 13.1, y: 52.12, z: 0.04 },
   /**
    * Where the bucket of holy water is set down: in front of the ritual
    * table's south-west corner, in easy view and reach from the holy circle
@@ -128,6 +132,12 @@ export const SMS: Record<string, Sms> = {
     from: 'Supervisor',
     text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
   },
+  // Day 3's only delivery, the same alert again (S4, PROVISIONAL).
+  d3delivery: {
+    id: 'd3delivery',
+    from: 'Supervisor',
+    text: 'FWD: A package has been delivered to your drop box. Thank you for using Christ-LERTS.',
+  },
   // The third, the same again (S3 part 3, PROVISIONAL).
   d2delivery3: {
     id: 'd2delivery3',
@@ -142,6 +152,7 @@ export const DELIVERIES: Record<string, RelicKind> = {
   d2delivery1: 'teacup',
   d2delivery2: 'clown',
   d2delivery3: 'bell',
+  d3delivery: 'box',
 };
 
 /** What each relic is called in prompts and objectives. */
@@ -150,6 +161,7 @@ export const RELIC_NAMES: Record<RelicKind, string> = {
   teacup: 'teacup',
   clown: 'clown doll',
   bell: 'hand bell',
+  box: 'brown box',
 };
 
 /** The front gate shuts itself this long after it opens (decisions 2026-11-10). */
@@ -181,6 +193,8 @@ export const DAY_TITLES: Record<number, { title: string; time: string }> = {
   1: { title: 'First Day', time: '4PM' },
   // PROVISIONAL until the designer names it.
   2: { title: 'Second Day', time: '4PM' },
+  // PROVISIONAL until the designer names it.
+  3: { title: 'Third Day', time: '4PM' },
 };
 
 /** The supervisor's letter (designer copy, 2026-11-08), one entry per paragraph. */
@@ -210,8 +224,15 @@ export const OFFICE_NOTE_DAY2 = [
   'Good Luck!',
 ].join('\n\n');
 
+/** Day 3's note (D3-01): one relic, a warning, the basement key. PROVISIONAL draft. */
+export const OFFICE_NOTE_DAY3 = [
+  'Only one delivery expected today, so this should be an easy shift. The alert will come through like yesterday.',
+  "A heads-up, though. The other staff have mentioned some odd goings-on around the grounds since yesterday. Probably just our lingering friends, but keep your wits about you.",
+  "After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them. Give it a fresh fill at the fountain before the delivery arrives.",
+].join('\n\n');
+
 /** The office note for each day. */
-export const OFFICE_NOTES: Record<number, string> = { 1: OFFICE_NOTE_DAY1, 2: OFFICE_NOTE_DAY2 };
+export const OFFICE_NOTES: Record<number, string> = { 1: OFFICE_NOTE_DAY1, 2: OFFICE_NOTE_DAY2, 3: OFFICE_NOTE_DAY3 };
 /** Day 1's note, as before. */
 export const OFFICE_NOTE = OFFICE_NOTE_DAY1;
 
@@ -332,6 +353,15 @@ export const THOUGHTS = {
   shiftDone: "That one really took it out of me. I'm ready to call it a day.",
   /** Spotting the clown's ghost chasing the angry one among the graves on the way out. */
   chaseSpotted: "Ha. Looks like those two are getting along.",
+  // Day 3, part 1 (S4, D3-01 to D3-04). PROVISIONAL copy.
+  /** Taking the chalice from the basement's far shelf, as the lights fail. */
+  basementDark: '...Of course. Of course the lights go now.',
+  /** First time outside after that, under the grey sky. */
+  skyGrey: 'Was that thunder? It was sunny a minute ago.',
+  /** The chalice and crucifix are on the ritual table; then the bucket. */
+  tableSetDay3: 'There. Now to fill the bucket before the delivery comes.',
+  /** The bucket of holy water is by the table; then the delivery text. */
+  waterReady: 'All set. Now I just wait.',
 };
 
 /**
@@ -381,6 +411,14 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
     ghost: 'I guess he must have really liked tea.',
   },
   // Designer copy, 2026-11-26 and 2026-11-27.
+  // Day 3's brown box (S4): plain, quiet and unremarkable. PROVISIONAL copy.
+  // The carry line notices the birds have stopped (D3_SILENCE).
+  box: {
+    approach: 'Huh. Nothing rattling this time.',
+    pickup: 'A plain brown box. No label, no address... nothing.',
+    carry: "It's gone really quiet. Where did all the birds go?",
+    ghost: '',
+  },
   // PROVISIONAL copy (S3 part 3).
   bell: {
     approach: 'Is that... a bell ringing?',
@@ -561,8 +599,8 @@ export const CHURCH_APPROACH_LINES: Record<number, string> = {
   2: THOUGHTS.churchApproachDay2,
 };
 
-/** Shown once Day 2's shift is over, at the gate, until Day 3 is built in S4. */
-export const S3_END = 'End of Day 2. Day 3 comes in S4.';
+/** Shown once Day 3's brown box is on the ritual table, until S4 part 2 is built. */
+export const S4_PART1_END = 'End of S4 part 1. The failed rituals come next.';
 
 /** The hand bell's rattles (D2-10): harder and longer than the music box's. */
 export const RATTLE_VIOLENT = { seconds: 2.4, strength: 1.6 };
@@ -606,6 +644,13 @@ export const ONLOOKERS = [
 ] as const;
 /** How close a lingering ghost must be, in metres, to count as seen. */
 export const SPOT_RANGE = { clown: 45, worried: 22 };
+
+/**
+ * Day 3 (D3-04, 7.1 D3_SILENCE): once the brown box is picked up the
+ * serious ghost hovers at the near edge of the east graves, turning to
+ * watch the player wherever they go. Silent, with no thought.
+ */
+export const WATCHER_SPOT = { x: 17.6, y: 30.5, height: 0.5 };
 
 /**
  * First-day control guide (designer copy, 2026-11-09), shown once the day card

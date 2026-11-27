@@ -9,6 +9,7 @@ import {
   LOITER_LINES,
   OFFICE_NOTE_DAY1,
   OFFICE_NOTE_DAY2,
+  OFFICE_NOTE_DAY3,
   RELIC_LINES,
   REMINDERS,
   type RelicLines,
@@ -89,17 +90,26 @@ export const DAY2: Cue[] = [
   { key: 'chaseSpotted', when: "On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view." },
 ];
 
+/** Day 3 thoughts, in play order (S4). */
+export const DAY3: Cue[] = [
+  { key: 'basementDark', when: "Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder rolls." },
+  { key: 'skyGrey', when: 'The first time outside after that, under the grey sky.' },
+  { key: 'tableSetDay3', when: 'The chalice and crucifix are both on the ritual table; then the bucket is to be filled.' },
+  { key: 'waterReady', when: 'The filled bucket is put down by the ritual table; then the delivery text.' },
+];
+
 /** Thoughts that sit with the relics instead (RELIC_LINES), so they're listed by relic. */
 const IN_RELIC_LINES: ThoughtKey[] = ['dropBox', 'relicPickup', 'relicAnnoying', 'relicGhost'];
 
 /** Every thought key the review lists, for the coverage test. */
-export const LISTED: ThoughtKey[] = [...ANY_DAY, ...DAY1, ...DAY2].map((c) => c.key).concat(IN_RELIC_LINES);
+export const LISTED: ThoughtKey[] = [...ANY_DAY, ...DAY1, ...DAY2, ...DAY3].map((c) => c.key).concat(IN_RELIC_LINES);
 
 const RELIC_CUES: { kind: keyof typeof RELIC_LINES; day: string; title: string }[] = [
   { kind: 'music-box', day: 'Day 1', title: 'Music box (Day 1, second delivery)' },
   { kind: 'teacup', day: 'Day 2', title: 'Teacup (Day 2, first delivery)' },
   { kind: 'clown', day: 'Day 2', title: 'Clown doll (Day 2, second delivery)' },
   { kind: 'bell', day: 'Day 2', title: 'Hand bell (Day 2, third delivery; placeholder relic)' },
+  { kind: 'box', day: 'Day 3', title: "Brown box (Day 3's only delivery)" },
 ];
 const RELIC_WHEN: Record<keyof RelicLines, string> = {
   approach: 'Nearing the drop box once it has been delivered.',
@@ -127,6 +137,7 @@ export const SMS_WHEN: Record<string, string> = {
   d2delivery1: 'Day 2, after "There. All set."',
   d2delivery2: "Day 2, once the teacup is put away, after 'If they're all like this today…'.",
   d2delivery3: "Day 2, once the clown doll is put away, after 'Two down…'.",
+  d3delivery: "Day 3, once the filled bucket is by the ritual table, after 'All set. Now I just wait.'",
 };
 
 /** Escape a table cell. */
@@ -167,6 +178,9 @@ export function scriptReview(): string {
     `### Day 2: ${DAY_TITLES[2].title}`,
     '',
     ...thoughtTable('D2', DAY2),
+    `### Day 3: ${DAY_TITLES[3].title}`,
+    '',
+    ...thoughtTable('D3', DAY3),
     '### Day 2: dawdling outside',
     '',
     'Timed from the gate opening, if the player still hasn\'t been inside the church.',
@@ -180,7 +194,7 @@ export function scriptReview(): string {
   ];
   for (const r of RELIC_CUES) {
     const lines = RELIC_LINES[r.kind];
-    const id = { 'music-box': 'MB', teacup: 'TC', clown: 'CD', bell: 'HB' }[r.kind];
+    const id = { 'music-box': 'MB', teacup: 'TC', clown: 'CD', bell: 'HB', box: 'BB' }[r.kind];
     out.push(`#### ${r.title}`, '', '| ID | When it plays | Text | Proposed |', '|---|---|---|---|');
     for (const [k, n] of RELIC_IDS) {
       const line = lines[k];
@@ -199,6 +213,7 @@ export function scriptReview(): string {
   out.push(...note('N1', 'Office note, Day 1', OFFICE_NOTE_DAY1));
   out.push(...note('N2', 'Office note, Day 2', OFFICE_NOTE_DAY2));
   out.push(...note('N3', 'Easter-egg note on the stool behind the church (any day)', STOOL_NOTE));
+  out.push(...note('N4', 'Office note, Day 3', OFFICE_NOTE_DAY3));
   out.push(
     '### Bible page (reading scripture to a relic)',
     '',

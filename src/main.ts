@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import './style.css';
 import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
-import { environmentLook } from './data/environment';
+import { BIRDSONG, environmentLook, THUNDER } from './data/environment';
 import { ARRIVAL, DOORS, PLAYER_RADIUS, TELEPORTS } from './data/layout';
 import {
   BLESS_SECONDS,
@@ -57,9 +57,15 @@ scene.add(hemi, ambient, sun);
 let shownEnvironment: EnvironmentPreset | null = null;
 
 /** Sky, fog and lights for the state's environment preset (doc 7.1). */
-function applyEnvironment(preset: EnvironmentPreset): void {
-  if (preset === shownEnvironment) return;
+let shownDim = 1;
+/**
+ * `dim` scales the light (1 = as the preset has it): the basement once its
+ * lights have failed on Day 3 (D3-02).
+ */
+function applyEnvironment(preset: EnvironmentPreset, dim = 1): void {
+  if (preset === shownEnvironment && dim === shownDim) return;
   shownEnvironment = preset;
+  shownDim = dim;
   const e = environmentLook(preset);
   sky.set(e.sky);
   fog.color.set(e.sky);
@@ -67,10 +73,10 @@ function applyEnvironment(preset: EnvironmentPreset): void {
   fog.far = e.fogFar;
   hemi.color.set(e.hemiSky);
   hemi.groundColor.set(e.hemiGround);
-  hemi.intensity = e.hemiIntensity;
-  ambient.intensity = e.ambient;
+  hemi.intensity = e.hemiIntensity * dim;
+  ambient.intensity = e.ambient * dim;
   sun.color.set(e.sun);
-  sun.intensity = e.sunIntensity;
+  sun.intensity = e.sunIntensity * dim;
   sun.position.set(...e.sunPosition);
 }
 
@@ -140,6 +146,43 @@ let pending: { seconds: number; event: StoryEvent }[] = [];
 /** Counts down through the end-of-shift fade; -1 when not changing day. */
 let dayFade = -1;
 let primaryDown = false;
+/** How much light is left in the basement once its lights fail (D3-02): dark, but the way to the stairs can be made out. */
+const BASEMENT_DARK = 0.2;
+/** Seconds since the basement lights started to fail (D3-02); -1 before. */
+let lightsOutT = -1;
+/** Countdowns to the next bird call and the next roll of thunder (7.1). */
+let birdTimer = 2;
+let thunderTimer = 25;
+
+/**
+ * How much light there is where the player is: the basement goes dark once
+ * its lights fail on Day 3 (D3-02), after a second of flickering.
+ */
+function lightLevel(dt: number): number {
+  if (lightsOutT >= 0) lightsOutT += dt;
+  if (player.level !== -1 || !state.flags.has('basement-dark')) return 1;
+  if (lightsOutT >= 0 && lightsOutT < 1.1) return [1, 0.25, 0.9, 0.15, 0.7, BASEMENT_DARK][Math.floor(lightsOutT * 5.5)] ?? BASEMENT_DARK;
+  return BASEMENT_DARK;
+}
+
+/**
+ * Birdsong outdoors, faint indoors, none underground, until the birds go
+ * quiet on Day 3 (7.1); and distant thunder from the basement chalice on.
+ */
+function ambience(dt: number): void {
+  const preset = state.environment_preset;
+  const indoors = player.level === -1 ? 0 : zoneAt(player.x, player.y, player.level)?.roof ? 0.25 : 1;
+  birdTimer -= dt;
+  if (birdTimer <= 0) {
+    birdTimer = 1.5 + Math.random() * 4;
+    if (BIRDSONG.has(preset) && player.level === 0) sfx.chirp(0.45 * indoors);
+  }
+  thunderTimer -= dt;
+  if (thunderTimer <= 0) {
+    thunderTimer = 25 + Math.random() * 20;
+    if (THUNDER.has(preset)) sfx.play('thunder');
+  }
+}
 
 function refreshColliders(): void {
   // The Bible stand moves in front of the ritual table for the hand bell (D2-11).
@@ -217,6 +260,9 @@ function handleEffect(e: Effect): void {
       break;
     case 'exorcise':
       props.startExorcise();
+      break;
+    case 'lights-out':
+      lightsOutT = 0;
       break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
@@ -643,6 +689,7 @@ renderer.setAnimationLoop(() => {
     if (state.relic === 'drop-box' && !state.flags.has('drop-box-approached')) dispatch({ type: 'approach-drop-box', ...at });
     if (state.relic === 'drop-box' && state.relic_kind === 'clown' && !state.flags.has('long-walk')) dispatch({ type: 'leave-church', ...at });
     if (state.relic === 'held' && !state.flags.has('relic-annoyed')) dispatch({ type: 'relic-near-church', ...at });
+    if (state.day_index === 3 && !state.flags.has('overcast-seen') && state.environment_preset !== 'BASE_DAY') dispatch({ type: 'outside-overcast', ...at });
     if (state.chalice === 'garden-bench' && !state.flags.has('chalice-missing')) dispatch({ type: 'near-altar', ...at });
     if (state.chalice === 'garden-bench' && state.flags.has('storage-opened') && !state.flags.has('searched-storage')) dispatch({ type: 'search-closet', ...at });
     if (state.day_index === 2 && !state.flags.has('entered-church')) dispatch({ type: 'enter-church', ...at });
@@ -680,7 +727,8 @@ renderer.setAnimationLoop(() => {
     dayFade -= dt;
     if (dayFade <= 0) nextDay();
   }
-  applyEnvironment(state.environment_preset);
+  applyEnvironment(state.environment_preset, lightLevel(dt));
+  if (started && !worldPaused && dayFade < 0) ambience(dt);
 
   // Reading scripture is a hold too, but with the Bible, not the cross.
   // Splashing the clown doll raises the holy-water rod instead.

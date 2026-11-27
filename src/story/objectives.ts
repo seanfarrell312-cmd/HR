@@ -1,4 +1,4 @@
-import { RELIC_NAMES, S3_END, SEARCH_CHECKLIST } from '../data/story';
+import { RELIC_NAMES, S4_PART1_END, SEARCH_CHECKLIST } from '../data/story';
 import type { GameState } from '../state/store';
 import { searchChecklistShown } from './search';
 import { tableReady } from './table';
@@ -359,16 +359,70 @@ export const DAY2: Objective[] = [
     task: (s) => (s.flags.has('gate-prompted') ? 'Head back to the front gate' : ''),
     done: (s) => s.day_index === 2 && s.flags.has('returned-to-gate'),
   },
+];
+
+/** Day 3 (doc 6.3): the exception becomes the entire job. Built in S4 to S6. */
+export const DAY3: Objective[] = [
   {
-    // Day 3 comes in S4.
-    id: 'S3-END',
-    task: () => S3_END,
+    // Gate, note, the chapel and basement keys, candles (D3-01).
+    id: 'D3-01',
+    task: (s) => {
+      if (!s.flags.has('arrived')) return '';
+      if (!s.flags.has('gate-unlocked')) return 'Enter the code on the gate keypad';
+      if (!s.flags.has('note-closed')) return 'Read the note on the office desk';
+      if (!s.inventory.has('chapel-key')) return 'Take the chapel and basement keys from the hooks by the office door';
+      if (!s.flags.has('chapel-opened')) return 'Unlock the chapel';
+      if (!s.inventory.has('matches')) return 'Pick up the matches from the shelf';
+      return `Light the candles around the holy circle (${s.candles_lit.size}/4)`;
+    },
+    done: (s) => s.day_index === 3 && s.flags.has('note-read') && s.candles_lit.size === 4,
+  },
+  {
+    // The crucifix from the altar, the chalice from the basement's far
+    // shelf; the lights fail and thunder starts (D3-02).
+    id: 'D3-02',
+    task: (s) => {
+      const crucifix = !s.flags.has('crucifix-staged');
+      if (crucifix && !s.inventory.has('crucifix')) return 'Fetch the crucifix from the altar';
+      if (s.chalice === 'basement') return crucifix ? 'Put the crucifix on the ritual table' : 'Fetch the chalice from the basement';
+      if (s.chalice === 'held') return crucifix ? 'Set the chalice and crucifix out on the ritual table' : 'Place the chalice on the ritual table';
+      return 'Put the crucifix on the ritual table';
+    },
+    done: (s) => s.day_index === 3 && tableReady(s),
+  },
+  {
+    // Fill the bucket at the fountain under a greying sky (D3-03).
+    id: 'D3-03',
+    task: (s) => {
+      // "There. Now to fill the bucket..." first.
+      if (!s.flags.has('d3-fill-wanted')) return '';
+      if (s.bucket === 'held' && s.bucket_filled) return 'Put the bucket down by the ritual table';
+      return 'Fill the bucket at the fountain in the west garden';
+    },
+    done: (s) => s.day_index === 3 && s.flags.has('d3-fill-wanted') && s.bucket === 'chapel' && s.bucket_filled,
+  },
+  {
+    // The text, and a plain brown box; the birds fall silent (D3-04).
+    id: 'D3-04',
+    task: (s) => {
+      if (!s.inbox.includes('d3delivery')) return '';
+      if (!s.sms_read.has('d3delivery')) return 'Check your phone (Q)';
+      if (s.relic === 'drop-box') return 'Collect the delivery from the drop box by the gate';
+      if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the brown box on the ritual table' : '';
+      return '';
+    },
+    done: (s) => s.day_index === 3 && s.relic_kind === 'box' && s.relic === 'ritual-table',
+  },
+  {
+    // The failed rituals come in S4 part 2.
+    id: 'S4-P1-END',
+    task: () => S4_PART1_END,
     done: () => false,
   },
 ];
 
 /** Every objective in play order. */
-const ALL: Objective[] = [...DAY1, ...DAY2];
+const ALL: Objective[] = [...DAY1, ...DAY2, ...DAY3];
 
 export function currentObjective(s: GameState): Objective {
   return ALL.find((o) => o.id === s.objective_id) ?? ALL[ALL.length - 1];

@@ -202,6 +202,11 @@ export class Sfx {
           this.glide('sine', 220, 120, t + 0.42, 0.16, 0.04);
         }
         break;
+      case 'thunder':
+        // Distant thunder: a low, slow rumble that swells and fades (D3).
+        for (let i = 0; i < 7; i++) this.hiss(i * 0.35 + Math.random() * 0.2, 1.4, 70 + Math.random() * 60, 0.22 * (1 - i / 9));
+        this.glide('sine', 55, 38, 0.1, 2.6, 0.08);
+        break;
       case 'angry-squeak':
         // Cross little squeaks, up then sharply down (D2-10, D2-11).
         for (let i = 0; i < 3; i++) {
@@ -245,6 +250,17 @@ export class Sfx {
       const t = i * (0.05 + Math.random() * 0.03);
       this.tone('sine', 2500 + Math.random() * 1100, t, 0.1, 0.14 * volume);
       this.hiss(t, 0.02, 5200, 0.18 * volume);
+    }
+  }
+
+  /** A bird call outside, at volume 0..1: two to four quick chirps (7.1 birdsong). */
+  chirp(volume: number): void {
+    if (volume <= 0.01) return;
+    const n = 2 + Math.floor(Math.random() * 3);
+    const f = 2600 + Math.random() * 1600;
+    for (let i = 0; i < n; i++) {
+      const t = i * (0.09 + Math.random() * 0.05);
+      this.glide('sine', f * (1 + Math.random() * 0.15), f * (0.75 + Math.random() * 0.2), t, 0.07, 0.035 * volume);
     }
   }
 
