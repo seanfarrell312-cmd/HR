@@ -1,6 +1,6 @@
 import { RELIC_NAMES, S3_END, SEARCH_CHECKLIST } from '../data/story';
 import type { GameState } from '../state/store';
-import { churchSealed } from './search';
+import { searchChecklistShown } from './search';
 import { tableReady } from './table';
 
 // Objectives for each day (doc 6.1, 6.2). Day 1 was built in S1 and S2, Day 2
@@ -183,7 +183,7 @@ export const DAY2: Objective[] = [
     // Where to look, crossed off as each is checked; it stays up through the
     // "outside somewhere" thought.
     checklist: (s) => {
-      if (!churchSealed(s)) return [];
+      if (!searchChecklistShown(s)) return [];
       const done = [s.flags.has('searched-desk'), s.flags.has('searched-storage'), s.flags.has('searched-basement')];
       return SEARCH_CHECKLIST.map((text, i) => ({ text, done: done[i] }));
     },

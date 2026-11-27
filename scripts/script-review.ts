@@ -61,7 +61,7 @@ export const DAY2: Cue[] = [
   { key: 'searchDesk', when: 'Searching the church: opening the office desk drawers from behind the desk and finding the key ("Check the office").' },
   { key: 'searchCloset', when: 'Searching the church: stepping into the storage closet once the key has opened it ("Check the storage closet").' },
   { key: 'searchBasement', when: 'Searching the church: trying the basement door with the key; it stays shut ("Check the basement").' },
-  { key: 'searchStayInside', when: 'Searching the church: trying the church doors from inside. They stay shut until the grounds objective shows.' },
+  { key: 'searchStayInside', when: 'Searching the church: trying the church doors from inside. They stay shut until all three places are checked.' },
   { key: 'searchNudge', when: 'Searching the church, before the key is found: 30 s with nothing new checked. Repeats after each further 30 s, three times at most.' },
   { key: 'searchNudgeKey', when: 'The same nudge once the key has been found.' },
   { key: 'searchOutside', when: 'All three places checked; then "Search the grounds for the chalice".' },

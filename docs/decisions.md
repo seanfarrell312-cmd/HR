@@ -954,3 +954,10 @@ Other changes:
 - **No fade at the gate.** Day 2 ends on the placeholder objective rather
   than a fade to Day 3.
 
+## 2026-12-01 — Church doors open with the "outside" thought
+
+Designer ruling. During the Day 2 chalice search, the church doors now open
+as soon as "I guess it's outside somewhere?" appears. Before, they stayed
+shut until the thought had finished and the grounds objective showed. The
+checklist still stays up, all crossed off, while the thought plays.
+

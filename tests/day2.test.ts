@@ -427,7 +427,7 @@ describe('the missing chalice (D2-02)', () => {
     expect(last).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.searchCloset), event: { type: 'search-done' } });
   });
 
-  it('keeps the church doors shut from inside until the grounds objective shows', () => {
+  it('keeps the church doors shut from inside until the search is done', () => {
     const shut = (g: GameState) => {
       g.open_doors.delete('church');
       return g;
@@ -449,12 +449,15 @@ describe('the missing chalice (D2-02)', () => {
     // Someone outside (a debug teleport) can still get in.
     expect(resolve('door:church', s, outside).prompt).toBe('E  Open church doors');
 
-    // Still shut while the "outside" thought plays, then open.
-    const searched = shut(at(step('search-thought-done')));
-    expect(resolve('door:church', searched, inside).action).toEqual({ kind: 'story', event: { type: 'try-church-doors' } });
-    applyEvent(searched, { type: 'search-thought-done' });
-    expect(resolve('door:church', searched, inside).prompt).toBe('E  Open church doors');
-    expect(applyEvent(searched, { type: 'try-church-doors' })).toEqual([]);
+    // Shut until the last place is checked; open as soon as the "outside"
+    // thought appears (designer, 2026-12-01).
+    const last = shut(at(step('search-done')));
+    expect(resolve('door:church', last, inside).action).toEqual({ kind: 'story', event: { type: 'try-church-doors' } });
+    expect(says(applyEvent(last, { type: 'search-done' }))).toEqual(["I guess it's outside somewhere?"]);
+    expect(resolve('door:church', last, inside).prompt).toBe('E  Open church doors');
+    expect(applyEvent(last, { type: 'try-church-doors' })).toEqual([]);
+    // The checklist stays up, all crossed off, while the thought plays.
+    expect(checklist(last)).toEqual(['x Check the office', 'x Check the storage closet', 'x Check the basement']);
   });
 
   it('only starts the search once the crucifix is on the table', () => {

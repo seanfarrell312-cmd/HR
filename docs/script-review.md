@@ -43,7 +43,7 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-07 | Searching the church: opening the office desk drawers from behind the desk and finding the key ("Check the office"). | No chalice in these drawers, but there's a key. Maybe it opens the storage closet, or the basement? | |
 | D2-08 | Searching the church: stepping into the storage closet once the key has opened it ("Check the storage closet"). | Just a bucket and a holy-water rod. No chalice in here. | |
 | D2-09 | Searching the church: trying the basement door with the key; it stays shut ("Check the basement"). | It doesn't fit. It must only be for the closet. | |
-| D2-10 | Searching the church: trying the church doors from inside. They stay shut until the grounds objective shows. | I need to find the chalice. I haven't checked all the rooms yet. | |
+| D2-10 | Searching the church: trying the church doors from inside. They stay shut until all three places are checked. | I need to find the chalice. I haven't checked all the rooms yet. | |
 | D2-11 | Searching the church, before the key is found: 30 s with nothing new checked. Repeats after each further 30 s, three times at most. | I should look around the office. Maybe there's a key for these doors. | |
 | D2-12 | The same nudge once the key has been found. | I should try this key on the locked doors. | |
 | D2-13 | All three places checked; then "Search the grounds for the chalice". | I guess it's outside somewhere? | |

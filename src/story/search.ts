@@ -16,9 +16,18 @@ export function searching(s: GameState): boolean {
 
 /**
  * Day 2: the church doors stay shut from the crucifix going down until the
- * "outside somewhere" thought has played and the grounds objective shows.
+ * search is done. They open as the "outside somewhere" thought appears
+ * (designer, 2026-12-01).
  */
 export function churchSealed(s: GameState): boolean {
+  return s.day_index === 2 && s.chalice === 'garden-bench' && s.flags.has('crucifix-staged') && !s.flags.has('church-searched');
+}
+
+/**
+ * Day 2: the search checklist shows from the crucifix going down, and stays
+ * up, all crossed off, through the "outside somewhere" thought.
+ */
+export function searchChecklistShown(s: GameState): boolean {
   return (
     s.day_index === 2 &&
     s.chalice === 'garden-bench' &&
