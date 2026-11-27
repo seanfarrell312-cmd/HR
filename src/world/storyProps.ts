@@ -283,6 +283,34 @@ export function poseHeldRod(rod: THREE.Object3D, raise: number, swing: number, l
   rod.rotation.set(-0.2 + 0.5 * raise - 1.4 * swing + 0.5 * lower, 0, 0.3 * raise - 0.15 * swing);
 }
 
+/**
+ * Dipping the rod in the bucket by the ritual table (2026-11-29): it comes
+ * down head first into the water, stays under a moment, lifts out dripping,
+ * then rises and fades away. Seconds for each stage, in order.
+ */
+export const DIP = { down: 0.3, under: 0.45, up: 0.3, fade: 0.35 };
+export const DIP_SECONDS = DIP.down + DIP.under + DIP.up + DIP.fade;
+/** Height of the water's surface in a bucket standing at `z`. */
+export const bucketWater = (z: number): number => z + 0.23;
+
+/**
+ * The rod's head during the dip, `t` seconds in: its height above or below
+ * the water's surface (metres) and how solid it is (0..1).
+ */
+export function dipPose(t: number): { head: number; opacity: number } {
+  const ease = (x: number) => x * x * (3 - 2 * x);
+  const k = (from: number, len: number) => ease(Math.min(1, Math.max(0, (t - from) / len)));
+  const above = 0.4;
+  const under = -0.05;
+  const t1 = DIP.down;
+  const t2 = t1 + DIP.under;
+  const t3 = t2 + DIP.up;
+  if (t < t1) return { head: above + (under - above) * k(0, t1), opacity: 1 };
+  if (t < t2) return { head: under, opacity: 1 };
+  if (t < t3) return { head: under + (0.2 - under) * k(t2, DIP.up), opacity: 1 };
+  return { head: 0.2 + 0.15 * k(t3, DIP.fade), opacity: 1 - k(t3, DIP.fade) };
+}
+
 interface Droplet {
   mesh: THREE.Mesh;
   mat: THREE.MeshBasicMaterial;
@@ -357,6 +385,12 @@ export class StoryProps {
   private clownAgitation = 0;
   private clownSlump = 0;
   private droplets: Droplet[] = [];
+  /** The rod going into the bucket by the ritual table; seconds in, or -1. */
+  private dipT = -1;
+  private dipRod: THREE.Group;
+  private dipMaterials: THREE.Material[] = [];
+  private ripple: THREE.Mesh;
+  private rippleMat: THREE.MeshBasicMaterial;
   private giggleTimer = 2;
   private bucket: THREE.Group;
   private heldBucket: THREE.Group;
@@ -400,6 +434,9 @@ export class StoryProps {
 
   /** Called when the possessed clown doll giggles, with volume 0..1. */
   onGiggle: (volume: number) => void = () => {};
+
+  /** Called as the rod's head goes into the bucket's water. */
+  onDipSplash: () => void = () => {};
 
   /** Called when the clock chimes, with volume 0..1 and agitation 0..1. */
   onChime: (volume: number, agitation: number) => void = () => {};
@@ -519,6 +556,27 @@ export class StoryProps {
     this.prankster.group.visible = false;
     this.root.add(this.relicGhost.group, this.peeker.group, this.prankster.group);
 
+    // The rod dipping into the bucket by the ritual table: a pivot at its
+    // head, the handle pointing up and leaning a little towards the circle.
+    this.dipRod = new THREE.Group();
+    const dipModel = rodModel();
+    dipModel.position.y = -0.37;
+    dipModel.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (m) {
+        m.transparent = true;
+        this.dipMaterials.push(m);
+      }
+    });
+    this.dipRod.add(dipModel);
+    this.dipRod.rotation.set(Math.PI, 0, 0.3);
+    this.dipRod.visible = false;
+    this.rippleMat = basic('#e8f6ff', 0.8);
+    this.ripple = new THREE.Mesh(new THREE.RingGeometry(0.03, 0.042, 18), this.rippleMat);
+    this.ripple.rotation.x = -Math.PI / 2;
+    this.ripple.visible = false;
+    this.root.add(this.dipRod, this.ripple);
+
     // Holy water flying off the doll as the rod strikes (D2-07).
     const dropGeometry = new THREE.IcosahedronGeometry(0.02, 0);
     for (let i = 0; i < DROPLETS; i++) {
@@ -563,6 +621,9 @@ export class StoryProps {
     this.danceT = -1;
     this.wiggleT = -1;
     this.splashT = -1;
+    this.dipT = -1;
+    this.dipRod.visible = false;
+    this.ripple.visible = false;
     for (const d of this.droplets) {
       d.age = DROPLET_LIFE;
       d.mesh.visible = false;
@@ -624,6 +685,16 @@ export class StoryProps {
   /** The rod strikes at the clown doll, splashing it, and it goes still (D2-07). */
   startSplash(): void {
     this.splashT = 0;
+  }
+
+  /** The rod dips into the bucket of holy water by the ritual table (D2-07). */
+  startDip(): void {
+    this.dipT = 0;
+  }
+
+  /** True while the rod is going into the bucket and back out. */
+  get dipping(): boolean {
+    return this.dipT >= 0;
   }
 
   startPurification(relic: PurifiedRelic): void {
@@ -759,6 +830,7 @@ export class StoryProps {
     this.syncTeacup(s, dt, listener);
     this.syncClown(s, dt, fxDt, listener);
     this.syncBucket(s);
+    this.updateDip(fxDt);
 
     // The hand cross rises into view while a blessing is held; the rod for
     // the water ritual.
@@ -977,18 +1049,66 @@ export class StoryProps {
   /** A burst of holy water off the doll as a strike lands. */
   private splashDroplets(): void {
     const spot = SPOTS.relicRitual;
-    const origin = new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + 0.16));
-    let n = 12;
+    this.throwDroplets(new THREE.Vector3(...toWorld(spot.x, spot.y, 0, spot.z + 0.16)), 12, 0.06, 0.4, 0.5, 0.9, 0.7);
+  }
+
+  /**
+   * `n` droplets from around `origin` (within `spread`), each thrown out
+   * sideways at `out`..`out + outVar` and up at `up`..`up + upVar` m/s.
+   */
+  private throwDroplets(origin: THREE.Vector3, n: number, spread: number, out: number, outVar: number, up: number, upVar: number): void {
     for (const d of this.droplets) {
       if (n === 0) break;
       if (d.age < DROPLET_LIFE) continue;
       n--;
       d.age = 0;
-      d.mesh.position.copy(origin).add(new THREE.Vector3((Math.random() - 0.5) * 0.12, Math.random() * 0.08, (Math.random() - 0.5) * 0.12));
+      d.mesh.position.copy(origin).add(new THREE.Vector3((Math.random() - 0.5) * 2 * spread, Math.random() * spread, (Math.random() - 0.5) * 2 * spread));
       const a = Math.random() * Math.PI * 2;
-      const out = 0.4 + Math.random() * 0.5;
-      d.v.set(Math.cos(a) * out, 0.9 + Math.random() * 0.7, Math.sin(a) * out);
+      const o = out + Math.random() * outVar;
+      d.v.set(Math.cos(a) * o, up + Math.random() * upVar, Math.sin(a) * o);
       d.mesh.visible = true;
+    }
+  }
+
+  /**
+   * The rod in the bucket: down into the water with a slosh, a ripple and a
+   * few splashes; out again dripping; then up and fading away, ready to use.
+   */
+  private updateDip(dt: number): void {
+    if (this.dipT < 0) return;
+    const before = this.dipT;
+    this.dipT += dt;
+    const b = SPOTS.bucketChapel;
+    const water = bucketWater(b.z);
+    const [x, , z] = toWorld(b.x, b.y, 0, 0);
+    const { head, opacity } = dipPose(this.dipT);
+    this.dipRod.visible = this.dipT < DIP_SECONDS;
+    this.dipRod.position.set(x, water + head, z);
+    for (const m of this.dipMaterials) m.opacity = opacity;
+    const crossed = (at: number) => before < at && this.dipT >= at;
+    const surface = new THREE.Vector3(x, water, z);
+    // In: the slosh, a ring on the water and a few splashes.
+    const hit = DIP.down * 0.8;
+    if (crossed(hit)) {
+      this.onDipSplash();
+      this.throwDroplets(surface, 7, 0.04, 0.15, 0.25, 0.5, 0.5);
+    }
+    const ripple = this.dipT - hit;
+    this.ripple.visible = ripple > 0 && ripple < 0.7;
+    if (this.ripple.visible) {
+      this.ripple.position.set(x, water + 0.004, z);
+      this.ripple.scale.setScalar(1 + ripple * 3.5);
+      this.rippleMat.opacity = 0.8 * (1 - ripple / 0.7);
+    }
+    // Out: drips falling off the head.
+    const out = DIP.down + DIP.under + DIP.up * 0.6;
+    for (const at of [out, out + 0.18, out + 0.36]) {
+      if (crossed(at)) this.throwDroplets(new THREE.Vector3(x, water + dipPose(at).head - 0.04, z), 1, 0.01, 0, 0.05, -0.2, 0);
+    }
+    if (this.dipT >= DIP_SECONDS) {
+      this.dipT = -1;
+      this.dipRod.visible = false;
+      this.ripple.visible = false;
     }
   }
 

@@ -861,7 +861,7 @@ describe('holy water for the clown doll (D2-07)', () => {
     expect(resolve('item:clown', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.rodDry });
     expect(flashes(applyEvent(s, { type: 'splash-doll' }))).toEqual([REMINDERS.rodDry]);
     expect(resolve('item:bucket', s, inCircle).prompt).toBe('E  Dip the rod in the holy water');
-    expect(applyEvent(s, { type: 'wet-rod' })).toEqual([{ kind: 'sfx', id: 'dip' }]);
+    expect(applyEvent(s, { type: 'wet-rod' })).toEqual([{ kind: 'dip' }]);
     expect(s.bucket_filled).toBe(true);
     expect(resolve('item:bucket', s, inCircle).prompt).toBe('');
     expect(task(s)).toBe('Stand in the holy circle and splash the clown doll with holy water');

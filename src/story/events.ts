@@ -219,6 +219,8 @@ export type Effect =
   | { kind: 'dance' }
   /** The rod strikes at the doll, splashing it, and the doll goes still (D2-07). */
   | { kind: 'splash' }
+  /** The holy-water rod dips into the bucket by the ritual table and comes out wet (D2-07). */
+  | { kind: 'dip' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -779,7 +781,9 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
       if (s.bucket !== 'chapel' || !s.bucket_filled) return flash(REMINDERS.holyWaterFirst);
       s.flags.add('rod-wet');
-      out.push({ kind: 'sfx', id: 'dip' });
+      // The rod goes into the water and out again; the slosh comes with the
+      // view's timing (2026-11-29).
+      out.push({ kind: 'dip' });
       break;
 
     case 'splash-doll':

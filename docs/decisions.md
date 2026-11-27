@@ -869,3 +869,19 @@ key later on. The search (D2-02) now leads them to it:
   drawers were good for something."
 - The closet counts as checked when the player steps through its doorway.
   Opening the door from the nave isn't enough.
+
+## 2026-11-29 — Dipping the rod shows on screen
+
+Designer request. Dipping the rod in the bucket by the ritual table is now
+something you see, not only a sound. It takes about 1.4 s:
+1. The rod appears over the bucket, head down, and goes into the water.
+2. As it goes in, the slosh plays, a ring spreads across the water and a
+   few drops splash up.
+3. It stays under for a moment, lifts out with a few drips falling off its
+   head, then rises and fades away.
+
+The doll can't be splashed until the rod has gone. Until then, aiming at the
+doll, the table or the bucket shows nothing. The splash itself is unchanged.
+
+PROVISIONAL: the timing and the look (a plain ring and a few blue drops) are
+placeholders, like the splash's droplets.

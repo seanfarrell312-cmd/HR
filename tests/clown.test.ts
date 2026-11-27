@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
-import { rodStrike } from '../src/world/storyProps';
+import { DIP, DIP_SECONDS, dipPose, rodStrike } from '../src/world/storyProps';
 import { SPLASH_STRIKE } from '../src/data/story';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
@@ -118,5 +118,18 @@ describe('the holy-water rod splash (2026-11-26)', () => {
     }
     expect(rodStrike(3 * SPLASH_STRIKE).lower).toBe(0);
     expect(rodStrike(3 * SPLASH_STRIKE + 1).lower).toBe(1);
+  });
+});
+
+describe('dipping the rod in the bucket (2026-11-29)', () => {
+  it('goes in head first, stays under, comes out and fades away', () => {
+    expect(dipPose(0).head).toBeGreaterThan(0.3);
+    // Under the surface for the whole middle stage.
+    for (const t of [DIP.down, DIP.down + DIP.under / 2, DIP.down + DIP.under - 0.01]) expect(dipPose(t).head).toBeLessThan(-0.03);
+    // Out again, still solid, then gone by the end.
+    expect(dipPose(DIP.down + DIP.under + DIP.up).head).toBeGreaterThan(0.15);
+    expect(dipPose(DIP.down + DIP.under + DIP.up).opacity).toBe(1);
+    expect(dipPose(DIP_SECONDS).opacity).toBe(0);
+    expect(DIP_SECONDS).toBeLessThan(2);
   });
 });

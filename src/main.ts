@@ -93,6 +93,7 @@ props.onChime = (volume, agitation) => sfx.chime(volume, agitation);
 props.onTune = (volume) => sfx.tune(volume);
 props.onClink = (volume) => sfx.clink(volume);
 props.onGiggle = (volume) => sfx.giggle(volume);
+props.onDipSplash = () => sfx.play('dip');
 props.onCue = (cue, relic) => {
   if (cue === 'ghost') {
     sfx.play('release');
@@ -192,6 +193,9 @@ function handleEffect(e: Effect): void {
       break;
     case 'splash':
       props.startSplash();
+      break;
+    case 'dip':
+      props.startDip();
       break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
@@ -638,6 +642,8 @@ renderer.setAnimationLoop(() => {
   // The clock can't be picked up until it has finished settling.
   // Nor the music box.
   if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:clown', 'item:ritual-table'].includes(target ?? '')) target = null;
+  // Nor the doll splashed while the rod is still going into the bucket.
+  if (props.dipping && ['item:clown', 'item:ritual-table', 'item:bucket'].includes(target ?? '')) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);
