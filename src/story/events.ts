@@ -621,14 +621,15 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'approach-drop-box':
-      if (s.relic !== 'drop-box' || s.flags.has('drop-box-approached')) return [];
+      if (s.relic !== 'drop-box' || s.flags.has('drop-box-approached') || !deliveryRead(s)) return [];
       if (!near(e, DROP_BOX_APPROACH)) return [];
       s.flags.add('drop-box-approached');
       out.push({ kind: 'say', text: RELIC_LINES[s.relic_kind].approach });
       break;
 
     case 'take-relic':
-      if (s.relic !== 'drop-box') return [];
+      // Not until its text has been read and the phone put away (designer, 2026-12-01).
+      if (s.relic !== 'drop-box' || !deliveryRead(s)) return [];
       if (s.held_prop_id) return flash(REMINDERS.handsFull);
       s.relic = 'held';
       s.held_prop_id = s.relic_kind;
@@ -922,7 +923,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       const line = spottedLine(s, e.who);
       if (!line) return [];
       s.flags.add(line.flag);
-      out.push({ kind: 'say', text: line.text });
+      if (line.text) out.push({ kind: 'say', text: line.text });
       break;
     }
 
@@ -1218,14 +1219,21 @@ export function ghostsChasing(s: GameState): boolean {
   return s.day_index === 2 && s.relics_stored.includes('bell');
 }
 
-/** The thought for a lingering ghost coming into view, and the flag it sets, or null if it's done or out of turn. */
+/** The delivery text that brought the current relic has been read and the phone put away. */
+export function deliveryRead(s: GameState): boolean {
+  const id = Object.keys(DELIVERIES).filter((k) => DELIVERIES[k] === s.relic_kind && s.inbox.includes(k)).pop();
+  return !id || s.sms_read.has(id);
+}
+
+/** The thought for a lingering ghost coming into view (or '' for none), and the flag it sets, or null if it's done or out of turn. */
 function spottedLine(s: GameState, who: Spotted): { flag: Flag; text: string } | null {
   const pick = (ok: boolean, flag: Flag, text: string) => (ok && !s.flags.has(flag) ? { flag, text } : null);
   switch (who) {
     case 'clown-roaming':
       return pick(clownRoaming(s), 'clown-roaming-spotted', THOUGHTS.clownRoaming);
     case 'worried':
-      return pick(worriedShown(s), 'worried-spotted', THOUGHTS.worriedSpotted);
+      // Seen, without a thought: the moment is meant to be subtle (designer, 2026-12-01).
+      return pick(worriedShown(s), 'worried-spotted', '');
     case 'worried-gone':
       return pick(s.flags.has('worried-vanished'), 'worried-looked-back', THOUGHTS.worriedGone);
     case 'chase':

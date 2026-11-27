@@ -31,14 +31,15 @@ export interface GhostModel {
    */
   setClown(on: boolean): void;
   /**
-   * Day 2's recurring ghosts (C09): 'worried' (brows raised in the middle,
-   * a small wobbly frown) and 'angry' (brows down in a V, a frown, eyes
+   * Day 2's recurring ghosts (C09): 'neutral', the concerned ghost at the
+   * old priest's grave (the usual eyes and a small straight mouth;
+   * designer, 2026-12-01), and 'angry' (brows down in a V, a frown, eyes
    * narrowed). 'happy' is the usual smile.
    */
   setMood(mood: GhostMood): void;
 }
 
-export type GhostMood = 'happy' | 'worried' | 'angry';
+export type GhostMood = 'happy' | 'neutral' | 'angry';
 
 /** The wig's colours, banded across the head from its right (-x) to its left. */
 export const WIG_COLOURS = ['#e0322b', '#f08a24', '#f4d23a', '#1f9e6a', '#2f6fe0', '#8a3fd1'] as const;
@@ -245,7 +246,8 @@ export function ghostModel(withLight: boolean): GhostModel {
   }
   group.add(dapper);
 
-  // Brows and a frown for the worried and angry ghosts.
+  // Brows and a frown for the angry ghost; a small straight mouth for the
+  // concerned one.
   const browY = eyeY + 0.09;
   const brows: THREE.Mesh[] = [];
   const browGeo = new THREE.BoxGeometry(0.075, 0.016, 0.012);
@@ -262,6 +264,19 @@ export function ghostModel(withLight: boolean): GhostModel {
   frown.position.set(0, SHOULDER - 0.075, faceZ(0, SHOULDER - 0.06) + 0.004);
   frown.visible = false;
   group.add(frown);
+  const lineY = SHOULDER - 0.05;
+  const line = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.011, 0.012), dark);
+  line.position.set(0, lineY, faceZ(0, lineY) + 0.003);
+  line.visible = false;
+  group.add(line);
+  let dapperOn = false;
+  let mood: GhostMood = 'happy';
+  /** The mouth follows the mood, and the mustache covers it (designer, 2026-12-01). */
+  const showMouth = () => {
+    smile.visible = !dapperOn && mood === 'happy';
+    frown.visible = !dapperOn && mood === 'angry';
+    line.visible = !dapperOn && mood === 'neutral';
+  };
 
   // The clown doll's ghost: the usual face under a rainbow clown wig
   // (designer, 2026-11-24). An afro of small, close-packed low-poly curls,
@@ -323,23 +338,21 @@ export function ghostModel(withLight: boolean): GhostModel {
     },
     setDapper(on: boolean) {
       dapper.visible = on;
-      smile.visible = !on;
+      dapperOn = on;
+      showMouth();
     },
     setClown(on: boolean) {
       wig.visible = on;
     },
-    setMood(mood: GhostMood) {
-      const cross = mood !== 'happy';
-      smile.visible = !cross;
-      frown.visible = cross;
+    setMood(m: GhostMood) {
+      mood = m;
+      showMouth();
       for (const [i, brow] of brows.entries()) {
-        const side = i === 0 ? -1 : 1;
-        brow.visible = cross;
-        // Worried: inner ends raised. Angry: inner ends pulled down.
-        brow.rotation.z = (mood === 'worried' ? 1 : -1) * side * -0.45;
+        // Inner ends pulled down into a V.
+        brow.visible = m === 'angry';
+        brow.rotation.z = (i === 0 ? 1 : -1) * -0.45;
       }
-      frown.scale.set(mood === 'worried' ? 0.75 : 1, mood === 'worried' ? 0.7 : 1, 1);
-      for (const eye of eyes) eye.scale.y = mood === 'angry' ? 0.95 : mood === 'worried' ? 1.35 : 1.25;
+      for (const eye of eyes) eye.scale.y = m === 'angry' ? 0.95 : 1.25;
     },
     setTongue(k: number) {
       tongue.visible = k > 0.01;

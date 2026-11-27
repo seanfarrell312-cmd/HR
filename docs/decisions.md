@@ -961,3 +961,37 @@ as soon as "I guess it's outside somewhere?" appears. Before, they stayed
 shut until the thought had finished and the grounds objective showed. The
 checklist still stays up, all crossed off, while the thought plays.
 
+## 2026-12-01 — S3 part 3 playtest
+
+Designer rulings:
+- **The teacup ghost's mustache** is thick and covers the mouth again. Part
+  3's new ghost moods had turned the smile back on under it. The mouth now
+  follows both the mustache and the mood, and a test guards it.
+- **Drop box.** No delivery can be taken, and the drop-box thought doesn't
+  play, until its text has been read and the phone put away. Until then the
+  drop box says "My phone just buzzed. I should check it first."
+  (PROVISIONAL copy). This applies to every delivery, not just the clown
+  doll.
+- **The Bible stand** is now a placeholder lectern: a base, a post and a top
+  that slopes towards the reader. The open Bible lies on the slope instead
+  of cutting into a flat-topped block. The real stand asset will replace
+  it.
+- **The clown's ghost** giggles among the graves only until the hand bell is
+  taken out of the drop box, then floats silently. The chase is silent until
+  the player has seen it; from then on there are giggles and squeaks.
+- **The concerned ghost.** No thought when it's first seen: the moment is
+  meant to be subtle. It floats over the dirt of the plot, facing the
+  headstone and bent a little forward as if reading it. Its face is the
+  usual black eyes with a small straight mouth, with no brows or frown.
+  "...Where'd it go?" on looking back is kept (approved).
+- **The old priest's grave** has moved, mirrored from beside the garden's
+  east hedge to south of the garden. It sits across the approach to the
+  garden's gateway, with the headstone at its south end. A player heading
+  for the gateway walks behind the ghost, can turn to see it, then turns
+  away into the garden. A tree that would have touched the headstone has
+  moved 1.2 m west. This supersedes the grave's place in the 2026-11-02 S0
+  review; the Day 3 digging (D3-21) will happen here.
+- **Onlookers at the end of Day 2.** While the clown's ghost chases the angry
+  one, the teacup's ghost (mustache and monocle) and the music box's ghost
+  float side by side, still, north of the loop, facing south and watching.
+

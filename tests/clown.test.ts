@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
 import { DIP, DIP_SECONDS, dipPose, gravesLoop, rodStrike } from '../src/world/storyProps';
-import { GRAVES_LOOP, SPLASH_STRIKE, WORRIED_SPOT } from '../src/data/story';
+import { GRAVES_LOOP, ONLOOKERS, SPLASH_STRIKE, WORRIED_SPOT } from '../src/data/story';
 import { AREAS, PROPS } from '../src/data/layout';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
@@ -136,30 +136,54 @@ describe('dipping the rod in the bucket (2026-11-29)', () => {
 });
 
 describe("Day 2's lingering ghosts (S3 part 3)", () => {
-  const faceParts = (g: ReturnType<typeof ghostModel>) =>
-    g.group.children.filter((c) => c.visible && c.type === 'Mesh' && (c as THREE.Mesh).geometry.type !== 'IcosahedronGeometry');
+  const visibleMeshes = (g: ReturnType<typeof ghostModel>) =>
+    g.group.children.filter((c) => c.visible && c.type === 'Mesh') as THREE.Mesh[];
+  const smileOf = (g: ReturnType<typeof ghostModel>) =>
+    visibleMeshes(g).filter((m) => m.geometry.type === 'TorusGeometry' && m.rotation.z !== 0);
+  const frownOf = (g: ReturnType<typeof ghostModel>) =>
+    visibleMeshes(g).filter((m) => m.geometry.type === 'TorusGeometry' && m.rotation.z === 0 && m.position.y < 0.6);
+  const boxes = (g: ReturnType<typeof ghostModel>) => visibleMeshes(g).filter((m) => m.geometry.type === 'BoxGeometry');
 
-  it('gives the worried and angry ghosts brows and a frown in place of the smile', () => {
-    const happy = ghostModel(false);
-    const worried = ghostModel(false);
-    worried.setMood('worried');
+  it('gives the angry ghost brows in a V and a frown in place of the smile', () => {
     const angry = ghostModel(false);
     angry.setMood('angry');
-    // Two brows and a frown come in; the smile goes: one more part each.
-    expect(faceParts(worried).length).toBe(faceParts(happy).length + 2);
-    expect(faceParts(angry).length).toBe(faceParts(happy).length + 2);
-    const brows = (g: ReturnType<typeof ghostModel>) =>
-      g.group.children.filter((c) => c.visible && (c as THREE.Mesh).geometry?.type === 'BoxGeometry').sort((a, b) => a.position.x - b.position.x);
-    const [wl, wr] = brows(worried);
-    const [al, ar] = brows(angry);
-    // Worried: inner ends up (the left brow tilts up towards the middle). Angry: down.
-    expect(wl.rotation.z).toBeGreaterThan(0);
-    expect(wr.rotation.z).toBeLessThan(0);
-    expect(al.rotation.z).toBeLessThan(0);
-    expect(ar.rotation.z).toBeGreaterThan(0);
-    // And back to the usual face.
+    expect(smileOf(angry)).toHaveLength(0);
+    expect(frownOf(angry)).toHaveLength(1);
+    const [l, r] = boxes(angry).sort((a, b) => a.position.x - b.position.x);
+    // Inner ends pulled down.
+    expect(l.rotation.z).toBeLessThan(0);
+    expect(r.rotation.z).toBeGreaterThan(0);
     angry.setMood('happy');
-    expect(faceParts(angry).length).toBe(faceParts(happy).length);
+    expect(smileOf(angry)).toHaveLength(1);
+    expect(boxes(angry)).toHaveLength(0);
+  });
+
+  it("gives the concerned ghost the usual eyes and a small straight mouth (2026-12-01)", () => {
+    const happy = ghostModel(false);
+    const neutral = ghostModel(false);
+    neutral.setMood('neutral');
+    expect(smileOf(neutral)).toHaveLength(0);
+    expect(frownOf(neutral)).toHaveLength(0);
+    // One small flat bar for a mouth, and no brows.
+    const mouth = boxes(neutral);
+    expect(mouth).toHaveLength(1);
+    expect(mouth[0].position.x).toBe(0);
+    const eyes = (g: ReturnType<typeof ghostModel>) => visibleMeshes(g).filter((m) => m.geometry.type === 'SphereGeometry').map((m) => m.scale.toArray());
+    expect(eyes(neutral)).toEqual(eyes(happy));
+  });
+
+  it("keeps the teacup ghost's mouth under its mustache, whatever the mood is set to", () => {
+    // The relic ghost is reused: the mustache goes on, then the mood is set.
+    const g = ghostModel(true);
+    g.setDapper(true);
+    g.setClown(false);
+    g.setMood('happy');
+    expect(smileOf(g)).toHaveLength(0);
+    expect(frownOf(g)).toHaveLength(0);
+    expect(boxes(g)).toHaveLength(0);
+    // And it comes back for the next ghost.
+    g.setDapper(false);
+    expect(smileOf(g)).toHaveLength(1);
   });
 
   it('keeps the clown ghost among the east graves, in sight of the path', () => {
@@ -174,13 +198,26 @@ describe("Day 2's lingering ghosts (S3 part 3)", () => {
     expect(GRAVES_LOOP.x - GRAVES_LOOP.rx).toBeLessThan(25);
   });
 
-  it("puts the worried ghost beside the old priest's grave, looking at it", () => {
+  it("floats the concerned ghost over the old priest's plot, bent towards the headstone", () => {
     const plot = PROPS.find((p) => p.id === 'old-priest-plot')!.rect;
-    expect(Math.hypot(WORRIED_SPOT.x - (plot.x1 + plot.x2) / 2, WORRIED_SPOT.y - (plot.y1 + plot.y2) / 2)).toBeLessThan(2);
-    expect(WORRIED_SPOT.lookX).toBeGreaterThanOrEqual(plot.x1);
-    expect(WORRIED_SPOT.lookX).toBeLessThanOrEqual(plot.x2);
-    expect(WORRIED_SPOT.lookY).toBeGreaterThanOrEqual(plot.y1);
-    expect(WORRIED_SPOT.lookY).toBeLessThanOrEqual(plot.y2);
+    const stone = PROPS.find((p) => p.id === 'old-priest-grave')!.rect;
+    expect(WORRIED_SPOT.x).toBeGreaterThan(plot.x1);
+    expect(WORRIED_SPOT.x).toBeLessThan(plot.x2);
+    expect(WORRIED_SPOT.y).toBeGreaterThan(plot.y1);
+    expect(WORRIED_SPOT.y).toBeLessThan(plot.y2);
+    expect(WORRIED_SPOT.lookX).toBeGreaterThanOrEqual(stone.x1);
+    expect(WORRIED_SPOT.lookX).toBeLessThanOrEqual(stone.x2);
+    expect(WORRIED_SPOT.lookY).toBeGreaterThanOrEqual(stone.y1);
+    expect(WORRIED_SPOT.lookY).toBeLessThanOrEqual(stone.y2);
+    expect(WORRIED_SPOT.lean).toBeGreaterThan(0);
+  });
+
+  it('places the teacup and music box ghosts side by side north of the graves loop', () => {
+    expect(ONLOOKERS.map((o) => o.relic)).toEqual(['teacup', 'music-box']);
+    const [a, b] = ONLOOKERS;
+    expect(a.y).toBe(b.y);
+    expect(Math.abs(a.x - b.x)).toBeLessThan(2.5);
+    for (const o of ONLOOKERS) expect(o.y).toBeGreaterThan(GRAVES_LOOP.y + GRAVES_LOOP.ry);
   });
 });
 

@@ -311,9 +311,7 @@ export const THOUGHTS = {
   clownRoaming: "Is that the clown out there? Guess he's in no rush to move on.",
   /** The hand bell is on the ritual table; then the refill. */
   bellRefill: 'Better fill that bucket before I start. Just in case.',
-  /** Spotting the worried ghost at the old priest's grave on the refill trip. */
-  worriedSpotted: "That one looks worried. What's it staring at?",
-  /** Looking back at the grave once the worried ghost has gone. */
+  /** Looking back at the old priest's grave once the concerned ghost has gone (designer approved, 2026-12-01). */
   worriedGone: "...Where'd it go?",
   /** The cross set the hand bell rattling; then holy water. */
   bellCross: "Whoa! Okay, it really didn't like that.",
@@ -450,6 +448,7 @@ export const REMINDERS = {
   rodDry: 'I should dip the rod in the holy water first.',
   drawersOtherSide: 'The drawers are on the other side.',
   standFirst: 'I need both hands. The Bible should go on its stand in front of me.',
+  checkPhone: 'My phone just buzzed. I should check it first.',
   bucketEmpty: "It's empty. I should fill it at the fountain first.",
 };
 
@@ -568,11 +567,21 @@ export const STAND_IN_FRONT = { x: 12.6, y: HOLY_CIRCLE.y };
  */
 export const GRAVES_LOOP = { x: 19.8, y: 41, rx: 2.3, ry: 5.5, height: 0.45 };
 /**
- * The worried ghost (D2-09): on the far (west) side of the old priest's plot,
- * staring down at it, so its face is towards the player coming from the
- * church.
+ * The concerned ghost (D2-09; designer, 2026-12-01): floating over the dirt
+ * of the old priest's plot, facing the headstone at its south end and bent
+ * a little to read it. The player passes behind it on the way to the
+ * garden's gateway.
  */
-export const WORRIED_SPOT = { x: -20.2, y: 51.7, lookX: -19, lookY: 51.7 };
+export const WORRIED_SPOT = { x: -19, y: 46.15, lookX: -19, lookY: 45, lean: 0.3 };
+/**
+ * At the end of Day 2 (designer, 2026-12-01) the teacup's ghost and the
+ * music box's ghost float side by side north of the graves loop, facing
+ * south, watching the chase.
+ */
+export const ONLOOKERS = [
+  { x: 18.9, y: 49.5, relic: 'teacup' },
+  { x: 20.5, y: 49.5, relic: 'music-box' },
+] as const;
 /** How close a lingering ghost must be, in metres, to count as seen. */
 export const SPOT_RANGE = { clown: 45, worried: 22 };
 

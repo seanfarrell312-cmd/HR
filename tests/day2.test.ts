@@ -1041,6 +1041,19 @@ describe('the third delivery (D2-08)', () => {
     expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
   });
 
+  it('keeps the drop box shut to each delivery until its text is read and the phone put away', () => {
+    for (const n of [1, 2, 3]) {
+      const s = at(step('read-sms', n));
+      expect(s.relic).toBe('drop-box');
+      const box = { x: 3.7, y: 1.5, level: 0 as const };
+      expect(resolve('item:drop-box', s, box).action).toEqual({ kind: 'message', text: REMINDERS.checkPhone });
+      expect(applyEvent(s, { type: 'take-relic' })).toEqual([]);
+      expect(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 })).toEqual([]);
+      applyEvent(s, { type: 'read-sms' });
+      expect(resolve('item:drop-box', s, box).prompt).toBe('E  Take the delivery');
+    }
+  });
+
   it("notices the clown's ghost among the graves once, only after the text", () => {
     const before = at(step('receive-sms', 3));
     expect(applyEvent(before, { type: 'spotted', who: 'clown-roaming' })).toEqual([]);
@@ -1086,7 +1099,7 @@ describe('the hand bell on the table, and the refill (D2-09)', () => {
     expect(task(s)).toBe('Stand in the holy circle and bless the hand bell');
   });
 
-  it("shows the worried ghost on the refill trip, and it's gone when looked for again", () => {
+  it("shows the concerned ghost on the refill trip, and it's gone when looked for again", () => {
     const early = at(step('bell-refill-wanted'));
     expect(worriedShown(early)).toBe(false);
     expect(applyEvent(early, { type: 'spotted', who: 'worried' })).toEqual([]);
@@ -1095,7 +1108,9 @@ describe('the hand bell on the table, and the refill (D2-09)', () => {
     // It can't vanish before it's been seen.
     expect(applyEvent(s, { type: 'worried-vanished' })).toEqual([]);
     expect(applyEvent(s, { type: 'spotted', who: 'worried-gone' })).toEqual([]);
-    expect(says(applyEvent(s, { type: 'spotted', who: 'worried' }))).toEqual(["That one looks worried. What's it staring at?"]);
+    // Seen without a word (designer, 2026-12-01).
+    expect(applyEvent(s, { type: 'spotted', who: 'worried' })).toEqual([]);
+    expect(s.flags.has('worried-spotted')).toBe(true);
     applyEvent(s, { type: 'worried-vanished' });
     expect(worriedShown(s)).toBe(false);
     expect(says(applyEvent(s, { type: 'spotted', who: 'worried-gone' }))).toEqual(["...Where'd it go?"]);

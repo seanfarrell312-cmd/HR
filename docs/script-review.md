@@ -60,13 +60,12 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-24 | The clown doll goes on the cleaned-relic table; then the third delivery text. | Two down. Please let that be the last one. | |
 | D2-25 | After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside. | Is that the clown out there? Guess he's in no rush to move on. | |
 | D2-26 | The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain. | Better fill that bucket before I start. Just in case. | |
-| D2-27 | On the hand bell's refill trip: the worried ghost at the old priest's grave first comes into view. | That one looks worried. What's it staring at? | |
-| D2-28 | Looking back at the grave once the worried ghost has vanished (it goes once the player has looked away for a second). | ...Where'd it go? | |
-| D2-29 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
-| D2-30 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
-| D2-31 | Straight after; then "Move the Bible stand in front of the ritual table". | Maybe it needs everything at once. The Bible, the cross and the water. | |
-| D2-32 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | Three in one shift. I think I've earned the walk home. | |
-| D2-33 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
+| D2-27 | On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second. | ...Where'd it go? | |
+| D2-28 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
+| D2-29 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
+| D2-30 | Straight after; then "Move the Bible stand in front of the ritual table". | Maybe it needs everything at once. The Bible, the cross and the water. | |
+| D2-31 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | Three in one shift. I think I've earned the walk home. | |
+| D2-32 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
 
 ### Day 2: dawdling outside
 
@@ -216,4 +215,5 @@ Proposed changes to B:
 | R-15 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
 | R-16 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
 | R-17 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
-| R-18 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-18 | Trying the drop box before reading the delivery text and putting the phone away. | My phone just buzzed. I should check it first. | |
+| R-19 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

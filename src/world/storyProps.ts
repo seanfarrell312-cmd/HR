@@ -6,6 +6,7 @@ import {
   CLOWN_WIGGLE_SECONDS,
   GRAVES_LOOP,
   HOLY_CIRCLE,
+  ONLOOKERS,
   PRANK_SECONDS,
   PURIFY,
   RATTLE_SECONDS,
@@ -212,6 +213,33 @@ export function bibleStandRect(s: GameState): { x1: number; y1: number; x2: numb
 }
 /** The Bible, open on top of the stand, turned to face the middle of the holy circle. */
 const bibleFacing = (x: number, y: number): number => Math.atan2(HOLY_CIRCLE.x - x, -(HOLY_CIRCLE.y - y));
+/** How far the lectern's top, and the Bible on it, slopes down towards the reader. */
+export const LECTERN_TILT = 0.3;
+
+/**
+ * A placeholder lectern (2026-12-01): a base, a post and a top that slopes
+ * down towards the reader at LECTERN_TILT, so the open Bible lies flat on
+ * it instead of cutting into a flat-topped block. It faces along +z; the
+ * caller turns it towards the circle.
+ */
+function lecternModel(height: number, color: string): THREE.Group {
+  const g = new THREE.Group();
+  const wood = lambert(color);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.42), wood);
+  base.position.y = 0.025;
+  const postH = height - 0.1;
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, postH, 0.12), wood);
+  post.position.y = postH / 2;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.04, 0.34), wood);
+  top.rotation.x = LECTERN_TILT;
+  top.position.y = height - 0.02;
+  // A lip along the low edge the book rests against.
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.04, 0.02), wood);
+  lip.rotation.x = LECTERN_TILT;
+  lip.position.set(0, height - 0.02 - 0.17 * Math.sin(LECTERN_TILT) + 0.02, 0.17 * Math.cos(LECTERN_TILT));
+  g.add(base, post, top, lip);
+  return g;
+}
 
 /** A china teacup on its saucer (Day 2's first relic, a PLACEHOLDER). */
 function teacupModel(): THREE.Group {
@@ -459,7 +487,9 @@ export class StoryProps {
   private heldBell: THREE.Group;
   private bellTimer = 1.5;
   /** The Bible stand, drawn here so it can move in front of the ritual table (D2-11). */
-  private bibleStand: THREE.Mesh;
+  private bibleStand: THREE.Group;
+  /** The teacup's and music box's ghosts, watching the chase at the end of Day 2. */
+  private onlookers: GhostModel[] = [];
   /** Day 2's lingering ghosts: the clown's among the graves, the angry one it chases, the worried one. */
   private roamer: GhostModel;
   private grump: GhostModel;
@@ -554,11 +584,7 @@ export class StoryProps {
     this.bell = tagged(bellModel(), 'bell') as THREE.Group;
     // Larger than life, like the teacup, so it reads on the tables.
     this.bell.scale.setScalar(1.4);
-    const sr = STAND_PROP.rect;
-    this.bibleStand = tagged(
-      new THREE.Mesh(new THREE.BoxGeometry(sr.x2 - sr.x1, STAND_PROP.height, sr.y2 - sr.y1), lambert(STAND_PROP.color)),
-      'bible',
-    ) as THREE.Mesh;
+    this.bibleStand = tagged(lecternModel(STAND_PROP.height, STAND_PROP.color), 'bible') as THREE.Group;
     this.bucket = tagged(bucketModel(), 'bucket') as THREE.Group;
     this.rod = tagged(at(rodModel(), SPOTS.rodCloset), 'rod') as THREE.Group;
     // The handle is thin: an invisible sleeve round it makes it easy to aim at.
@@ -662,8 +688,14 @@ export class StoryProps {
     this.grump = ghostModel(false);
     this.grump.setMood('angry');
     this.worrier = ghostModel(false);
-    this.worrier.setMood('worried');
-    for (const g of [this.roamer, this.grump, this.worrier]) {
+    this.worrier.setMood('neutral');
+    this.worrier.group.rotation.order = 'YXZ';
+    for (const o of ONLOOKERS) {
+      const g = ghostModel(false);
+      g.setDapper(o.relic === 'teacup');
+      this.onlookers.push(g);
+    }
+    for (const g of [this.roamer, this.grump, this.worrier, ...this.onlookers]) {
       g.group.visible = false;
       this.root.add(g.group);
     }
@@ -1297,9 +1329,12 @@ export class StoryProps {
     const r = bibleStandRect(s);
     const x = (r.x1 + r.x2) / 2;
     const y = (r.y1 + r.y2) / 2;
-    this.bibleStand.position.set(...toWorld(x, y, 0, STAND_PROP.height / 2));
-    this.bible.position.set(...toWorld(x, y, 0, SPOTS.bible.z));
-    this.bible.rotation.set(0.3, bibleFacing(x, y), 0);
+    const facing = bibleFacing(x, y);
+    this.bibleStand.position.set(...toWorld(x, y, 0));
+    this.bibleStand.rotation.set(0, facing, 0);
+    // Lying on the sloping top, at the same slope.
+    this.bible.position.set(...toWorld(x, y, 0, STAND_PROP.height + 0.004));
+    this.bible.rotation.set(LECTERN_TILT, facing, 0);
   }
 
   /**
@@ -1327,8 +1362,11 @@ export class StoryProps {
     if (this.roamer.group.visible) place(this.roamer, chasing ? t - 1.1 : t, 0);
     if (this.grump.group.visible) place(this.grump, t, 1.7);
 
-    // Giggles from the clown, squeaks from the angry one, by distance.
-    if (this.roamer.group.visible) {
+    // Giggles from the clown, squeaks from the angry one, by distance: the
+    // clown's ghost until the hand bell is out of the drop box, and the chase
+    // once the player has seen it (designer, 2026-12-01).
+    const heard = chasing ? s.flags.has('chase-spotted') : s.relic_kind === 'bell' && s.relic === 'drop-box';
+    if (this.roamer.group.visible && heard) {
       this.ghostSoundTimer -= dt;
       if (this.ghostSoundTimer <= 0) {
         this.ghostSoundTimer = chasing ? 1.3 : 3.2;
@@ -1339,12 +1377,21 @@ export class StoryProps {
       }
     }
 
-    // The worried ghost, staring down at the plot.
+    // The teacup's and music box's ghosts watch from north of the loop.
+    for (const [i, g] of this.onlookers.entries()) {
+      const o = ONLOOKERS[i];
+      g.group.visible = chasing;
+      if (!chasing) continue;
+      g.group.position.set(...toWorld(o.x, o.y, 0, GRAVES_LOOP.height + 0.1 + Math.sin(this.roamT * 1.2 + i * 2) * 0.05));
+      g.group.rotation.set(0, Math.atan2(GRAVES_LOOP.x - o.x, -(GRAVES_LOOP.y - o.y)), 0);
+    }
+
+    // The concerned ghost, over the plot, bent to read the headstone.
     const w = WORRIED_SPOT;
     this.worrier.group.visible = worriedShown(s);
     if (this.worrier.group.visible) {
-      this.worrier.group.position.set(...toWorld(w.x, w.y, 0, 0.35 + Math.sin(this.roamT * 1.5) * 0.03));
-      this.worrier.group.rotation.set(0, Math.atan2(w.lookX - w.x, -(w.lookY - w.y)), 0);
+      this.worrier.group.position.set(...toWorld(w.x, w.y, 0, 0.3 + Math.sin(this.roamT * 1.5) * 0.03));
+      this.worrier.group.rotation.set(w.lean, Math.atan2(w.lookX - w.x, -(w.lookY - w.y)), 0);
     }
 
     // What has been seen. Not from indoors, where walls are in the way.

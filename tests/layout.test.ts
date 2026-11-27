@@ -90,6 +90,24 @@ describe('layout data', () => {
     expect(blocked(spawn.x, spawn.y, 0, PLAYER_RADIUS, staticColliders())).toBe(false);
   });
 
+  it("puts the old priest's grave south of the garden, headstone at the south end (2026-12-01)", () => {
+    const stone = PROPS.find((p) => p.id === 'old-priest-grave')!.rect;
+    const plot = PROPS.find((p) => p.id === 'old-priest-plot')!.rect;
+    const fence = PROPS.find((p) => p.id === 'garden-fence-e')!.rect;
+    // South of the garden's fence line, east of its gateway, so the walk
+    // from the church to the gateway passes just north of it.
+    expect(plot.y2).toBeLessThan(fence.y1);
+    expect(stone.y2).toBeLessThanOrEqual(plot.y1);
+    expect(plot.x1).toBeGreaterThan(PROPS.find((p) => p.id === 'garden-gatepost-e')!.rect.x2);
+    // Nothing solid on it or crowding the headstone.
+    const solid = staticColliders().filter((c) => c.level === 0 && c.id !== 'old-priest-grave');
+    for (const c of solid) {
+      const r = c.rect;
+      const overlaps = r.x1 < plot.x2 + 0.3 && r.x2 > plot.x1 - 0.3 && r.y1 < plot.y2 && r.y2 > stone.y1;
+      expect(overlaps, c.id).toBe(false);
+    }
+  });
+
   it('gives the chapel a single entrance', () => {
     const chapel = area('chapel').rect;
     const entrances = DOORS.filter(

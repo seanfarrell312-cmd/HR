@@ -78,8 +78,7 @@ export const DAY2: Cue[] = [
   { key: 'lastOne', when: 'The clown doll goes on the cleaned-relic table; then the third delivery text.' },
   { key: 'clownRoaming', when: "After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside." },
   { key: 'bellRefill', when: 'The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain.' },
-  { key: 'worriedSpotted', when: "On the hand bell's refill trip: the worried ghost at the old priest's grave first comes into view." },
-  { key: 'worriedGone', when: 'Looking back at the grave once the worried ghost has vanished (it goes once the player has looked away for a second).' },
+  { key: 'worriedGone', when: "On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second." },
   { key: 'bellCross', when: 'Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket.' },
   { key: 'bellSplash', when: 'Splashing the hand bell with holy water: once its rattle has died away.' },
   { key: 'bellIdea', when: 'Straight after; then "Move the Bible stand in front of the ritual table".' },
@@ -234,5 +233,6 @@ const REMINDER_WHEN: Record<keyof typeof REMINDERS, string> = {
   rodDry: 'Trying to splash the clown doll before dipping the rod in the bucket.',
   drawersOtherSide: 'Searching the church: trying the office desk drawers from anywhere but behind the desk.',
   standFirst: "Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table.",
+  checkPhone: 'Trying the drop box before reading the delivery text and putting the phone away.',
   bucketEmpty: 'Putting the bucket down by the ritual table before filling it.',
 };

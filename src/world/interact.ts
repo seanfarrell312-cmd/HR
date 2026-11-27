@@ -9,6 +9,7 @@ import {
   blessBlocker,
   closetFetch,
   churchSealed,
+  deliveryRead,
   rodDipWanted,
   standMoveWanted,
   searchesDoor,
@@ -123,6 +124,7 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'drop-box':
       if (s.relic === 'none') return say('Relic drop box', REMINDERS.dropBoxEmpty);
       if (s.relic !== 'drop-box') return NONE;
+      if (!deliveryRead(s)) return say('Relic drop box', REMINDERS.checkPhone);
       // Deliveries go in from the road; staff take them out from inside the gate.
       if (player.y < 0) return say('Relic drop box', REMINDERS.hatchInside);
       if (s.held_prop_id) return say('Relic drop box', REMINDERS.handsFull);
