@@ -72,6 +72,7 @@ export const DAY2: Cue[] = [
   { key: 'alertRead', when: 'Closing the phone after the first delivery text; then the drop-box objective.' },
   { key: 'homeEarly', when: 'The teacup goes on the cleaned-relic table; then the second delivery text.' },
   { key: 'longWalk', when: 'Leaving the church by its front doors once the second delivery text is in, before the doll is collected.' },
+  { key: 'clownHaunted', when: 'Blessing the clown doll with the cross the first time: once it has giggled and wiggled. Then "Pick up the Bible from the stand".' },
   { key: 'clownDance', when: 'Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing.' },
   { key: 'clownWater', when: 'Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet.' },
   { key: 'cooledOff', when: 'Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again.' },
@@ -81,7 +82,8 @@ export const DAY2: Cue[] = [
   { key: 'worriedGone', when: "On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second." },
   { key: 'bellCross', when: 'Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket.' },
   { key: 'bellSplash', when: 'Splashing the hand bell with holy water: once its rattle has died away.' },
-  { key: 'bellIdea', when: 'Straight after; then "Move the Bible stand in front of the ritual table".' },
+  { key: 'bellIdea', when: 'Straight after; then "Move the Bible stand into the holy circle", then the rod dipped again.' },
+  { key: 'powerOfChrist', when: "The hand bell's two-handed blessing: as the rod and cross strike at it in turn, four times. Then its ghost." },
   { key: 'shiftDone', when: 'The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate".' },
   { key: 'chaseSpotted', when: "On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view." },
 ];

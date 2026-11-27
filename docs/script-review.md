@@ -54,18 +54,20 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 | D2-18 | Closing the phone after the first delivery text; then the drop-box objective. | Christ-LERTS? Nice. | |
 | D2-19 | The teacup goes on the cleaned-relic table; then the second delivery text. | If they're all like this today, I might get to go home early. | |
 | D2-20 | Leaving the church by its front doors once the second delivery text is in, before the doll is collected. | I should have brought a bike or something. This walk is ridiculous. | |
-| D2-21 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
-| D2-22 | Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet. | Time for some holy water. There was a bucket and a rod in the storage closet. | |
-| D2-23 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
-| D2-24 | The clown doll goes on the cleaned-relic table; then the third delivery text. | Two down. Please let that be the last one. | |
-| D2-25 | After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside. | Is that the clown out there? Guess he's in no rush to move on. | |
-| D2-26 | The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain. | Better fill that bucket before I start. Just in case. | |
-| D2-27 | On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second. | ...Where'd it go? | |
-| D2-28 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
-| D2-29 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
-| D2-30 | Straight after; then "Move the Bible stand in front of the ritual table". | Maybe it needs everything at once. The Bible, the cross and the water. | |
-| D2-31 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | Three in one shift. I think I've earned the walk home. | |
-| D2-32 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
+| D2-21 | Blessing the clown doll with the cross the first time: once it has giggled and wiggled. Then "Pick up the Bible from the stand". | Yep, that's haunted. Let's see how they like some of the Good Book. | |
+| D2-22 | Blessing the clown doll with the cross the second time, after scripture: once it has finished laughing and dancing. | It's... dancing? Okay, that definitely didn't work. | |
+| D2-23 | Straight after; then "Put the Bible back on the stand", then the bucket and rod from the closet. | Time for some holy water. There was a bucket and a rod in the storage closet. | |
+| D2-24 | Splashing the clown doll with holy water: once it has stopped and slumped. Then the cross again. | Looks like that cooled him off. | |
+| D2-25 | The clown doll goes on the cleaned-relic table; then the third delivery text. | Two down. Please let that be the last one. | |
+| D2-26 | After the third text: the clown's ghost, drifting among the nearest east graves, first comes into view from outside. | Is that the clown out there? Guess he's in no rush to move on. | |
+| D2-27 | The hand bell goes on the ritual table; then the bucket is to be refilled at the fountain. | Better fill that bucket before I start. Just in case. | |
+| D2-28 | On the hand bell's refill trip: looking back at the old priest's grave once the concerned ghost there has vanished. It goes, without a word, once the player has seen it and looked away for a second. | ...Where'd it go? | |
+| D2-29 | Blessing the hand bell with the cross: once its hard rattle has died away. Then the rod and bucket. | Whoa! Okay, it really didn't like that. | |
+| D2-30 | Splashing the hand bell with holy water: once its rattle has died away. | It's only getting angrier! | |
+| D2-31 | Straight after; then "Move the Bible stand into the holy circle", then the rod dipped again. | Maybe it needs everything at once. The Bible, the cross, and the water. | |
+| D2-32 | The hand bell's two-handed blessing: as the rod and cross strike at it in turn, four times. Then its ghost. | The power of Christ compels you! | |
+| D2-33 | The hand bell goes on the cleaned-relic table and dusk falls; then "Head back to the front gate". | That one really took it out of me. I'm ready to call it a day. | |
+| D2-34 | On the walk out: the clown's ghost chasing the angry ghost among the east graves first comes into view. | Ha. Looks like those two are getting along. | |
 
 ### Day 2: dawdling outside
 

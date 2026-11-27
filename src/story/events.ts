@@ -33,6 +33,7 @@ import {
   CLOWN_WIGGLE_SECONDS,
   SPLASH_SECONDS,
   RATTLE_VIOLENT,
+  EXORCISE_SECONDS,
   CHURCH_LEFT_Y,
   STORAGE_INSIDE,
 } from '../data/story';
@@ -76,6 +77,8 @@ export type StoryEvent =
    * holy water stills it; the third cross releases it.
    */
   | { type: 'clown-wiggle-done' }
+  /** Timed, after "Yep, that's haunted...": the Bible is wanted. */
+  | { type: 'clown-book-wanted' }
   | { type: 'clown-dance-done' }
   | { type: 'water-idea' }
   | { type: 'water-wanted' }
@@ -96,6 +99,8 @@ export type StoryEvent =
   | { type: 'bell-splash-settled' }
   | { type: 'bell-idea' }
   | { type: 'two-handed-wanted' }
+  /** Timed: the two-handed blessing's strikes are done; the ghost comes out. */
+  | { type: 'bell-exorcised' }
   /** Move the Bible stand in front of the ritual table for the two-handed blessing. */
   | { type: 'move-bible-stand' }
   /** A lingering ghost (or where it was) has come into view; its thought, once (D2-08, D2-09, D2-12). */
@@ -215,7 +220,8 @@ export type SfxId =
   | 'sprinkle'
   | 'bell-rattle'
   | 'bell-wind-down'
-  | 'angry-squeak';
+  | 'angry-squeak'
+  | 'exorcise';
 
 export type PurifiedRelic = 'clock' | RelicKind;
 
@@ -244,6 +250,8 @@ export type Effect =
   | { kind: 'splash' }
   /** The holy-water rod dips into the bucket by the ritual table and comes out wet (D2-07). */
   | { kind: 'dip' }
+  /** The two-handed blessing: rod splash, then cross, four times (D2-11). */
+  | { kind: 'exorcise' }
   | { kind: 'objective'; id: string }
   /** Apply `event` after `seconds` of unpaused play (the game keeps the timer). */
   | { kind: 'after'; seconds: number; event: StoryEvent }
@@ -717,12 +725,23 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
           );
           break;
         }
-        if (!s.flags.has('two-handed-wanted')) return [];
+        if (!s.flags.has('two-handed-wanted') || s.flags.has('bell-exorcising')) return [];
         if (!s.flags.has('bible-stand-moved')) return flash(REMINDERS.standFirst);
         if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
-        s.flags.add('relic-blessed');
-        s.fired_scares.push('d2-bell-ghost');
-        out.push({ kind: 'purify', relic: 'bell' });
+        if (!s.flags.has('rod-wet')) return flash(s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+        // Rod and cross strike at it in turn, four times; then its ghost
+        // (designer, 2026-11-27). The strikes use up the water.
+        s.flags.add('bell-exorcising');
+        s.flags.delete('rod-wet');
+        s.bucket_filled = false;
+        out.push(
+          { kind: 'exorcise' },
+          { kind: 'sfx', id: 'exorcise' },
+          { kind: 'say', text: THOUGHTS.powerOfChrist },
+          { kind: 'rattle', seconds: EXORCISE_SECONDS, strength: 1.2 },
+          { kind: 'sfx', id: 'angry-squeak' },
+          { kind: 'after', seconds: EXORCISE_SECONDS + THOUGHT_BEAT, event: { type: 'bell-exorcised' } },
+        );
         break;
       }
       if (s.relic_kind === 'clown') {
@@ -731,7 +750,7 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
           out.push({ kind: 'wiggle' }, { kind: 'after', seconds: CLOWN_WIGGLE_SECONDS, event: { type: 'clown-wiggle-done' } });
           break;
         }
-        if (!s.flags.has('clown-wiggle-done')) return [];
+        if (!s.flags.has('clown-book-wanted')) return [];
         if (!s.flags.has('scripture-read')) return flash(REMINDERS.scriptureFirst);
         if (!s.flags.has('clown-danced')) {
           s.flags.add('clown-danced');
@@ -780,6 +799,15 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'clown-wiggle-done':
       if (!s.flags.has('clown-wiggled') || s.flags.has('clown-wiggle-done')) return [];
       s.flags.add('clown-wiggle-done');
+      out.push(
+        { kind: 'say', text: THOUGHTS.clownHaunted },
+        { kind: 'after', seconds: afterThought(THOUGHTS.clownHaunted), event: { type: 'clown-book-wanted' } },
+      );
+      break;
+
+    case 'clown-book-wanted':
+      if (!s.flags.has('clown-wiggle-done') || s.flags.has('clown-book-wanted')) return [];
+      s.flags.add('clown-book-wanted');
       break;
 
     case 'clown-dance-done':
@@ -848,8 +876,10 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
         if (!s.flags.has('bell-water-wanted') || s.flags.has('bell-splashed')) return [];
         if (!s.inventory.has('rod')) return flash(REMINDERS.needRod);
         if (!s.flags.has('rod-wet')) return flash(s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
+        // The rod is used, but there's water left for the last blessing
+        // (designer, 2026-11-27: the rod is dipped again for it).
         s.flags.add('bell-splashed');
-        s.bucket_filled = false;
+        s.flags.delete('rod-wet');
         out.push(
           { kind: 'splash' },
           { kind: 'sfx', id: 'sprinkle' },
@@ -911,6 +941,13 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     case 'two-handed-wanted':
       if (!s.flags.has('bell-idea') || s.flags.has('two-handed-wanted')) return [];
       s.flags.add('two-handed-wanted');
+      break;
+
+    case 'bell-exorcised':
+      if (!s.flags.has('bell-exorcising') || s.flags.has('relic-blessed')) return [];
+      s.flags.add('relic-blessed');
+      s.fired_scares.push('d2-bell-ghost');
+      out.push({ kind: 'purify', relic: 'bell' });
       break;
 
     case 'move-bible-stand':
@@ -1189,11 +1226,16 @@ export function bibleReturnable(s: GameState): boolean {
 export function rodDipWanted(s: GameState): boolean {
   if (s.flags.has('rod-wet')) return false;
   if (s.relic_kind === 'clown') return s.flags.has('water-wanted') && !s.flags.has('clown-doused');
-  if (s.relic_kind === 'bell') return s.flags.has('bell-water-wanted') && !s.flags.has('bell-splashed');
+  if (s.relic_kind === 'bell') {
+    // Before the splash, and again for the two-handed blessing once the
+    // Bible stand is in the circle (designer, 2026-11-27).
+    if (s.flags.has('bell-water-wanted') && !s.flags.has('bell-splashed')) return true;
+    return s.flags.has('two-handed-wanted') && s.flags.has('bible-stand-moved') && !s.flags.has('bell-exorcising');
+  }
   return false;
 }
 
-/** The Bible stand can be moved in front of the ritual table (D2-11). */
+/** The Bible stand can be moved into the holy circle (D2-11). */
 export function standMoveWanted(s: GameState): boolean {
   return (
     s.relic_kind === 'bell' &&
@@ -1266,7 +1308,7 @@ export function closetFetch(s: GameState): boolean {
 export function bibleWanted(s: GameState): boolean {
   if (s.relic !== 'ritual-table' || s.flags.has('scripture-read')) return false;
   if (s.relic_kind === 'teacup') return true;
-  if (s.relic_kind === 'clown') return s.flags.has('clown-wiggle-done');
+  if (s.relic_kind === 'clown') return s.flags.has('clown-book-wanted');
   return s.relic_kind === 'music-box' && s.flags.has('bible-prompted');
 }
 

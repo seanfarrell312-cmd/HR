@@ -14,7 +14,9 @@ import {
   SPLASH_STRIKE,
   SPOT_RANGE,
   SPOTS,
-  STAND_IN_FRONT,
+  STAND_IN_CIRCLE,
+  EXORCISE,
+  EXORCISE_SECONDS,
   TREE_PEEK,
   WORRIED_SPOT,
   type ItemSpot,
@@ -209,7 +211,7 @@ export function bibleStandRect(s: GameState): { x1: number; y1: number; x2: numb
   if (!s.flags.has('bible-stand-moved')) return r;
   const hw = (r.x2 - r.x1) / 2;
   const hd = (r.y2 - r.y1) / 2;
-  return { x1: STAND_IN_FRONT.x - hw, y1: STAND_IN_FRONT.y - hd, x2: STAND_IN_FRONT.x + hw, y2: STAND_IN_FRONT.y + hd };
+  return { x1: STAND_IN_CIRCLE.x - hw, y1: STAND_IN_CIRCLE.y - hd, x2: STAND_IN_CIRCLE.x + hw, y2: STAND_IN_CIRCLE.y + hd };
 }
 /** The Bible, open on top of the stand, turned to face the middle of the holy circle. */
 const bibleFacing = (x: number, y: number): number => Math.atan2(HOLY_CIRCLE.x - x, -(HOLY_CIRCLE.y - y));
@@ -401,6 +403,22 @@ export function dipPose(t: number): { head: number; opacity: number } {
   return { head: 0.2 + 0.15 * k(t3, DIP.fade), opacity: 1 - k(t3, DIP.fade) };
 }
 
+/** When in each strike cycle the rod's splash lands, as a fraction of the cycle. */
+const EXORCISE_HIT = 0.5 * 0.35;
+
+/**
+ * The two-handed blessing's strikes (designer, 2026-11-27), `t` seconds in:
+ * in the first half of each cycle the rod swings at the bell and back; in
+ * the second, the cross. After the last, both drop out of view.
+ */
+export function exorcisePose(t: number): { rod: number; cross: number; lower: number } {
+  const ease = (x: number) => x * x * (3 - 2 * x);
+  const bump = (x: number) => (x < 0.35 ? ease(x / 0.35) : 1 - ease((x - 0.35) / 0.65));
+  if (t >= EXORCISE_SECONDS) return { rod: 0, cross: 0, lower: Math.min(1, (t - EXORCISE_SECONDS) / ROD_LOWER) };
+  const u = t / EXORCISE.cycle - Math.floor(t / EXORCISE.cycle);
+  return { rod: u < 0.5 ? bump(u / 0.5) : 0, cross: u >= 0.5 ? bump((u - 0.5) / 0.5) : 0, lower: 0 };
+}
+
 interface Droplet {
   mesh: THREE.Mesh;
   mat: THREE.MeshBasicMaterial;
@@ -499,6 +517,8 @@ export class StoryProps {
   /** Seconds each lingering ghost (or the empty grave) has been in view, and out of view. */
   private seenFor: Record<Spotted, number> = { 'clown-roaming': 0, worried: 0, 'worried-gone': 0, chase: 0 };
   private worriedAwayFor = 0;
+  /** Seconds into the two-handed blessing's strikes (D2-11), or -1. */
+  private exorciseT = -1;
   private bucket: THREE.Group;
   private heldBucket: THREE.Group;
   private rod: THREE.Group;
@@ -769,6 +789,7 @@ export class StoryProps {
     this.wiggleT = -1;
     this.splashT = -1;
     this.dipT = -1;
+    this.exorciseT = -1;
     this.dipRod.visible = false;
     this.ripple.visible = false;
     for (const d of this.droplets) {
@@ -837,6 +858,16 @@ export class StoryProps {
   /** The rod dips into the bucket of holy water by the ritual table (D2-07). */
   startDip(): void {
     this.dipT = 0;
+  }
+
+  /** The two-handed blessing has filled: rod and cross strike at the hand bell in turn (D2-11). */
+  startExorcise(): void {
+    this.exorciseT = 0;
+  }
+
+  /** True while the two-handed blessing's strikes play. */
+  get exorcising(): boolean {
+    return this.exorciseT >= 0;
   }
 
   /** True while the rod is going into the bucket and back out. */
@@ -986,10 +1017,21 @@ export class StoryProps {
     // The hand cross rises into view while a blessing is held; the rod for
     // the water ritual.
     this.heldCross.visible = hold.cross && hold.active && hold.progress > 0;
-    this.heldCross.position.y = -0.45 + hold.progress * 0.2;
+    this.heldCross.position.set(0.22, -0.45 + hold.progress * 0.2, -0.5);
+    this.heldCross.rotation.set(0, 0, 0);
+    const strikes = this.exorciseStrikes(fxDt);
     // Held, the rod rises and draws back; the splash brings it down on the
     // doll like a hammer, away from the player, three times.
-    if (this.splashT >= 0 && this.splashT < SPLASH_STILL + ROD_LOWER) {
+    if (strikes) {
+      // The two-handed blessing's strikes: rod in the left hand, cross in
+      // the right, each swinging forward in turn.
+      this.heldRod.visible = true;
+      poseHeldRod(this.heldRod, 1, strikes.rod, strikes.lower, -1);
+      this.heldCross.visible = true;
+      const c = strikes.cross;
+      this.heldCross.position.set(0.22 - 0.07 * c, -0.25 + 0.05 * c - 0.3 * strikes.lower, -0.5 - 0.16 * c);
+      this.heldCross.rotation.set(-1.15 * c, 0, 0.15 * c);
+    } else if (this.splashT >= 0 && this.splashT < SPLASH_STILL + ROD_LOWER) {
       const { swing, lower } = rodStrike(this.splashT);
       this.heldRod.visible = true;
       poseHeldRod(this.heldRod, 1, swing, lower);
@@ -1197,6 +1239,28 @@ export class StoryProps {
     }
   }
 
+  /**
+   * Advance the two-handed blessing's strikes and return how far the rod
+   * and the cross are swung forward (0..1), and how far both have dropped
+   * away at the end; null when they aren't playing. Drops fly off the bell
+   * as each rod strike lands.
+   */
+  private exorciseStrikes(dt: number): { rod: number; cross: number; lower: number } | null {
+    if (this.exorciseT < 0) return null;
+    const before = this.exorciseT;
+    this.exorciseT += dt;
+    const t = this.exorciseT;
+    const end = EXORCISE_SECONDS;
+    if (t >= end + ROD_LOWER) {
+      this.exorciseT = -1;
+      return null;
+    }
+    const pose = exorcisePose(t);
+    const hits = (x: number) => Math.floor(x / EXORCISE.cycle - EXORCISE_HIT);
+    if (t < end && hits(t) > hits(before)) this.splashDroplets();
+    return pose;
+  }
+
   /** The doll's giggle, by how far the listener is from the ritual table. */
   private giggleVolume(listener: THREE.Vector3): number {
     const d = Math.hypot(listener.x - SPOTS.relicRitual.x, -listener.z - SPOTS.relicRitual.y);
@@ -1390,7 +1454,7 @@ export class StoryProps {
     const w = WORRIED_SPOT;
     this.worrier.group.visible = worriedShown(s);
     if (this.worrier.group.visible) {
-      this.worrier.group.position.set(...toWorld(w.x, w.y, 0, 0.3 + Math.sin(this.roamT * 1.5) * 0.03));
+      this.worrier.group.position.set(...toWorld(w.x, w.y, 0, w.height + Math.sin(this.roamT * 1.5) * 0.03));
       this.worrier.group.rotation.set(w.lean, Math.atan2(w.lookX - w.x, -(w.lookY - w.y)), 0);
     }
 

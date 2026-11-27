@@ -215,6 +215,9 @@ function handleEffect(e: Effect): void {
     case 'dip':
       props.startDip();
       break;
+    case 'exorcise':
+      props.startExorcise();
+      break;
     case 'end-day':
       // Fade out; the loop starts the next day once the screen is black.
       dayFade = DAY_FADE;
@@ -662,6 +665,7 @@ renderer.setAnimationLoop(() => {
   if (props.purifying && ['item:clock', 'item:music-box', 'item:teacup', 'item:clown', 'item:bell', 'item:ritual-table'].includes(target ?? '')) target = null;
   // Nor the doll splashed while the rod is still going into the bucket.
   if (props.dipping && ['item:clown', 'item:bell', 'item:ritual-table', 'item:bucket'].includes(target ?? '')) target = null;
+  if (props.exorcising && ['item:bell', 'item:ritual-table', 'item:bucket', 'item:bible'].includes(target ?? '')) target = null;
   const res = resolve(target, state, player);
   if (blessMeter.update(dt, primaryDown, !!res.hold) && res.hold) dispatch(res.hold);
   hud.setHold(blessMeter.progress);

@@ -276,7 +276,7 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
         return story('E  Put the Bible back', { type: 'return-bible' });
       }
       // The hand bell's two-handed blessing: the stand goes in front (D2-11).
-      if (standMoveWanted(s)) return story('E  Move the Bible stand in front of the table', { type: 'move-bible-stand' });
+      if (standMoveWanted(s)) return story('E  Move the Bible stand into the holy circle', { type: 'move-bible-stand' });
       if (!bibleWanted(s)) return NONE;
       return story('E  Pick up the Bible', { type: 'take', item: 'bible' });
 
@@ -314,8 +314,8 @@ function resolveClown(s: GameState, player: Player): Resolution {
     if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
     return bless;
   }
-  // Giggling and wiggling.
-  if (!s.flags.has('clown-wiggle-done')) return NONE;
+  // Giggling and wiggling, then "Yep, that's haunted...".
+  if (!s.flags.has('clown-book-wanted')) return NONE;
   if (!s.flags.has('scripture-read')) {
     if (!s.inventory.has('bible')) return say(label, REMINDERS.bibleFirst);
     if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
@@ -391,9 +391,10 @@ function resolveBell(s: GameState, player: Player): Resolution {
     };
   }
   // Rattling, then two thoughts.
-  if (!s.flags.has('two-handed-wanted')) return NONE;
+  if (!s.flags.has('two-handed-wanted') || s.flags.has('bell-exorcising')) return NONE;
   if (!s.flags.has('bible-stand-moved')) return say(label, REMINDERS.standFirst);
   if (!s.inventory.has('cross')) return say(label, REMINDERS.needCross);
+  if (!s.flags.has('rod-wet')) return say(label, s.bucket === 'chapel' && s.bucket_filled ? REMINDERS.rodDry : REMINDERS.holyWaterFirst);
   if (!inHolyCircle(player)) return say(label, REMINDERS.standInCircle);
   return bless('Hold click  Bless the hand bell with the cross and rod');
 }

@@ -240,8 +240,8 @@ export const DAY2: Objective[] = [
       if (s.relic === 'held') return s.flags.has('relic-pickup-thought-done') ? 'Put the clown doll on the ritual table' : '';
       const cross = !s.inventory.has('cross') ? 'Take the cross from the chapel shelf' : '';
       if (!s.flags.has('clown-wiggled')) return cross || 'Stand in the holy circle and bless the clown doll';
-      // Nothing new while it giggles.
-      if (!s.flags.has('clown-wiggle-done')) return '';
+      // Nothing new while it giggles and "Yep, that's haunted..." plays.
+      if (!s.flags.has('clown-book-wanted')) return '';
       if (!s.flags.has('scripture-read')) {
         return s.inventory.has('bible') ? 'Read the clown doll some scripture' : 'Pick up the Bible from the stand';
       }
@@ -339,7 +339,10 @@ export const DAY2: Objective[] = [
     id: 'D2-11',
     task: (s) => {
       if (!s.flags.has('relic-blessed')) {
-        if (!s.flags.has('bible-stand-moved')) return 'Move the Bible stand in front of the ritual table';
+        if (!s.flags.has('bible-stand-moved')) return 'Move the Bible stand into the holy circle';
+        // The strikes, "The power of Christ compels you!", then the ghost.
+        if (s.flags.has('bell-exorcising')) return '';
+        if (!s.flags.has('rod-wet')) return 'Dip the holy-water rod in the bucket';
         return 'Stand in the holy circle and bless the hand bell with the cross and rod together';
       }
       // Waits until the ghost has gone and its thought has played.

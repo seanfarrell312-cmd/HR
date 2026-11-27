@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { clownModel, heldClownQuaternion, HELD_CLOWN, poseClown } from '../src/world/clown';
 import { ghostModel, onWig, WIG_COLOURS, wigBand } from '../src/world/ghost';
-import { DIP, DIP_SECONDS, dipPose, gravesLoop, rodStrike } from '../src/world/storyProps';
-import { GRAVES_LOOP, ONLOOKERS, SPLASH_STRIKE, WORRIED_SPOT } from '../src/data/story';
+import { DIP, DIP_SECONDS, dipPose, exorcisePose, gravesLoop, rodStrike } from '../src/world/storyProps';
+import { EXORCISE, EXORCISE_SECONDS, GRAVES_LOOP, ONLOOKERS, SPLASH_STRIKE, WORRIED_SPOT } from '../src/data/story';
 import { AREAS, PROPS } from '../src/data/layout';
 
 // The clown doll's model (S3 part 2, 2026-11-22 playtest fixes).
@@ -210,6 +210,13 @@ describe("Day 2's lingering ghosts (S3 part 3)", () => {
     expect(WORRIED_SPOT.lookY).toBeGreaterThanOrEqual(stone.y1);
     expect(WORRIED_SPOT.lookY).toBeLessThanOrEqual(stone.y2);
     expect(WORRIED_SPOT.lean).toBeGreaterThan(0);
+    // A little way back from the headstone, eyes level with its upper part,
+    // leaning only slightly (designer, 2026-11-27).
+    expect(WORRIED_SPOT.y - stone.y2).toBeGreaterThan(1.2);
+    const eyes = WORRIED_SPOT.height + 0.64;
+    expect(eyes).toBeGreaterThan(0.9);
+    expect(eyes).toBeLessThan(1.35);
+    expect(WORRIED_SPOT.lean).toBeLessThan(0.2);
   });
 
   it('places the teacup and music box ghosts side by side north of the graves loop', () => {
@@ -218,6 +225,27 @@ describe("Day 2's lingering ghosts (S3 part 3)", () => {
     expect(a.y).toBe(b.y);
     expect(Math.abs(a.x - b.x)).toBeLessThan(2.5);
     for (const o of ONLOOKERS) expect(o.y).toBeGreaterThan(GRAVES_LOOP.y + GRAVES_LOOP.ry);
+  });
+});
+
+describe("the hand bell's two-handed blessing (2026-11-27)", () => {
+  it('swings the rod, then the cross, four times, then both drop away', () => {
+    let rodStrikes = 0;
+    let crossStrikes = 0;
+    let lastRod = 0;
+    let lastCross = 0;
+    for (let t = 0; t < EXORCISE_SECONDS; t += 0.01) {
+      const p = exorcisePose(t);
+      // Never both forward at once.
+      expect(p.rod > 0.05 && p.cross > 0.05).toBe(false);
+      if (p.rod > 0.9 && lastRod <= 0.9) rodStrikes++;
+      if (p.cross > 0.9 && lastCross <= 0.9) crossStrikes++;
+      lastRod = p.rod;
+      lastCross = p.cross;
+    }
+    expect(rodStrikes).toBe(EXORCISE.cycles);
+    expect(crossStrikes).toBe(EXORCISE.cycles);
+    expect(exorcisePose(EXORCISE_SECONDS + 1).lower).toBe(1);
   });
 });
 

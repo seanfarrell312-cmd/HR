@@ -995,3 +995,37 @@ Designer rulings:
   one, the teacup's ghost (mustache and monocle) and the music box's ghost
   float side by side, still, north of the loop, facing south and watching.
 
+## 2026-11-27 — Day 2 playtest: grave, clown thought, bucket, final blessing
+
+Designer rulings:
+- **The old priest's grave** has moved 4 m further south (headstone at
+  y = 41), so the walk from the church doors to the garden gateway no longer
+  crosses it. The tree moved on 2026-12-01 is back where it was.
+- **The concerned ghost** floats 1.5 m back from the headstone and higher
+  (0.55 m off the ground), with its eyes level with the stone's upper part.
+  It leans forward only slightly, as if reading the top of the stone. It is
+  the same model and size as every other ghost (none is scaled).
+- **The clown doll's first cross.** After its giggle and wiggle: "Yep, that's
+  haunted. Let's see how they like some of the Good Book." Then the Bible
+  objective. ("Lets" became "Let's", and "good book" is capitalised to
+  match the Day 1 line.)
+- **The bucket of holy water** is set down in front of the ritual table's
+  south-west corner instead of past its south end. From the middle of the
+  circle it's in view about 30 degrees right of straight ahead, and in reach.
+- **Copy.** "Maybe it needs everything at once. The Bible, the cross, and
+  the water." After the bell is put away: "That one really took it out of
+  me. I'm ready to call it a day."
+- **The hand bell's final blessing.** The steps are now:
+  1. "Move the Bible stand into the holy circle": it goes inside the ring's
+     east side, facing the middle.
+  2. "Dip the holy-water rod in the bucket" again.
+  3. The hold: the rod (left hand) and cross (right) rise.
+  4. Once it fills, the rod splashes the bell, then the cross swings
+     forward, four times in a row (0.7 s each), with drops flying off the
+     bell. "The power of Christ compels you!" plays meanwhile, and the bell
+     rattles and squeaks throughout.
+  5. Then the sparkles and the angry ghost, as before.
+
+  Because of the second dip, the first splash on the bell no longer empties
+  the bucket. The four strikes use up the water.
+

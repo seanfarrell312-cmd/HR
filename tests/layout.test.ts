@@ -99,6 +99,9 @@ describe('layout data', () => {
     expect(plot.y2).toBeLessThan(fence.y1);
     expect(stone.y2).toBeLessThanOrEqual(plot.y1);
     expect(plot.x1).toBeGreaterThan(PROPS.find((p) => p.id === 'garden-gatepost-e')!.rect.x2);
+    // Well south of the walk from the church doors (y 50) to the gateway
+    // (y 49), so it isn't walked over (designer, 2026-11-27).
+    expect(plot.y2).toBeLessThan(fence.y1 - 4.5);
     // Nothing solid on it or crowding the headstone.
     const solid = staticColliders().filter((c) => c.level === 0 && c.id !== 'old-priest-grave');
     for (const c of solid) {
@@ -106,6 +109,22 @@ describe('layout data', () => {
       const overlaps = r.x1 < plot.x2 + 0.3 && r.x2 > plot.x1 - 0.3 && r.y1 < plot.y2 && r.y2 > stone.y1;
       expect(overlaps, c.id).toBe(false);
     }
+  });
+
+  it('sets the bucket of holy water down in easy reach and view of the holy circle (2026-11-27)', () => {
+    const b = SPOTS.bucketChapel;
+    const table = PROPS.find((p) => p.id === 'ritual-table')!.rect;
+    const bucket = { x1: b.x - 0.15, y1: b.y - 0.15, x2: b.x + 0.15, y2: b.y + 0.15 };
+    // By the table's front edge, not under it.
+    expect(bucket.x2).toBeLessThanOrEqual(table.x1);
+    expect(table.x1 - bucket.x2).toBeLessThan(0.4);
+    expect(b.y).toBeGreaterThanOrEqual(table.y1);
+    // Within reach of anywhere in the circle, and within 40 degrees of
+    // straight ahead from its middle facing the table.
+    expect(Math.hypot(b.x - CANDLES[0].x, b.y - CANDLES[0].y)).toBeGreaterThan(0.4);
+    const reach = 2.9;
+    expect(Math.hypot(b.x - (11.4 - 0.9), b.y - 53.1)).toBeLessThan(reach);
+    expect(Math.abs(Math.atan2(b.y - 53.1, b.x - 11.4))).toBeLessThan((40 * Math.PI) / 180);
   });
 
   it('gives the chapel a single entrance', () => {

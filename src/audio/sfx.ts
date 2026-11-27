@@ -191,6 +191,17 @@ export class Sfx {
         // One last ring, left to hum away.
         this.ring(0, 0.8, 1.6);
         break;
+      case 'exorcise':
+        // The two-handed blessing (D2-11): a flick of the rod, then the
+        // cross swung through the air, four times.
+        for (let i = 0; i < 4; i++) {
+          const t = i * 0.7;
+          this.hiss(t + 0.1, 0.12, 4200, 0.22);
+          for (let j = 0; j < 3; j++) this.tone('sine', 1800 + Math.random() * 1600, t + 0.13 + j * 0.03, 0.05, 0.05);
+          this.hiss(t + 0.42, 0.16, 700, 0.18);
+          this.glide('sine', 220, 120, t + 0.42, 0.16, 0.04);
+        }
+        break;
       case 'angry-squeak':
         // Cross little squeaks, up then sharply down (D2-10, D2-11).
         for (let i = 0; i < 3; i++) {

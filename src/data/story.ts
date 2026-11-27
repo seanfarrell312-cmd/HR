@@ -69,8 +69,12 @@ export const SPOTS = {
   bucketCloset: { x: -9.78, y: 61.3, z: 0.012 },
   /** The rod's handle end; it lies south along the shelf, its head over the bucket. */
   rodCloset: { x: -10.15, y: 61.6, z: 0.5 },
-  /** Where the bucket of holy water is set down, by the ritual table's south end. */
-  bucketChapel: { x: 13.05, y: 51.35, z: 0.012 },
+  /**
+   * Where the bucket of holy water is set down: in front of the ritual
+   * table's south-west corner, in easy view and reach from the holy circle
+   * (designer, 2026-11-27).
+   */
+  bucketChapel: { x: 13.1, y: 52.4, z: 0.012 },
   /** Inside the drop box at the gate, where the music box is heard from. */
   dropBox: { x: 3.7, y: 0.1, z: 0.9 },
 } satisfies Record<string, ItemSpot>;
@@ -318,9 +322,13 @@ export const THOUGHTS = {
   /** The splash set it rattling worse; then the idea. */
   bellSplash: "It's only getting angrier!",
   /** Straight after; then the Bible stand and the two-handed blessing. */
-  bellIdea: 'Maybe it needs everything at once. The Bible, the cross and the water.',
+  bellIdea: 'Maybe it needs everything at once. The Bible, the cross, and the water.',
+  /** Designer copy, 2026-11-27: while the two-handed blessing strikes at the hand bell. */
+  powerOfChrist: 'The power of Christ compels you!',
+  /** Designer copy, 2026-11-27: after the clown doll's first cross and its giggle; then the Bible. */
+  clownHaunted: "Yep, that's haunted. Let's see how they like some of the Good Book.",
   /** The hand bell is on the cleaned-relic table; then the walk to the gate. */
-  shiftDone: "Three in one shift. I think I've earned the walk home.",
+  shiftDone: "That one really took it out of me. I'm ready to call it a day.",
   /** Spotting the clown's ghost chasing the angry one among the graves on the way out. */
   chaseSpotted: "Ha. Looks like those two are getting along.",
 };
@@ -558,7 +566,15 @@ export const RATTLE_VIOLENT = { seconds: 2.4, strength: 1.6 };
  * east of the holy circle, between the player and the ritual table, low
  * enough to see the relic over the Bible.
  */
-export const STAND_IN_FRONT = { x: 12.6, y: HOLY_CIRCLE.y };
+export const STAND_IN_CIRCLE = { x: 12.05, y: HOLY_CIRCLE.y };
+
+/**
+ * The two-handed blessing (designer, 2026-11-27): once the hold fills, the
+ * rod in the left hand splashes the hand bell, then the cross in the right
+ * swings forward, four times in a row, `cycle` seconds each.
+ */
+export const EXORCISE = { cycles: 4, cycle: 0.7 };
+export const EXORCISE_SECONDS = EXORCISE.cycles * EXORCISE.cycle;
 
 /**
  * Day 2's lingering ghosts. The clown's ghost drifts on a loop among the
@@ -567,12 +583,12 @@ export const STAND_IN_FRONT = { x: 12.6, y: HOLY_CIRCLE.y };
  */
 export const GRAVES_LOOP = { x: 19.8, y: 41, rx: 2.3, ry: 5.5, height: 0.45 };
 /**
- * The concerned ghost (D2-09; designer, 2026-12-01): floating over the dirt
- * of the old priest's plot, facing the headstone at its south end and bent
- * a little to read it. The player passes behind it on the way to the
- * garden's gateway.
+ * The concerned ghost (D2-09; designer, 2026-12-01 and 2026-11-27): floating
+ * over the dirt of the old priest's plot, facing the headstone at its south
+ * end from a little way back and high enough to read its upper part, leaning
+ * slightly. The player passes behind it on the way to the garden's gateway.
  */
-export const WORRIED_SPOT = { x: -19, y: 46.15, lookX: -19, lookY: 45, lean: 0.3 };
+export const WORRIED_SPOT = { x: -19, y: 42.6, lookX: -19, lookY: 41, lean: 0.12, height: 0.55 };
 /**
  * At the end of Day 2 (designer, 2026-12-01) the teacup's ghost and the
  * music box's ghost float side by side north of the graves loop, facing

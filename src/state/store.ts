@@ -106,6 +106,8 @@ export type Flag =
   /** The first cross made it giggle and wiggle; then scripture is wanted. */
   | 'clown-wiggled'
   | 'clown-wiggle-done'
+  /** "Yep, that's haunted..." has played: the Bible is wanted. */
+  | 'clown-book-wanted'
   /** The second cross, after scripture, made it dance; then the two thoughts. */
   | 'clown-danced'
   | 'clown-dance-done'
@@ -130,7 +132,9 @@ export type Flag =
   | 'bell-splash-settled'
   | 'bell-idea'
   | 'two-handed-wanted'
-  /** The Bible stand has been moved in front of the ritual table (D2-11). */
+  /** The two-handed blessing is striking at it; then the ghost (D2-11). */
+  | 'bell-exorcising'
+  /** The Bible stand has been moved into the holy circle (D2-11). */
   | 'bible-stand-moved'
   /** Day 2's lingering ghosts: each thought once (D2-08, D2-09, D2-12). */
   | 'clown-roaming-spotted'
@@ -170,6 +174,7 @@ export const RELIC_FLAGS: readonly Flag[] = [
   'relic-thought-done',
   'clown-wiggled',
   'clown-wiggle-done',
+  'clown-book-wanted',
   'clown-danced',
   'clown-dance-done',
   'water-idea',
@@ -185,6 +190,7 @@ export const RELIC_FLAGS: readonly Flag[] = [
   'bell-splash-settled',
   'bell-idea',
   'two-handed-wanted',
+  'bell-exorcising',
 ];
 
 export type ClockLocation = 'ritual-table' | 'held' | 'office-desk';

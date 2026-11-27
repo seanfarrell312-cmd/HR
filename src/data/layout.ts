@@ -383,14 +383,16 @@ function garden(): Prop[] {
     // (designer, 2026-12-01: mirrored from beside the east hedge); the
     // headstone at its south end, so a player heading for the gateway
     // passes behind anyone standing at it.
-    { id: 'old-priest-grave', label: "Old priest's grave", rect: rect(-19.6, 44.85, -18.4, 45.15), height: 1.2, level: 0, color: '#8d8a83' },
-    { id: 'old-priest-plot', label: "Old priest's plot", rect: rect(-19.5, 45.2, -18.5, 47.6), height: 0.05, level: 0, color: '#5a4632', shape: 'flat', solid: false },
+    // Moved 4 m further south (2026-11-27) so the walk from the church doors
+    // to the gateway doesn't cross it.
+    { id: 'old-priest-grave', label: "Old priest's grave", rect: rect(-19.6, 40.85, -18.4, 41.15), height: 1.2, level: 0, color: '#8d8a83' },
+    { id: 'old-priest-plot', label: "Old priest's plot", rect: rect(-19.5, 41.2, -18.5, 43.6), height: 0.05, level: 0, color: '#5a4632', shape: 'flat', solid: false },
   ];
 }
 
 function trees(): Prop[] {
   const spots: [number, number][] = [
-    [-34, 46], [-35, 63], [-21.2, 44.6], [-38, 28], [-12, 20], [12, 18], [34, 22], [38, 70], [-38, 80], [-10, 80], [10, 80],
+    [-34, 46], [-35, 63], [-20, 45], [-38, 28], [-12, 20], [12, 18], [34, 22], [38, 70], [-38, 80], [-10, 80], [10, 80],
   ];
   return spots.map(([x, y], i) => ({
     id: `tree-${i + 1}`,

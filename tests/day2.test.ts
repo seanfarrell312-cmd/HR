@@ -17,7 +17,8 @@ import {
   SEARCH_SPOTS,
   S3_END,
   RATTLE_VIOLENT,
-  STAND_IN_FRONT,
+  STAND_IN_CIRCLE,
+  EXORCISE_SECONDS,
   THOUGHT_BEAT,
   CLOWN_DANCE_SECONDS,
   CLOWN_WIGGLE_SECONDS,
@@ -109,6 +110,7 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'place-relic' },
   { type: 'bless-relic' },
   { type: 'clown-wiggle-done' },
+  { type: 'clown-book-wanted' },
   { type: 'take', item: 'bible' },
   { type: 'begin-scripture' },
   { type: 'read-scripture' },
@@ -163,9 +165,12 @@ export const DAY2_PLAYTHROUGH: StoryEvent[] = [
   { type: 'bell-splash-settled' },
   { type: 'bell-idea' },
   { type: 'two-handed-wanted' },
-  // D2-11: the Bible stand in front, the two-handed blessing, put it away.
+  // D2-11: the Bible stand into the circle, the rod dipped again, the
+  // two-handed blessing, put it away.
   { type: 'move-bible-stand' },
+  { type: 'wet-rod' },
   { type: 'bless-relic' },
+  { type: 'bell-exorcised' },
   { type: 'relic-ghost-gone' },
   { type: 'relic-thought-done' },
   { type: 'pickup-relic' },
@@ -809,7 +814,14 @@ describe('the clown doll arrives and the cross fails (D2-05)', () => {
     expect(fx).toEqual([{ kind: 'wiggle' }, { kind: 'after', seconds: CLOWN_WIGGLE_SECONDS, event: { type: 'clown-wiggle-done' } }]);
     expect(task(s)).toBe('');
     expect(resolve('item:clown', s, inCircle).prompt).toBe('');
-    applyEvent(s, { type: 'clown-wiggle-done' });
+    // "Yep, that's haunted..." first (designer, 2026-11-27).
+    const haunted = applyEvent(s, { type: 'clown-wiggle-done' });
+    expect(says(haunted)).toEqual(["Yep, that's haunted. Let's see how they like some of the Good Book."]);
+    expect(haunted).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.clownHaunted), event: { type: 'clown-book-wanted' } });
+    expect(task(s)).toBe('');
+    expect(resolve('item:clown', s, inCircle).prompt).toBe('');
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    applyEvent(s, { type: 'clown-book-wanted' });
     expect(task(s)).toBe('Pick up the Bible from the stand');
     expect(resolve('item:clown', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.bibleFirst });
     // No skipping the scripture.
@@ -1151,44 +1163,52 @@ describe('the cross and holy water fail on the hand bell (D2-10)', () => {
     expect(task(s)).toBe('Stand in the holy circle and splash the hand bell with holy water');
   });
 
-  it('rattles harder at the splash, empties the bucket, then the idea', () => {
+  it('rattles harder at the splash, leaves water for later, then the idea', () => {
     const s = at(step('splash-relic', 2));
     expect(resolve('item:bell', s, inCircle).hold).toEqual({ type: 'splash-relic' });
     const fx = applyEvent(s, { type: 'splash-relic' });
     expect(fx).toContainEqual({ kind: 'splash' });
     expect(fx).toContainEqual({ kind: 'rattle', ...RATTLE_VIOLENT });
     expect(fx).toContainEqual({ kind: 'sfx', id: 'angry-squeak' });
-    expect(s.bucket_filled).toBe(false);
+    // The rod is used, but the bucket keeps its water for the last blessing.
+    expect(s.bucket_filled).toBe(true);
+    expect(s.flags.has('rod-wet')).toBe(false);
     expect(s.flags.has('relic-blessed')).toBe(false);
     expect(task(s)).toBe('');
     const worse = applyEvent(s, { type: 'bell-splash-settled' });
     expect(says(worse)).toEqual(["It's only getting angrier!"]);
     expect(worse).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.bellSplash), event: { type: 'bell-idea' } });
-    expect(says(applyEvent(s, { type: 'bell-idea' }))).toEqual(['Maybe it needs everything at once. The Bible, the cross and the water.']);
+    expect(says(applyEvent(s, { type: 'bell-idea' }))).toEqual(['Maybe it needs everything at once. The Bible, the cross, and the water.']);
     applyEvent(s, { type: 'two-handed-wanted' });
     expect(s.objective_id).toBe('D2-11');
-    expect(task(s)).toBe('Move the Bible stand in front of the ritual table');
+    expect(task(s)).toBe('Move the Bible stand into the holy circle');
   });
 });
 
 describe('the two-handed blessing (D2-11)', () => {
-  it('moves the Bible stand in front of the ritual table first', () => {
+  it('moves the Bible stand into the circle, then the rod is dipped again', () => {
     const s = at(step('move-bible-stand'));
     expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.standFirst });
     expect(flashes(applyEvent(s, { type: 'bless-relic' }))).toEqual([REMINDERS.standFirst]);
-    expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Move the Bible stand in front of the table');
+    // Not dipped before the stand is in place.
+    expect(resolve('item:bucket', s, inCircle).prompt).toBe('');
+    expect(resolve('item:bible', s, inCircle).prompt).toBe('E  Move the Bible stand into the holy circle');
     const home = bibleStandRect(s);
     applyEvent(s, { type: 'move-bible-stand' });
     const moved = bibleStandRect(s);
-    expect((moved.x1 + moved.x2) / 2).toBeCloseTo(STAND_IN_FRONT.x);
-    expect((moved.y1 + moved.y2) / 2).toBeCloseTo(STAND_IN_FRONT.y);
+    expect((moved.x1 + moved.x2) / 2).toBeCloseTo(STAND_IN_CIRCLE.x);
+    expect((moved.y1 + moved.y2) / 2).toBeCloseTo(STAND_IN_CIRCLE.y);
     expect(moved.x2 - moved.x1).toBeCloseTo(home.x2 - home.x1);
-    // In front: east of the circle, short of the table, not in the circle.
-    const table = PROPS.find((p) => p.id === 'ritual-table')!.rect;
-    expect(moved.x1).toBeGreaterThan(HOLY_CIRCLE.x + HOLY_CIRCLE.r);
-    expect(moved.x2).toBeLessThan(table.x1);
+    // Inside the circle's east side, in front of the player in the middle,
+    // and leaving room to stand there.
+    expect(moved.x1).toBeGreaterThan(HOLY_CIRCLE.x + 0.3);
+    expect(moved.x2).toBeLessThanOrEqual(HOLY_CIRCLE.x + HOLY_CIRCLE.r);
     // Nothing more to do with the Bible.
     expect(resolve('item:bible', s, inCircle).prompt).toBe('');
+    expect(task(s)).toBe('Dip the holy-water rod in the bucket');
+    expect(resolve('item:bell', s, inCircle).action).toEqual({ kind: 'message', text: REMINDERS.rodDry });
+    expect(resolve('item:bucket', s, inCircle).prompt).toBe('E  Dip the rod in the holy water');
+    expect(applyEvent(s, { type: 'wet-rod' })).toEqual([{ kind: 'dip' }]);
     expect(task(s)).toBe('Stand in the holy circle and bless the hand bell with the cross and rod together');
     expect(resolve('item:bell', s, inCircle).prompt).toBe('Hold click  Bless the hand bell with the cross and rod');
   });
@@ -1199,10 +1219,22 @@ describe('the two-handed blessing (D2-11)', () => {
     expect(applyEvent(s, { type: 'move-bible-stand' })).toEqual([]);
   });
 
-  it('releases the angry ghost, then the bell is put away', () => {
+  it('strikes four times with "The power of Christ compels you!", then the angry ghost', () => {
     const s = at(step('bless-relic', 6));
     const fx = applyEvent(s, { type: 'bless-relic' });
-    expect(fx).toEqual([{ kind: 'purify', relic: 'bell' }]);
+    expect(fx).toContainEqual({ kind: 'exorcise' });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'exorcise' });
+    expect(says(fx)).toEqual(['The power of Christ compels you!']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: EXORCISE_SECONDS + THOUGHT_BEAT, event: { type: 'bell-exorcised' } });
+    expect(fx.some((f) => f.kind === 'purify')).toBe(false);
+    expect(EXORCISE_SECONDS).toBeCloseTo(4 * 0.7);
+    // The strikes use the water and the rod.
+    expect(s.bucket_filled).toBe(false);
+    expect(s.flags.has('rod-wet')).toBe(false);
+    expect(task(s)).toBe('');
+    expect(resolve('item:bell', s, inCircle).prompt).toBe('');
+    expect(applyEvent(s, { type: 'bless-relic' })).toEqual([]);
+    expect(applyEvent(s, { type: 'bell-exorcised' })).toEqual([{ kind: 'purify', relic: 'bell' }]);
     expect(task(s)).toBe('');
     expect(says(applyEvent(s, { type: 'relic-ghost-gone' }))).toEqual(["Well, somebody's in a mood."]);
     applyEvent(s, { type: 'relic-thought-done' });
@@ -1218,7 +1250,7 @@ describe('the end of the shift (D2-12)', () => {
   it('falls dusk once the hand bell is away, then the gate', () => {
     const s = at(step('store-relic', 3));
     const fx = applyEvent(s, { type: 'store-relic' });
-    expect(says(fx)).toEqual(["Three in one shift. I think I've earned the walk home."]);
+    expect(says(fx)).toEqual(["That one really took it out of me. I'm ready to call it a day."]);
     expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(THOUGHTS.shiftDone), event: { type: 'head-home' } });
     expect(s.environment_preset).toBe('D1_EVENING');
     expect(s.relics_stored).toEqual(['teacup', 'clown', 'bell']);
