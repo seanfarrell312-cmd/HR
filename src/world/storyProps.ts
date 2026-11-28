@@ -204,14 +204,73 @@ function bellModel(): THREE.Group {
   return g;
 }
 
-/** A plain brown cardboard box with a strip of tape across the top (Day 3, D3-04). */
+let woodTexture: THREE.Texture | null = null;
+/** A small dark-wood grain, streaked along the box's length (Day 3's box). */
+function wood(): THREE.Texture | null {
+  if (woodTexture) return woodTexture;
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = '#4e2c1b';
+  ctx.fillRect(0, 0, 32, 32);
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 26; i++) {
+    const y0 = rand() * 32;
+    const dark = rand() < 0.6;
+    ctx.fillStyle = dark ? 'rgba(25, 11, 5, 0.3)' : 'rgba(110, 62, 36, 0.18)';
+    for (let x = 0; x < 32; x++) ctx.fillRect(x, Math.floor(y0 + Math.sin(x * 0.35 + i) * 0.8), 1, 1);
+  }
+  woodTexture = new THREE.CanvasTexture(c);
+  woodTexture.colorSpace = THREE.SRGBColorSpace;
+  woodTexture.magFilter = THREE.NearestFilter;
+  woodTexture.minFilter = THREE.NearestFilter;
+  return woodTexture;
+}
+
+/**
+ * A plain dark-wood box with a brass latch on the front (Day 3, D3-04):
+ * a lid over a base, a dark seam between, the two ends bowed out a little.
+ * The front (latch) faces local +z.
+ */
 function boxModel(): THREE.Group {
+  const W = 0.32, D = 0.28, H = 0.13, BASE = 0.085, SEAM = 0.003;
   const g = new THREE.Group();
-  const card = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.26), lambert('#a5814f'));
-  card.position.y = 0.12;
-  const tape = new THREE.Mesh(new THREE.BoxGeometry(0.345, 0.004, 0.06), lambert('#c7ad78'));
-  tape.position.y = 0.242;
-  g.add(card, tape);
+  const map = wood();
+  const woodMat = map
+    ? new THREE.MeshLambertMaterial({ map, flatShading: true })
+    : lambert('#4e2c1b');
+  const brass = lambert('#b08a45');
+  const base = new THREE.Mesh(new THREE.BoxGeometry(W, BASE, D), woodMat);
+  base.position.y = BASE / 2;
+  const seam = new THREE.Mesh(new THREE.BoxGeometry(W - 0.006, SEAM + 0.002, D - 0.006), lambert('#1e110a'));
+  seam.position.y = BASE + SEAM / 2;
+  const lidH = H - BASE - SEAM;
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(W, lidH, D), woodMat);
+  lid.position.y = BASE + SEAM + lidH / 2;
+  g.add(base, seam, lid);
+  // The ends bow outwards, like the reference box.
+  for (const side of [-1, 1]) {
+    const bow = new THREE.Mesh(new THREE.CylinderGeometry(H / 2, H / 2, D, 14), woodMat);
+    bow.rotation.x = Math.PI / 2;
+    bow.scale.set(0.3, 1, 1);
+    bow.position.set((side * W) / 2, H / 2, 0);
+    g.add(bow);
+  }
+  // The latch: a hasp on the lid over a catch plate with a small knob.
+  const front = D / 2 + 0.002;
+  const hasp = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.004), brass);
+  hasp.position.set(0, BASE + SEAM + 0.012, front);
+  const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.022, 6), brass);
+  hinge.rotation.z = Math.PI / 2;
+  hinge.position.set(0, BASE + SEAM + 0.002, front + 0.002);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.032, 0.004), brass);
+  plate.position.set(0, BASE - 0.018, front);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 6, 5), brass);
+  knob.position.set(0, BASE - 0.016, front + 0.004);
+  g.add(hasp, hinge, plate, knob);
   return g;
 }
 
@@ -687,8 +746,8 @@ export class StoryProps {
     this.heldClown.group.quaternion.copy(heldClownQuaternion());
     this.heldClown.group.scale.setScalar(HELD_CLOWN.scale);
     this.heldBox = boxModel();
-    this.heldBox.position.set(0.1, -0.4, -0.55);
-    this.heldBox.rotation.set(0.25, 0.3, 0);
+    this.heldBox.position.set(0.06, -0.3, -0.62);
+    this.heldBox.rotation.set(0.15, 0.3, 0);
     this.heldBell = bellModel();
     this.heldBell.position.set(0.12, -0.27, -0.5);
     this.heldBell.rotation.set(0.35, 0, 0);

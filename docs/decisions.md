@@ -1067,8 +1067,9 @@ What happens, in order:
    and can be taken any time on Day 3. The bucket is filled at the fountain
    under the grey sky while the birds still sing.
 4. **D3-04.** With the bucket back: "All set. Now I just wait." Then the
-   Christ-LERTS text. The box is a plain brown cardboard box with a strip of
-   tape, quiet and still. Taking it out of the drop box, the birds stop
+   Christ-LERTS text. The box is a plain dark-wood box with a brass latch
+   on the front and bowed ends, after the designer's reference images
+   (`docs/design/concept-art/box/`), quiet and still. Taking it out of the drop box, the birds stop
    and the sky darkens a shade (7.1 D3_SILENCE). On the walk up: "It's gone
    really quiet. Where did all the birds go?" From then on the serious
    ghost (the neutral face) hovers at the near edge of the east graves,
