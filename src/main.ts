@@ -574,7 +574,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyN') {
     // Debug: skip straight to the start of the next day.
-    if (state.day_index < 2) {
+    if (state.day_index < 3) {
       nextDay();
       hud.flash(`Skipped to Day ${state.day_index}`);
     }
