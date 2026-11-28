@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import './style.css';
 import { Sfx } from './audio/sfx';
 import { DOOR_PRESETS } from './data/doorPresets';
-import { BIRDSONG, environmentLook, THUNDER } from './data/environment';
+import { BIRDSONG, environmentLook, FADE_IN, mixLooks, THUNDER, type EnvironmentLook } from './data/environment';
 import { ARRIVAL, DOORS, PLAYER_RADIUS, TELEPORTS } from './data/layout';
 import {
   BLESS_SECONDS,
@@ -55,6 +55,9 @@ const ambient = new THREE.AmbientLight('#ffffff', 0.6);
 const sun = new THREE.DirectionalLight();
 scene.add(hemi, ambient, sun);
 let shownEnvironment: EnvironmentPreset | null = null;
+/** What is on screen now, and an ease from an earlier look if one is under way. */
+let shownLook: EnvironmentLook | null = null;
+let fade: { from: EnvironmentLook; t: number; seconds: number } | null = null;
 
 /** Sky, fog and lights for the state's environment preset (doc 7.1). */
 let shownDim = 1;
@@ -62,11 +65,21 @@ let shownDim = 1;
  * `dim` scales the light (1 = as the preset has it): the basement once its
  * lights have failed on Day 3 (D3-02).
  */
-function applyEnvironment(preset: EnvironmentPreset, dim = 1): void {
-  if (preset === shownEnvironment && dim === shownDim) return;
-  shownEnvironment = preset;
+function applyEnvironment(preset: EnvironmentPreset, dim = 1, dt = 0): void {
+  if (preset !== shownEnvironment) {
+    // Some changes ease in (FADE_IN); the rest, and a new day, are instant.
+    const seconds = shownEnvironment ? FADE_IN[preset] ?? 0 : 0;
+    fade = seconds > 0 && shownLook ? { from: shownLook, t: 0, seconds } : null;
+    shownEnvironment = preset;
+  } else if (!fade && dim === shownDim) return;
   shownDim = dim;
-  const e = environmentLook(preset);
+  let e = environmentLook(preset);
+  if (fade) {
+    fade.t += dt;
+    if (fade.t >= fade.seconds) fade = null;
+    else e = mixLooks(fade.from, e, fade.t / fade.seconds);
+  }
+  shownLook = e;
   sky.set(e.sky);
   fog.color.set(e.sky);
   fog.near = e.fogNear;
@@ -180,7 +193,7 @@ function ambience(dt: number): void {
   thunderTimer -= dt;
   if (thunderTimer <= 0) {
     thunderTimer = 25 + Math.random() * 20;
-    if (THUNDER.has(preset)) sfx.play('thunder');
+    if (THUNDER.has(preset)) sfx.play('thunder-far');
   }
 }
 
@@ -727,7 +740,7 @@ renderer.setAnimationLoop(() => {
     dayFade -= dt;
     if (dayFade <= 0) nextDay();
   }
-  applyEnvironment(state.environment_preset, lightLevel(dt));
+  applyEnvironment(state.environment_preset, lightLevel(dt), dt);
   if (started && !worldPaused && dayFade < 0) ambience(dt);
 
   // Reading scripture is a hold too, but with the Bible, not the cross.

@@ -1597,7 +1597,9 @@ export class StoryProps {
     if (!g.group.visible) return;
     const w = WATCHER_SPOT;
     g.group.position.set(...toWorld(w.x, w.y, 0, w.height + Math.sin(this.roamT * 1.1) * 0.03));
-    g.group.rotation.set(0, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), 0);
+    // Turned full on to the player, leaning in a little.
+    g.group.rotation.order = 'YXZ';
+    g.group.rotation.set(w.lean, Math.atan2(cam.x - g.group.position.x, cam.z - g.group.position.z), 0);
   }
 
   /**

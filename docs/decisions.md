@@ -1096,6 +1096,41 @@ Also added:
 - The grey skies' colours, the basement's darkness level and flicker, and
   the birdsong and thunder sounds (placeholders). The full audio cue table
   (H05) is still to come; birds and thunder follow the presets in 7.1.
-- The serious ghost's spot, about 17 m east of the path at the graves'
-  edge. From the path it's small.
+- The serious ghost's spot. Superseded below: it now floats at the
+  concerned ghost's spot.
+
+## 2026-11-27 — Day 3 part 1 playtest
+
+Designer's changes:
+
+- **The walk up** on Day 3 now says "No spirits? I guess they all made it
+  home." (the per-day church-approach thought, 25 m from the doors).
+- **The office note** no longer tells the player to refill the bucket: the
+  supervisor doesn't know how the rituals are done. It now only says the
+  bucket and rod are by the ritual table.
+- **Thunder you can hear.** A clap of thunder (a crack, then a rumble) plays
+  as the basement lights fail, and again the first time the church doors
+  are opened after that, with "Was that thunder? It was sunny a minute ago."
+  If the player gets outside some other way first, the same thunder and
+  thought play there. The old rumble was too low for most speakers, so
+  both it and the distant thunder every 25 to 45 s were raised in pitch.
+- **A sign by the church doors**, on the front wall inside the nave just
+  east of the doors, so the doors shutting by themselves is no surprise.
+  It's there every day and can be read with E. Text (draft): "Please note:
+  the church doors close automatically."
+- **The storm darkening is remarked on.** Picking up the box, "Is this a
+  cigar box? It feels empty." is followed by "Whoa. It's getting kinda
+  dark. I guess a storm is really rolling in fast." The sky darkens and the
+  birds stop as that second line starts, and the darkening now eases in
+  over 4 s rather than snapping (the only preset change that eases; the
+  rest stay instant).
+- **The watcher** floats where Day 2's concerned ghost read the old
+  priest's headstone, the same role there to add tension. It turns to face
+  the player wherever they go and leans towards them a little.
+
+### PROVISIONAL (not yet ruled on)
+
+- The sign's wording and look (cream face, dark board, 1.35 m up).
+- "Woah" in the storm line is spelt "Whoa".
+- The thunder sounds (placeholders until H05) and the 4 s ease.
 

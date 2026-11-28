@@ -1,6 +1,6 @@
 import { DOOR_PRESETS, LOCK_MESSAGES } from '../data/doorPresets';
 import { DOORS, PLAYER_RADIUS, TRANSITIONS, type Level, type LockState, type Spawn } from '../data/layout';
-import { BEHIND_DESK, HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
+import { BEHIND_DESK, DOOR_SIGN, HOLY_CIRCLE, RELIC_NAMES, REMINDERS } from '../data/story';
 import type { GameState } from '../state/store';
 import {
   altarOpen,
@@ -135,6 +135,8 @@ function resolveItem(id: string, s: GameState, player: Player): Resolution {
     case 'stool-note':
       // The Easter egg: readable any time, any day, hands full or not.
       return { prompt: 'E  Read note', action: { kind: 'read-note', note: 'stool' } };
+    case 'door-sign':
+      return { prompt: 'E  Read sign', action: { kind: 'message', text: DOOR_SIGN } };
     case 'chapel-key':
       if (s.inventory.has('chapel-key')) return NONE;
       // Day 3: the basement key hangs with it (D3-01).

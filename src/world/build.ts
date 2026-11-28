@@ -12,6 +12,7 @@ import {
   type Prop,
   type Rect,
 } from '../data/layout';
+import { SIGN_TEXT } from '../data/story';
 import { wallSegments } from './collision';
 
 export interface DoorView {
@@ -50,6 +51,33 @@ function boxMesh(r: Rect, level: 0 | -1, base: number, height: number, color: st
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), mat(color));
   mesh.position.set(...toWorld((r.x1 + r.x2) / 2, (r.y1 + r.y2) / 2, level, base + height / 2));
   return mesh;
+}
+
+/** Dark lettering on cream, word-wrapped to fit, for a sign's face. */
+function signTexture(text: string): THREE.Texture | null {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 144;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = '#e9e1cc';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = '#2a2018';
+  ctx.font = 'bold 22px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines: string[] = [];
+  for (const word of text.split(' ')) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && ctx.measureText(`${last} ${word}`).width < c.width - 24) lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  }
+  const lh = 26;
+  lines.forEach((l, i) => ctx.fillText(l, c.width / 2, c.height / 2 + (i - (lines.length - 1) / 2) * lh));
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 function propMesh(p: Prop): THREE.Object3D {
@@ -133,6 +161,19 @@ function propMesh(p: Prop): THREE.Object3D {
       const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.7, 6), mat(p.color));
       spout.position.set(...toWorld(cx, cy, p.level, base + p.height + 0.35));
       group.add(basin, water, spout);
+      return group;
+    }
+    case 'sign': {
+      // A dark board with a cream face carrying the text, facing north.
+      const board = boxMesh(p.rect, p.level, base, p.height, p.color);
+      const face = new THREE.Mesh(
+        new THREE.PlaneGeometry(w - 0.04, p.height - 0.04),
+        new THREE.MeshLambertMaterial({ map: signTexture(SIGN_TEXT[p.id] ?? '') }),
+      );
+      face.rotation.y = Math.PI;
+      face.position.set(...toWorld(cx, p.rect.y2 + 0.002, p.level, base + p.height / 2));
+      const group = new THREE.Group();
+      group.add(board, face);
       return group;
     }
     case 'flat': {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BIRDSONG, THUNDER } from '../src/data/environment';
-import { afterThought, GATE_CODE, OFFICE_NOTES, RELIC_LINES, REMINDERS, S4_PART1_END, SPOTS, THOUGHTS } from '../src/data/story';
+import { BIRDSONG, environmentLook, FADE_IN, mixLooks, THUNDER } from '../src/data/environment';
+import { afterThought, DOOR_SIGN, GATE_CODE, WATCHER_SPOT, WORRIED_SPOT, OFFICE_NOTES, RELIC_LINES, REMINDERS, S4_PART1_END, SPOTS, THOUGHTS } from '../src/data/story';
 import { PROPS } from '../src/data/layout';
 import { createInitialState, type GameState } from '../src/state/store';
 import { startDay } from '../src/story/day';
@@ -19,6 +19,7 @@ export const DAY3_PLAYTHROUGH: StoryEvent[] = [
   { type: 'arrived' },
   { type: 'recall-gate-code' },
   { type: 'keypad-submit', code: GATE_CODE },
+  { type: 'approach-church', x: 0, y: 30, level: 0 },
   { type: 'door-opened', id: 'church' },
   { type: 'door-opened', id: 'office' },
   { type: 'read-note' },
@@ -35,8 +36,8 @@ export const DAY3_PLAYTHROUGH: StoryEvent[] = [
   { type: 'stage-table' },
   { type: 'door-opened', id: 'basement' },
   { type: 'pickup-chalice' },
-  { type: 'outside-overcast', x: 0, y: 46, level: 0 },
   { type: 'stage-table' },
+  { type: 'door-opened', id: 'church' },
   // D3-03: fill the bucket.
   { type: 'd3-fill-wanted' },
   { type: 'pickup-bucket' },
@@ -47,6 +48,7 @@ export const DAY3_PLAYTHROUGH: StoryEvent[] = [
   { type: 'read-sms' },
   { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 },
   { type: 'take-relic' },
+  { type: 'relic-pickup-2' },
   { type: 'relic-pickup-thought-done' },
   { type: 'relic-near-church', x: 0, y: 40, level: 0 },
   { type: 'place-relic' },
@@ -108,6 +110,17 @@ describe('the start of Day 3 (D3-01)', () => {
     expect(OFFICE_NOTES[3]).toContain('basement key');
   });
 
+  it("notices on the walk up that Day 2's ghosts are gone", () => {
+    const s = at(step('approach-church'));
+    expect(says(applyEvent(s, { type: 'approach-church', x: 0, y: 30, level: 0 }))).toEqual(['No spirits? I guess they all made it home.']);
+    expect(applyEvent(s, { type: 'approach-church', x: 0, y: 40, level: 0 })).toEqual([]);
+  });
+
+  it('leaves the fill to the player: the note only says where the bucket is', () => {
+    expect(OFFICE_NOTES[3]).toContain('The bucket and rod are by the ritual table');
+    expect(OFFICE_NOTES[3]).not.toMatch(/fill|fountain/i);
+  });
+
   it('hands over the chapel and basement keys together, which opens the basement door', () => {
     const s = at(step('take'));
     expect(task(s)).toBe('Take the chapel and basement keys from the hooks by the office door');
@@ -153,15 +166,26 @@ describe('the chalice in the basement (D3-02)', () => {
     expect(c.z).toBeCloseTo((shelf.base ?? 0) + shelf.height, 3);
   });
 
-  it('notices the grey sky once, outside only', () => {
+  it('claps thunder as the church doors open after the lights fail, then notices the grey sky', () => {
     const before = at(step('pickup-chalice'));
-    expect(applyEvent(before, { type: 'outside-overcast', x: 0, y: 46, level: 0 })).toEqual([]);
-    const s = at(step('outside-overcast'));
+    expect(says(applyEvent(before, { type: 'door-opened', id: 'church' }))).toEqual([]);
+    const s = at(step('door-opened', 5));
+    const fx = applyEvent(s, { type: 'door-opened', id: 'church' });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'thunder' });
+    expect(says(fx)).toEqual(['Was that thunder? It was sunny a minute ago.']);
+    // Once only, by the doors or outside.
+    expect(applyEvent(s, { type: 'door-opened', id: 'church' })).toEqual([]);
+    expect(applyEvent(s, { type: 'outside-overcast', x: 0, y: 46, level: 0 })).toEqual([]);
+  });
+
+  it('gives the same thunder and thought on first stepping outside some other way', () => {
+    const s = at(step('door-opened', 5));
     // Indoors, or underground: not yet.
     expect(applyEvent(s, { type: 'outside-overcast', x: 0, y: 55, level: 0 })).toEqual([]);
-    expect(applyEvent(s, { type: 'outside-overcast', x: 0, y: 55, level: -1 })).toEqual([]);
-    expect(says(applyEvent(s, { type: 'outside-overcast', x: 0, y: 46, level: 0 }))).toEqual(['Was that thunder? It was sunny a minute ago.']);
-    expect(applyEvent(s, { type: 'outside-overcast', x: 0, y: 40, level: 0 })).toEqual([]);
+    expect(applyEvent(s, { type: 'outside-overcast', x: 0, y: 46, level: -1 })).toEqual([]);
+    const fx = applyEvent(s, { type: 'outside-overcast', x: 0, y: 46, level: 0 });
+    expect(fx).toContainEqual({ kind: 'sfx', id: 'thunder' });
+    expect(says(fx)).toEqual(['Was that thunder? It was sunny a minute ago.']);
   });
 });
 
@@ -201,12 +225,18 @@ describe('the brown box (D3-04)', () => {
     expect(task(s)).toBe('Collect the delivery from the drop box by the gate');
   });
 
-  it('is quiet, and the birds stop as it is picked up', () => {
+  it('is quiet; the sky darkens and the birds stop as the storm is remarked on', () => {
     const s = at(step('approach-drop-box'));
     expect(says(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 }))).toEqual([RELIC_LINES.box.approach]);
     expect(BIRDSONG.has(s.environment_preset)).toBe(true);
-    expect(says(applyEvent(s, { type: 'take-relic' }))).toEqual(['Is this a cigar box? It feels empty.']);
+    const fx = applyEvent(s, { type: 'take-relic' });
+    expect(says(fx)).toEqual(['Is this a cigar box? It feels empty.']);
+    expect(fx).toContainEqual({ kind: 'after', seconds: afterThought(RELIC_LINES.box.pickup), event: { type: 'relic-pickup-2' } });
+    // Not yet: the darkening waits for the line that notices it.
+    expect(s.environment_preset).toBe('D3_OVERCAST');
+    expect(says(applyEvent(s, { type: 'relic-pickup-2' }))).toEqual(["Whoa. It's getting kinda dark. I guess a storm is really rolling in fast."]);
     expect(s.environment_preset).toBe('D3_SILENCE');
+    expect(FADE_IN.D3_SILENCE).toBeGreaterThan(0);
     expect(BIRDSONG.has(s.environment_preset)).toBe(false);
     expect(THUNDER.has(s.environment_preset)).toBe(true);
     applyEvent(s, { type: 'relic-pickup-thought-done' });
@@ -222,7 +252,32 @@ describe('the brown box (D3-04)', () => {
   });
 });
 
+describe('the watcher (D3-04)', () => {
+  it("floats where Day 2's concerned ghost read the headstone", () => {
+    expect([WATCHER_SPOT.x, WATCHER_SPOT.y, WATCHER_SPOT.height]).toEqual([WORRIED_SPOT.x, WORRIED_SPOT.y, WORRIED_SPOT.height]);
+  });
+});
+
+describe('the sign by the church doors', () => {
+  it('sits on the inside of the front wall beside the doors and can be read', () => {
+    const sign = PROPS.find((p) => p.id === 'door-sign')!;
+    expect(sign.rect.y1).toBeGreaterThanOrEqual(50.15);
+    expect(sign.rect.x1).toBeGreaterThan(1.5);
+    expect(sign.solid).toBe(false);
+    const s = day3Start();
+    expect(resolve('item:door-sign', s, { x: 2.5, y: 51.5, level: 0 })).toEqual({ prompt: 'E  Read sign', action: { kind: 'message', text: DOOR_SIGN } });
+  });
+});
+
 describe('birds and thunder (7.1)', () => {
+  it('eases between looks', () => {
+    const a = environmentLook('D3_OVERCAST');
+    const b = environmentLook('D3_SILENCE');
+    expect(mixLooks(a, b, 0)).toEqual(a);
+    expect(mixLooks(a, b, 1)).toEqual(b);
+    expect(mixLooks(a, b, 0.5).sunIntensity).toBeCloseTo((a.sunIntensity + b.sunIntensity) / 2);
+  });
+
   it('has birdsong on Days 1 and 2 and Day 3 until the box, and thunder from the chalice on', () => {
     expect([...BIRDSONG].sort()).toEqual(['BASE_DAY', 'D1_EVENING', 'D3_OVERCAST']);
     expect([...THUNDER].sort()).toEqual(['D3_OVERCAST', 'D3_SILENCE']);

@@ -228,7 +228,8 @@ export type SfxId =
   | 'bell-wind-down'
   | 'angry-squeak'
   | 'exorcise'
-  | 'thunder';
+  | 'thunder'
+  | 'thunder-far';
 
 export type PurifiedRelic = 'clock' | RelicKind;
 
@@ -334,11 +335,11 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       break;
 
     case 'outside-overcast': {
-      // The first time outside under the grey sky (D3-03).
-      if (s.day_index !== 3 || s.flags.has('overcast-seen') || s.environment_preset === 'BASE_DAY') return [];
+      // Out under the grey sky without opening the church doors (D3-03):
+      // the same thunder and thought as at the doors.
+      if (!overcastUnseen(s)) return [];
       if (e.level !== 0 || zoneAt(e.x, e.y, 0)?.roof) return [];
-      s.flags.add('overcast-seen');
-      out.push({ kind: 'say', text: THOUGHTS.skyGrey });
+      overcastSeen(s, out);
       break;
     }
 
@@ -696,7 +697,6 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       {
         const lines = RELIC_LINES[s.relic_kind];
         const next: StoryEvent = { type: lines.pickup2 ? 'relic-pickup-2' : 'relic-pickup-thought-done' };
-        if (s.relic_kind === 'box') s.environment_preset = 'D3_SILENCE';
         out.push(
           { kind: 'sfx', id: 'pickup' },
           { kind: 'say', text: lines.pickup },
@@ -709,6 +709,8 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
       const line = RELIC_LINES[s.relic_kind].pickup2;
       if (!line || s.relic === 'drop-box' || s.relic === 'none' || s.flags.has('relic-pickup-2')) return [];
       s.flags.add('relic-pickup-2');
+      // The box: the sky darkens and the birds stop as this is said (D3-04, 7.1 D3_SILENCE).
+      if (s.relic_kind === 'box') s.environment_preset = 'D3_SILENCE';
       out.push({ kind: 'say', text: line }, { kind: 'after', seconds: afterThought(line), event: { type: 'relic-pickup-thought-done' } });
       break;
     }
@@ -1220,6 +1222,9 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
         }
       }
       if (e.id === 'storage' && s.inventory.has('storage-key') && !s.flags.has('storage-opened')) s.flags.add('storage-opened');
+      // Day 3: opening the church doors after the lights fail, thunder rolls
+      // and the sky outside is grey (designer, 2026-11-27).
+      if (e.id === 'church' && overcastUnseen(s)) overcastSeen(s, out);
       // Day 2: the cleansed clock, on the desk since yesterday.
       if (e.id === 'office' && s.day_index === 2 && !s.flags.has('office-opened')) {
         s.flags.add('office-opened');
@@ -1236,6 +1241,17 @@ export function applyEvent(s: GameState, e: StoryEvent): Effect[] {
     if (id === 'D1-10' || id === 'D2-12') out.push({ kind: 'end-day' });
   }
   return out;
+}
+
+/** Day 3: the sky has turned (D3-02) but the player hasn't been out under it yet. */
+function overcastUnseen(s: GameState): boolean {
+  return s.day_index === 3 && !s.flags.has('overcast-seen') && s.environment_preset !== 'BASE_DAY';
+}
+
+/** A roll of thunder, and the thought that goes with it (D3-03). */
+function overcastSeen(s: GameState, out: Effect[]): void {
+  s.flags.add('overcast-seen');
+  out.push({ kind: 'sfx', id: 'thunder' }, { kind: 'say', text: THOUGHTS.skyGrey });
 }
 
 /** Why the clock can't be blessed yet, or null when it can (player position aside). */

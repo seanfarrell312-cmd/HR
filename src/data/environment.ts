@@ -81,6 +81,35 @@ export const BIRDSONG: ReadonlySet<EnvironmentPreset> = new Set(['BASE_DAY', 'D1
 /** Presets with distant thunder now and then (7.1). */
 export const THUNDER: ReadonlySet<EnvironmentPreset> = new Set(['D3_OVERCAST', 'D3_SILENCE']);
 
+/**
+ * Seconds a preset takes to settle in when it arrives during a shift; any
+ * other preset switches at once. Day 3's storm darkens while the player
+ * remarks on it (designer, 2026-11-27).
+ */
+export const FADE_IN: Partial<Record<EnvironmentPreset, number>> = { D3_SILENCE: 4 };
+
+function mixHex(a: string, b: string, t: number): string {
+  const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  return '#' + [0, 1, 2].map((i) => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * t).toString(16).padStart(2, '0')).join('');
+}
+
+/** Part way (t from 0 to 1) from one look to another. */
+export function mixLooks(a: EnvironmentLook, b: EnvironmentLook, t: number): EnvironmentLook {
+  const n = (x: number, y: number) => x + (y - x) * t;
+  return {
+    sky: mixHex(a.sky, b.sky, t),
+    fogNear: n(a.fogNear, b.fogNear),
+    fogFar: n(a.fogFar, b.fogFar),
+    hemiSky: mixHex(a.hemiSky, b.hemiSky, t),
+    hemiGround: mixHex(a.hemiGround, b.hemiGround, t),
+    hemiIntensity: n(a.hemiIntensity, b.hemiIntensity),
+    ambient: n(a.ambient, b.ambient),
+    sun: mixHex(a.sun, b.sun, t),
+    sunIntensity: n(a.sunIntensity, b.sunIntensity),
+    sunPosition: [0, 1, 2].map((i) => n(a.sunPosition[i], b.sunPosition[i])) as [number, number, number],
+  };
+}
+
 export function environmentLook(preset: EnvironmentPreset): EnvironmentLook {
   return ENVIRONMENTS[preset] ?? ENVIRONMENTS.BASE_DAY!;
 }

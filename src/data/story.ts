@@ -178,6 +178,14 @@ export const AUTO_CLOSE_DOORS: Readonly<Record<string, number>> = {
 };
 /** The sticker above the keypad screen (designer copy, 2026-11-10). */
 export const GATE_CAUTION = `Caution: gate is automatic and closes after ${GATE_OPEN_SECONDS} seconds`;
+/**
+ * The small sign inside the nave beside the church doors (designer,
+ * 2026-11-27), so the doors shutting on their own is no surprise.
+ * PROVISIONAL copy.
+ */
+export const DOOR_SIGN = 'Please note: the church doors close automatically.';
+/** Text on the signs in the world, by prop id. */
+export const SIGN_TEXT: Readonly<Record<string, string>> = { 'door-sign': DOOR_SIGN };
 
 /** Only the newest text shows on the phone; each new one replaces the last (decisions 2026-11-10). */
 export function phoneMessages(inbox: string[]): Sms[] {
@@ -228,7 +236,7 @@ export const OFFICE_NOTE_DAY2 = [
 export const OFFICE_NOTE_DAY3 = [
   'Only one delivery expected today, so this should be an easy shift. The alert will come through like yesterday.',
   "A heads-up, though. The other staff have mentioned some odd goings-on around the grounds since yesterday. Probably just our lingering friends, but keep your wits about you.",
-  "After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them. Give it a fresh fill at the fountain before the delivery arrives.",
+  "After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them.",
 ].join('\n\n');
 
 /** The office note for each day. */
@@ -353,10 +361,12 @@ export const THOUGHTS = {
   shiftDone: "That one really took it out of me. I'm ready to call it a day.",
   /** Spotting the clown's ghost chasing the angry one among the graves on the way out. */
   chaseSpotted: "Ha. Looks like those two are getting along.",
-  // Day 3, part 1 (S4, D3-01 to D3-04). PROVISIONAL copy.
+  // Day 3, part 1 (S4, D3-01 to D3-04). PROVISIONAL copy unless marked.
+  /** The walk up to the church: Day 2's ghosts are gone (designer copy, 2026-11-27). */
+  churchApproachDay3: 'No spirits? I guess they all made it home.',
   /** Taking the chalice from the basement's far shelf, as the lights fail. */
   basementDark: '...Of course. Of course the lights go now.',
-  /** First time outside after that, under the grey sky. */
+  /** Opening the church doors after that: thunder, and the grey sky outside. */
   skyGrey: 'Was that thunder? It was sunny a minute ago.',
   /** The chalice and crucifix are on the ritual table; then the bucket. */
   tableSetDay3: 'There. Now to fill the bucket before the delivery comes.',
@@ -412,11 +422,13 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
   },
   // Designer copy, 2026-11-26 and 2026-11-27.
   // Day 3's brown box (S4): a plain wooden box, quiet and unremarkable. The
-  // approach and pickup lines are designer copy (2026-11-27); the carry line
-  // is PROVISIONAL and notices the birds have stopped (D3_SILENCE).
+  // approach and pickup lines are designer copy (2026-11-27); the second
+  // pickup line comes as the sky darkens and the birds stop (D3_SILENCE).
+  // The carry line is PROVISIONAL and notices the birds have gone.
   box: {
     approach: "It doesn't sound like another noisy one. Maybe it's another doll?",
     pickup: 'Is this a cigar box? It feels empty.',
+    pickup2: "Whoa. It's getting kinda dark. I guess a storm is really rolling in fast.",
     carry: "It's gone really quiet. Where did all the birds go?",
     ghost: '',
   },
@@ -598,6 +610,7 @@ export const CHURCH_APPROACH = { x: 0, y: 50, r: 25 };
 export const CHURCH_APPROACH_LINES: Record<number, string> = {
   1: THOUGHTS.churchApproach,
   2: THOUGHTS.churchApproachDay2,
+  3: THOUGHTS.churchApproachDay3,
 };
 
 /** Shown once Day 3's brown box is on the ritual table, until S4 part 2 is built. */
@@ -648,10 +661,12 @@ export const SPOT_RANGE = { clown: 45, worried: 22 };
 
 /**
  * Day 3 (D3-04, 7.1 D3_SILENCE): once the brown box is picked up the
- * serious ghost hovers at the near edge of the east graves, turning to
- * watch the player wherever they go. Silent, with no thought.
+ * serious ghost hovers where Day 2's concerned ghost read the old priest's
+ * headstone (designer, 2026-11-27: the same role, there to add tension),
+ * now turned to watch the player wherever they go, leaning towards them a
+ * little. Silent, with no thought.
  */
-export const WATCHER_SPOT = { x: 17.6, y: 30.5, height: 0.5 };
+export const WATCHER_SPOT = { x: WORRIED_SPOT.x, y: WORRIED_SPOT.y, height: WORRIED_SPOT.height, lean: 0.1 };
 
 /**
  * First-day control guide (designer copy, 2026-11-09), shown once the day card

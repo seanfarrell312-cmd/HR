@@ -73,10 +73,11 @@ Thoughts are the subtitled lines in the protagonist's head. Reminders are the sh
 
 | ID | When it plays | Text | Proposed |
 |---|---|---|---|
-| D3-01 | Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder rolls. | ...Of course. Of course the lights go now. | |
-| D3-02 | The first time outside after that, under the grey sky. | Was that thunder? It was sunny a minute ago. | |
-| D3-03 | The chalice and crucifix are both on the ritual table; then the bucket is to be filled. | There. Now to fill the bucket before the delivery comes. | |
-| D3-04 | The filled bucket is put down by the ritual table; then the delivery text. | All set. Now I just wait. | |
+| D3-01 | First time within 25 m of the church doors after the gate opens; Day 2's ghosts are gone. | No spirits? I guess they all made it home. | |
+| D3-02 | Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder claps. | ...Of course. Of course the lights go now. | |
+| D3-03 | Opening the church doors after that (or first stepping outside some other way): a clap of thunder and a grey sky. | Was that thunder? It was sunny a minute ago. | |
+| D3-04 | The chalice and crucifix are both on the ritual table; then the bucket is to be filled. | There. Now to fill the bucket before the delivery comes. | |
+| D3-05 | The filled bucket is put down by the ritual table; then the delivery text. | All set. Now I just wait. | |
 
 ### Day 2: dawdling outside
 
@@ -135,6 +136,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 |---|---|---|---|
 | BB-01 | Nearing the drop box once it has been delivered. | It doesn't sound like another noisy one. Maybe it's another doll? | |
 | BB-02 | Taking it out of the drop box. | Is this a cigar box? It feels empty. | |
+| BB-02b | Straight after; then the ritual table objective. | Whoa. It's getting kinda dark. I guess a storm is really rolling in fast. | |
 | BB-03 | Carrying it up the path, 17 m from the church doors. | It's gone really quiet. Where did all the birds go? | |
 
 ## Texts
@@ -208,7 +210,7 @@ Proposed changes to N3:
 
 **N4-2.** A heads-up, though. The other staff have mentioned some odd goings-on around the grounds since yesterday. Probably just our lingering friends, but keep your wits about you.
 
-**N4-3.** After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them. Give it a fresh fill at the fountain before the delivery arrives.
+**N4-3.** After yesterday's pranks I've moved the chalice down to the basement for safekeeping. The basement key is on the hook with the chapel key. The bucket and rod are by the ritual table where you left them.
 
 Proposed changes to N4:
 
@@ -231,20 +233,21 @@ Proposed changes to B:
 | R-01 | Day 1: entering the wrong gate code. | Wrong code. I should check my messages. | |
 | R-02 | Day 2 on: entering the wrong gate code (the code came as a thought, not a text). | Wrong code. | |
 | R-03 | The sticker above the gate keypad. | Caution: gate is automatic and closes after 10 seconds | |
-| R-04 | Day 2 church search: the checklist under the objective. | Check the office / Check the storage closet / Check the basement | |
-| R-05 | Trying to pick something up while carrying something else. | My hands are full. | |
-| R-06 | Trying the drop box from the road side of the gate. | The hatch is on the inside of the gate. | |
-| R-07 | Trying the drop box before anything has been delivered. | Nothing's been delivered yet. | |
-| R-08 | Putting a relic on the ritual table before the chalice and crucifix are set out. | The chalice and crucifix need setting out on the table first. | |
-| R-09 | Trying to bless a relic without the cross. | I need the cross from the shelf. | |
-| R-10 | Trying to bless a relic that needs scripture before it has been read some. | I should read it some scripture first. | |
-| R-11 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
-| R-12 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
-| R-13 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
-| R-14 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
-| R-15 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
-| R-16 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
-| R-17 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
-| R-18 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
-| R-19 | Trying the drop box before reading the delivery text and putting the phone away. | My phone just buzzed. I should check it first. | |
-| R-20 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |
+| R-04 | The sign inside the nave beside the church doors (any day), and when it is read. | Please note: the church doors close automatically. | |
+| R-05 | Day 2 church search: the checklist under the objective. | Check the office / Check the storage closet / Check the basement | |
+| R-06 | Trying to pick something up while carrying something else. | My hands are full. | |
+| R-07 | Trying the drop box from the road side of the gate. | The hatch is on the inside of the gate. | |
+| R-08 | Trying the drop box before anything has been delivered. | Nothing's been delivered yet. | |
+| R-09 | Putting a relic on the ritual table before the chalice and crucifix are set out. | The chalice and crucifix need setting out on the table first. | |
+| R-10 | Trying to bless a relic without the cross. | I need the cross from the shelf. | |
+| R-11 | Trying to bless a relic that needs scripture before it has been read some. | I should read it some scripture first. | |
+| R-12 | Trying to read scripture without the Bible. | I need the Bible from the stand. | |
+| R-13 | Picking up a cleansed relic while still holding the Bible. | I should put the Bible back on its stand first. | |
+| R-14 | Trying to bless or read from outside the holy circle. | I should stand in the holy circle. | |
+| R-15 | Trying to splash the clown doll, or dip the rod, before the bucket of holy water is by the ritual table. | I need the bucket of holy water by the table first. | |
+| R-16 | Trying to splash the clown doll, or dip the rod, without the holy-water rod. | I need the holy-water rod. | |
+| R-17 | Trying to splash the clown doll before dipping the rod in the bucket. | I should dip the rod in the holy water first. | |
+| R-18 | Searching the church: trying the office desk drawers from anywhere but behind the desk. | The drawers are on the other side. | |
+| R-19 | Trying the hand bell's two-handed blessing before moving the Bible stand in front of the ritual table. | I need both hands. The Bible should go on its stand in front of me. | |
+| R-20 | Trying the drop box before reading the delivery text and putting the phone away. | My phone just buzzed. I should check it first. | |
+| R-21 | Putting the bucket down by the ritual table before filling it. | It's empty. I should fill it at the fountain first. | |

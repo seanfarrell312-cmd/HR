@@ -21,6 +21,7 @@ import {
   WRONG_CODE,
   WRONG_CODE_LATER,
   GATE_CAUTION,
+  DOOR_SIGN,
 } from '../src/data/story.ts';
 
 export type ThoughtKey = keyof typeof THOUGHTS;
@@ -92,8 +93,9 @@ export const DAY2: Cue[] = [
 
 /** Day 3 thoughts, in play order (S4). */
 export const DAY3: Cue[] = [
-  { key: 'basementDark', when: "Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder rolls." },
-  { key: 'skyGrey', when: 'The first time outside after that, under the grey sky.' },
+  { key: 'churchApproachDay3', when: "First time within 25 m of the church doors after the gate opens; Day 2's ghosts are gone." },
+  { key: 'basementDark', when: "Taking the chalice from the basement's far shelf, as the lights flicker and fail and thunder claps." },
+  { key: 'skyGrey', when: 'Opening the church doors after that (or first stepping outside some other way): a clap of thunder and a grey sky.' },
   { key: 'tableSetDay3', when: 'The chalice and crucifix are both on the ritual table; then the bucket is to be filled.' },
   { key: 'waterReady', when: 'The filled bucket is put down by the ritual table; then the delivery text.' },
 ];
@@ -229,6 +231,7 @@ export function scriptReview(): string {
     ['Day 1: entering the wrong gate code.', WRONG_CODE],
     ['Day 2 on: entering the wrong gate code (the code came as a thought, not a text).', WRONG_CODE_LATER],
     ['The sticker above the gate keypad.', GATE_CAUTION],
+    ['The sign inside the nave beside the church doors (any day), and when it is read.', DOOR_SIGN],
     ['Day 2 church search: the checklist under the objective.', SEARCH_CHECKLIST.join(' / ')],
     ...Object.entries(REMINDERS).map(([k, v]): [string, string] => [REMINDER_WHEN[k as keyof typeof REMINDERS], v]),
   ];

@@ -203,9 +203,19 @@ export class Sfx {
         }
         break;
       case 'thunder':
-        // Distant thunder: a low, slow rumble that swells and fades (D3).
-        for (let i = 0; i < 7; i++) this.hiss(i * 0.35 + Math.random() * 0.2, 1.4, 70 + Math.random() * 60, 0.22 * (1 - i / 9));
-        this.glide('sine', 55, 38, 0.1, 2.6, 0.08);
+        // A clap of thunder close by (D3: the lights failing, the church
+        // doors): a sharp crack, then a rolling rumble high enough to come
+        // through laptop speakers. PLACEHOLDER (H05).
+        this.hiss(0, 0.3, 1600, 0.9);
+        this.hiss(0.02, 0.7, 600, 0.9);
+        for (let i = 0; i < 9; i++) this.hiss(0.15 + i * 0.3 + Math.random() * 0.15, 1.1, 160 + Math.random() * 200, 0.85 * (1 - i / 11));
+        this.glide('sine', 70, 40, 0.05, 2.8, 0.18);
+        break;
+      case 'thunder-far':
+        // Distant thunder every half a minute or so (D3): a softer roll with
+        // no crack. PLACEHOLDER (H05).
+        for (let i = 0; i < 7; i++) this.hiss(i * 0.35 + Math.random() * 0.2, 1.2, 140 + Math.random() * 140, 0.4 * (1 - i / 9));
+        this.glide('sine', 60, 40, 0.1, 2.4, 0.08);
         break;
       case 'angry-squeak':
         // Cross little squeaks, up then sharply down (D2-10, D2-11).

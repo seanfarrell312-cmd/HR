@@ -73,8 +73,10 @@ export interface Prop {
    * 'disc': a flat circle on the ground, filling the rect's shorter side.
    * 'fence': a low see-through railing of pickets along the rect's long side.
    * 'fountain': a hexagonal stone basin of water with a spout in the middle.
+   * 'sign': a thin board on a wall with its text (SIGN_TEXT, by id) on the
+   *   face towards +y (north).
    */
-  shape?: 'box' | 'cylinder' | 'ring' | 'flat' | 'stool' | 'disc' | 'fence' | 'fountain';
+  shape?: 'box' | 'cylinder' | 'ring' | 'flat' | 'stool' | 'disc' | 'fence' | 'fountain' | 'sign';
   /** Props block movement unless marked solid: false. */
   solid?: boolean;
   /** Height the prop starts at above the level floor. */
@@ -421,6 +423,9 @@ export const PROPS: Prop[] = [
   ...pews(),
   { id: 'aisle', label: 'Aisle carpet', rect: rect(-0.8, 50.2, 0.8, 64.6), height: 0.02, level: 0, color: '#a11d22', shape: 'flat', solid: false },
   { id: 'altar', label: 'Altar', rect: rect(-2.8, 64.8, 2.8, 66.3), height: 1.1, level: 0, color: '#c8c3ba' },
+  // On the front wall inside the nave, just east of the church doors
+  // (designer, 2026-11-27): they close by themselves.
+  { id: 'door-sign', label: 'Sign', rect: rect(2.2, 50.15, 2.8, 50.18), height: 0.34, base: 1.35, level: 0, color: '#3b2a1c', shape: 'sign', solid: false, interact: 'door-sign' },
   { id: 'relic-table', label: 'Cleaned-relic table', rect: rect(6.9, 50.3, 7.85, 51.8), height: 0.85, level: 0, color: WOOD, interact: 'relic-table' },
   { id: 'keys', label: 'Key hooks', rect: rect(-8.25, 51.1, -8.15, 51.6), height: 0.3, level: 0, color: '#e08a1e', base: 1.4, solid: false, interact: 'chapel-key' },
 
