@@ -231,9 +231,8 @@ function wood(): THREE.Texture | null {
 }
 
 /**
- * A plain dark-wood box with a brass latch on the front (Day 3, D3-04):
- * a lid over a base, a dark seam between, the two ends bowed out a little.
- * The front (latch) faces local +z.
+ * A plain dark-wood box, no latch or fittings (Day 3, D3-04): a lid over a
+ * base, a dark seam between, the two ends bowed out a little.
  */
 function boxModel(): THREE.Group {
   const W = 0.32, D = 0.28, H = 0.13, BASE = 0.085, SEAM = 0.003;
@@ -242,7 +241,6 @@ function boxModel(): THREE.Group {
   const woodMat = map
     ? new THREE.MeshLambertMaterial({ map, flatShading: true })
     : lambert('#4e2c1b');
-  const brass = lambert('#b08a45');
   const base = new THREE.Mesh(new THREE.BoxGeometry(W, BASE, D), woodMat);
   base.position.y = BASE / 2;
   const seam = new THREE.Mesh(new THREE.BoxGeometry(W - 0.006, SEAM + 0.002, D - 0.006), lambert('#1e110a'));
@@ -259,18 +257,6 @@ function boxModel(): THREE.Group {
     bow.position.set((side * W) / 2, H / 2, 0);
     g.add(bow);
   }
-  // The latch: a hasp on the lid over a catch plate with a small knob.
-  const front = D / 2 + 0.002;
-  const hasp = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.004), brass);
-  hasp.position.set(0, BASE + SEAM + 0.012, front);
-  const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.022, 6), brass);
-  hinge.rotation.z = Math.PI / 2;
-  hinge.position.set(0, BASE + SEAM + 0.002, front + 0.002);
-  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.032, 0.004), brass);
-  plate.position.set(0, BASE - 0.018, front);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 6, 5), brass);
-  knob.position.set(0, BASE - 0.016, front + 0.004);
-  g.add(hasp, hinge, plate, knob);
   return g;
 }
 

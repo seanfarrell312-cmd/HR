@@ -205,7 +205,7 @@ describe('the brown box (D3-04)', () => {
     const s = at(step('approach-drop-box'));
     expect(says(applyEvent(s, { type: 'approach-drop-box', x: 3.7, y: 6, level: 0 }))).toEqual([RELIC_LINES.box.approach]);
     expect(BIRDSONG.has(s.environment_preset)).toBe(true);
-    expect(says(applyEvent(s, { type: 'take-relic' }))).toEqual(['A plain brown box. No label, no address... nothing.']);
+    expect(says(applyEvent(s, { type: 'take-relic' }))).toEqual(['Is this a cigar box? It feels empty.']);
     expect(s.environment_preset).toBe('D3_SILENCE');
     expect(BIRDSONG.has(s.environment_preset)).toBe(false);
     expect(THUNDER.has(s.environment_preset)).toBe(true);

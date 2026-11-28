@@ -411,11 +411,12 @@ export const RELIC_LINES: Record<RelicKind, RelicLines> = {
     ghost: 'I guess he must have really liked tea.',
   },
   // Designer copy, 2026-11-26 and 2026-11-27.
-  // Day 3's brown box (S4): plain, quiet and unremarkable. PROVISIONAL copy.
-  // The carry line notices the birds have stopped (D3_SILENCE).
+  // Day 3's brown box (S4): a plain wooden box, quiet and unremarkable. The
+  // pickup line is designer copy (2026-11-27); the rest is PROVISIONAL. The
+  // carry line notices the birds have stopped (D3_SILENCE).
   box: {
     approach: 'Huh. Nothing rattling this time.',
-    pickup: 'A plain brown box. No label, no address... nothing.',
+    pickup: 'Is this a cigar box? It feels empty.',
     carry: "It's gone really quiet. Where did all the birds go?",
     ghost: '',
   },

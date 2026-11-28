@@ -134,7 +134,7 @@ Timed from the gate opening, if the player still hasn't been inside the church.
 | ID | When it plays | Text | Proposed |
 |---|---|---|---|
 | BB-01 | Nearing the drop box once it has been delivered. | Huh. Nothing rattling this time. | |
-| BB-02 | Taking it out of the drop box. | A plain brown box. No label, no address... nothing. | |
+| BB-02 | Taking it out of the drop box. | Is this a cigar box? It feels empty. | |
 | BB-03 | Carrying it up the path, 17 m from the church doors. | It's gone really quiet. Where did all the birds go? | |
 
 ## Texts
