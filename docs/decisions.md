@@ -1069,8 +1069,10 @@ What happens, in order:
 4. **D3-04.** With the bucket back: "All set. Now I just wait." Then the
    Christ-LERTS text. The box is a plain dark-wood box with bowed ends and
    no latch or fittings, after the designer's reference images
-   (`docs/design/concept-art/box/`), quiet and still. Picking it up (the
-   designer's line): "Is this a cigar box? It feels empty." Taking it out
+   (`docs/design/concept-art/box/`), quiet and still. Nearing the drop box
+   (the designer's line): "It doesn't sound like another noisy one. Maybe
+   it's another doll?" Picking it up (the designer's line): "Is this a
+   cigar box? It feels empty." Taking it out
    of the drop box, the birds stop
    and the sky darkens a shade (7.1 D3_SILENCE). On the walk up: "It's gone
    really quiet. Where did all the birds go?" From then on the serious
